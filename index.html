@@ -303,7 +303,8 @@ textarea.f-input{resize:vertical;min-height:56px}
     <div class="sec-h"><div class="sec-t">작업 붙여넣기 <small>엑셀 표를 그대로 복사 → 붙여넣기</small></div></div>
     <div class="paste-panel">
       <div class="paste-hint" id="pasteHint">
-        시공사 작업표(엑셀)에서 <b>표 전체를 복사</b>해 아래에 붙여넣으세요. 날짜·시공사·하도사·인원·취약작업자·작업내용·안전Risk(○표시)를 자동으로 인식하고, <b>시공사별로 분류</b>해 저장합니다. 여러 날짜·여러 시공사가 섞여 있어도 됩니다.
+        <b>표준 입력 양식</b>을 사용하세요. 양식 엑셀에 작업을 채운 뒤 <b>헤더행부터 데이터 전체를 복사</b>해 아래에 붙여넣으면 자동 인식·분류됩니다.<br>
+        위험유형 6칸(밀폐공간·활가스·화재폭발·철거낙하·고소작업·중량물협착)은 해당하면 <b>아무 글자(○·ㅅ·v 등)</b>나 넣으세요. 여러 시공사·여러 날짜가 섞여 있어도 됩니다.
       </div>
       <textarea class="paste-area" id="pasteArea" placeholder="여기에 엑셀 표를 붙여넣기 (Ctrl+V)"></textarea>
       <div class="parsed-count" id="parsedCount"></div>
@@ -396,7 +397,7 @@ textarea.f-input{resize:vertical;min-height:56px}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '3.2.0',
+  version : '4.0.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -479,57 +480,55 @@ function apparentTemp(Ta,RH,windMs,month){
 
 /* ================= 작업 입력 파싱 ================= */
 function pad2(n){return String(n).padStart(2,'0');}
-// v3.2 파서: 취약작업자 셀(0/0/0/0)을 앵커로 찾아 상대 위치 파싱 (앞쪽 빈 셀에 강건)
-const RISK_COLS=['밀폐공간','15m이내 활가스 배관','화재/폭발','철거/낙하','고소작업','중량물협착'];
-function isRiskMark(v){ const s=String(v||'').trim(); return s.length<=2 && /[○◯●⚫✓ㅇoO]/.test(s); }
-function looksVuln(v){ return /^\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*$/.test(String(v||'')); }
+// v4 파서: 표준 입력 양식 전용. 헤더로 열 위치 자동 매핑 (앞쪽 빈 셀·병합에 강건).
+const RISK_ORDER=['밀폐공간','15m이내 활가스 배관','화재/폭발','철거/낙하','고소작업','중량물협착'];
 function parsePaste(text){
-  const rawLines=text.split(/\r?\n/);
-  const rows=[];
-  let curDate='', lastCon='', lastProj='';
-  for(const raw of rawLines){
-    if(!raw.trim()) continue;
-    const cells=raw.split('\t');
-    const joined=raw.replace(/\t/g,' ').trim();
-    const nonEmpty=cells.filter(c=>c.trim()).length;
-    // (1) 날짜행
-    const dm=joined.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
-    if(dm && nonEmpty<=2){ curDate=`${dm[1]}.${pad2(dm[2])}.${pad2(dm[3])}`; lastCon=''; lastProj=''; continue; }
-    // (2) 헤더/주석/안내 스킵
-    if(/진행\s*프로젝트|수행업체 투입인력|안전\s*Risk|취약작업자.*소계/.test(joined)) continue;
-    if(/^※|상기 투입인력/.test(joined)) continue;
-    if(/프로젝트\s*·\s*시공사\s*·\s*하도사/.test(joined)) continue;
-    if(/투자엔지니어링실|고위험작업 보고/.test(joined)) continue;
-    // (3) 취약작업자 앵커
-    let vIdx=-1;
-    for(let i=0;i<cells.length;i++){ if(looksVuln(cells[i])){ vIdx=i; break; } }
-    if(vIdx<0) continue;
-    const get=(i)=> (cells[i]||'').trim();
-    const headcount=get(vIdx-1);       // 출력인원 (취약 바로 앞)
-    const subcon=get(vIdx-2);          // 하도사
-    // 시공사·프로젝트: 더 앞쪽 비숫자 텍스트 역순 탐색
-    let contractor='', project='';
-    for(let i=vIdx-3;i>=0;i--){
-      const val=get(i); if(!val) continue;
-      if(!contractor && !/^\d+$/.test(val)){ contractor=val; continue; }
-      if(contractor && !project && !/^\d+$/.test(val)){ project=val; break; }
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  let hi=-1, cols=null;
+  for(let i=0;i<lines.length;i++){
+    const cs=lines[i].split('\t').map(c=>c.trim());
+    if(cs.includes('시공사')&&cs.includes('작업내용')&&cs.some(c=>/밀폐/.test(c))){
+      hi=i; cols={};
+      cs.forEach((c,idx)=>{
+        if(c==='날짜')cols.date=idx;
+        else if(c==='시공사'&&cols.contractor===undefined)cols.contractor=idx;
+        else if(/하도사/.test(c))cols.subcon=idx;
+        else if(/출력인원/.test(c))cols.head=idx;
+        else if(/취약작업자/.test(c))cols.vuln=idx;
+        else if(/작업내용/.test(c))cols.task=idx;
+        else if(/밀폐/.test(c))cols.r0=idx;
+        else if(/활가스/.test(c))cols.r1=idx;
+        else if(/화재/.test(c))cols.r2=idx;
+        else if(/철거/.test(c))cols.r3=idx;
+        else if(/고소/.test(c))cols.r4=idx;
+        else if(/중량물|협착/.test(c))cols.r5=idx;
+        else if(/작업기간/.test(c))cols.period=idx;
+        else if(/현장책임|책임작업/.test(c))cols.manager=idx;
+        else if(/안전조치/.test(c))cols.safety=idx;
+      });
+      break;
     }
-    // 작업내용: 취약 다음(소계 건너뜀)에서 첫 작업성 텍스트
-    let taskIdx=-1;
-    for(let i=vIdx+1;i<cells.length;i++){ const v=get(i); if(v.length>3 && /^-|\s-\s|제작|설치|굴착|용접|해체|철거|배관|비계|포설|정비|보수|작업/.test(v)){ taskIdx=i; break; } }
-    const task=taskIdx>=0?get(taskIdx):'';
-    // Risk 6칸: 작업내용 다음부터
-    const riskStart=taskIdx>=0?taskIdx+1:vIdx+3;
+  }
+  if(hi<0) return [];  // 헤더 못 찾으면 빈 결과 → updatePreview에서 안내
+  const rows=[]; let lastDate='';
+  for(let i=hi+1;i<lines.length;i++){
+    const cs=lines[i].split('\t');
+    const get=(k)=> cols[k]!==undefined ? (cs[cols[k]]||'').trim() : '';
+    const contractor=get('contractor'), task=get('task'), subcon=get('subcon');
+    if(!contractor && !task && !subcon) continue;
+    if(/실적3회|형식:/.test(get('vuln'))) continue;
+    let date=get('date')||lastDate;
+    const dm=date.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+    if(dm) date=`${dm[1]}.${pad2(dm[2])}.${pad2(dm[3])}`;
+    if(date) lastDate=date;
     const risks=[];
-    for(let k=0;k<6;k++){ if(isRiskMark(get(riskStart+k))) risks.push(RISK_COLS[k]); }
-    const period=get(riskStart+6);
-    const manager=get(riskStart+7).replace(/\s+/g,' ');
-    const safety=get(riskStart+8).replace(/\s+/g,' ');
-    if(contractor) lastCon=contractor; else contractor=lastCon;
-    if(project) lastProj=project; else project=lastProj;
-    if(!task && !subcon && !headcount) continue;
-    rows.push({date:curDate, project, contractor, subcon, headcount, headcountN:parseInt(headcount)||0,
-      vulnerable:get(vIdx), vuln:parseVuln(get(vIdx)), task, risk:risks.join(', '), risks, period, manager, safety});
+    ['r0','r1','r2','r3','r4','r5'].forEach((rk,k)=>{ if(get(rk)) risks.push(RISK_ORDER[k]); });
+    const headcount=get('head');
+    rows.push({date, project:'', contractor, subcon,
+      headcount, headcountN:parseInt(headcount)||0,
+      vulnerable:get('vuln'), vuln:parseVuln(get('vuln')),
+      task, risk:risks.join(', '), risks,
+      period:get('period'), manager:get('manager'), safety:get('safety')});
   }
   return rows;
 }
@@ -927,7 +926,7 @@ function updatePreview(){
   const rows=parsePaste($('pasteArea').value);
   const pc=$('parsedCount'), pv=$('parsedPreview');
   if(!$('pasteArea').value.trim()){ pc.textContent=''; pv.innerHTML=''; return; }
-  if(!rows.length){ pc.className='parsed-count err'; pc.textContent='인식된 작업이 없습니다. 엑셀에서 표 전체(헤더 포함)를 복사해 붙여넣었는지 확인하세요.'; pv.innerHTML=''; return; }
+  if(!rows.length){ pc.className='parsed-count err'; pc.textContent='인식된 작업이 없습니다. 표준 양식의 헤더행(날짜·시공사·하도사…)부터 데이터까지 함께 복사했는지 확인하세요.'; pv.innerHTML=''; return; }
   // 시공사·날짜별 집계 요약
   const cons=[...new Set(rows.map(r=>r.contractor||'기타'))];
   const dates=[...new Set(rows.map(r=>r.date).filter(Boolean))];
