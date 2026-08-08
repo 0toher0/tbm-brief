@@ -31,6 +31,13 @@ body{font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;backg
 button,input,textarea,select{font-family:inherit}
 button{cursor:pointer}
 
+/* 날짜 선택 칩 */
+.date-chips{display:flex;gap:6px;overflow-x:auto;padding:0 2px 12px;scrollbar-width:none}
+.date-chips::-webkit-scrollbar{display:none}
+.dchip{flex:none;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.8rem;font-weight:700;color:var(--ink2);white-space:nowrap}
+.dchip.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.dchip .dc-cnt{font-size:.66rem;opacity:.65;margin-left:4px}
+
 /* header */
 header{background:var(--ink);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
 .h-title{font-family:var(--num);font-weight:700;font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase}
@@ -222,6 +229,7 @@ textarea.f-input{resize:vertical;min-height:56px}
   <div id="errBox" class="err" style="display:none"></div>
 
   <div id="content" style="display:none">
+    <div id="dateChips" class="date-chips"></div>
     <!-- 작업환경 종합 모니터링 -->
     <div class="mon" id="mon">
       <div class="mon-band">
@@ -292,23 +300,28 @@ textarea.f-input{resize:vertical;min-height:56px}
 <!-- ============ 작업입력 ============ -->
 <div class="pg" id="pgInput">
   <section>
-    <div class="sec-h"><div class="sec-t">작업 입력 <small>엑셀에서 행을 복사해 붙여넣기</small></div></div>
-    <div class="subtabs" id="subtabs"></div>
+    <div class="sec-h"><div class="sec-t">작업 붙여넣기 <small>엑셀 표를 그대로 복사 → 붙여넣기</small></div></div>
     <div class="paste-panel">
       <div class="paste-hint" id="pasteHint">
-        엑셀에서 <b>데이터 행</b>을 선택해 복사한 뒤 아래에 붙여넣으세요. 컬럼 순서:<br>
-        <code>프로젝트 · 시공사 · 하도사 · 출력인원 · 취약작업자(1/2/1/2) · 작업내용 · 안전Risk유형 · 현장책임자 · 안전조치</code><br>
-        취약작업자는 <code>작업실적3회↓ / 65세↑ / 70세↑ / 입사6개월↓</code> 순서입니다.
+        시공사 작업표(엑셀)에서 <b>표 전체를 복사</b>해 아래에 붙여넣으세요. 날짜·시공사·하도사·인원·취약작업자·작업내용·안전Risk(○표시)를 자동으로 인식하고, <b>시공사별로 분류</b>해 저장합니다. 여러 날짜·여러 시공사가 섞여 있어도 됩니다.
       </div>
-      <textarea class="paste-area" id="pasteArea" placeholder="여기에 엑셀 행을 붙여넣기 (Ctrl+V)"></textarea>
+      <textarea class="paste-area" id="pasteArea" placeholder="여기에 엑셀 표를 붙여넣기 (Ctrl+V)"></textarea>
       <div class="parsed-count" id="parsedCount"></div>
       <div class="parsed-preview" id="parsedPreview"></div>
       <div class="btn-row">
-        <button class="btn ghost" id="btnClearInput">이 시공사 지우기</button>
-        <button class="btn primary" id="btnSaveInput">저장</button>
+        <button class="btn ghost" id="btnClearInput">붙여넣기 지우기</button>
+        <button class="btn primary" id="btnSaveInput">인식 결과 저장</button>
       </div>
     </div>
-    <div class="stamp">입력한 작업은 이 기기에 저장되며 '오늘' 화면의 작업 목록·종합·조치사항에 반영됩니다.</div>
+  </section>
+  <section>
+    <div class="sec-h"><div class="sec-t">저장된 작업 <small>시공사별</small></div></div>
+    <div class="subtabs" id="subtabs"></div>
+    <div class="parsed-preview" id="savedList" style="margin-top:8px"></div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn ghost" id="btnClearAll">전체 작업 삭제</button>
+    </div>
+    <div class="stamp">저장된 작업은 이 기기에 보관되며 '오늘' 화면의 날짜별 작업·종합·조치사항에 반영됩니다.</div>
   </section>
 </div>
 
@@ -383,7 +396,7 @@ textarea.f-input{resize:vertical;min-height:56px}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '3.0.0',
+  version : '3.1.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -400,6 +413,7 @@ let contractors = loadJSON(LS_CONS, ['포스코이앤씨','플랜텍','포스코
 let inputData = loadJSON(LS_INPUT, {});   // { 시공사명: [rawRow,...] }
 let activeCon = contractors[0] || '';
 let openTaskIdx = -1;
+let selectedDate = '';   // '오늘' 화면에서 선택된 작업 날짜 (빈값=전체)
 
 /* ================= 취약작업자 & 안전Risk유형 ================= */
 const VULN_LABELS=['작업실적3회이하','65세이상','70세이상','입사6개월이하'];
@@ -464,17 +478,53 @@ function apparentTemp(Ta,RH,windMs,month){
 }
 
 /* ================= 작업 입력 파싱 ================= */
-function parseRow(line){
-  const c=line.split('\t');
-  const row={
-    project:(c[0]||'').trim(), contractor:(c[1]||'').trim(), subcon:(c[2]||'').trim(),
-    headcount:(c[3]||'').trim(), vulnerable:(c[4]||'').trim(), task:(c[5]||'').trim(),
-    risk:(c[6]||'').trim(), manager:(c[7]||'').trim(), safety:(c[8]||'').trim(),
-  };
-  row.headcountN=parseInt(row.headcount)||0;
-  row.vuln=parseVuln(row.vulnerable);
-  row.risks=normalizeRisk(row.risk);
-  return row;
+function pad2(n){return String(n).padStart(2,'0');}
+// 실제 시공사 엑셀 붙여넣기 형식 파서 (날짜구분·2줄헤더·○표시·시공사상속 대응)
+const RISK_COLS=['밀폐공간','15m이내 활가스 배관','화재/폭발','철거/낙하','고소작업','중량물협착']; // I~N열 순서
+function parsePaste(text){
+  const rawLines=text.split(/\r?\n/);
+  const rows=[];
+  let curDate='', lastCon='', lastProj='';
+  for(let raw of rawLines){
+    const line=raw.replace(/\s+$/,'');
+    if(!line.trim()) continue;
+    const cells=line.split('\t');
+    // (1) 날짜 구분행
+    const dm=(cells[0]||'').match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+    const nonEmpty=cells.filter(c=>c.trim()).length;
+    if(dm && nonEmpty<=2){ curDate=`${dm[1]}.${pad2(dm[2])}.${pad2(dm[3])}`; lastCon=''; lastProj=''; continue; }
+    const c0=(cells[0]||'').trim(), c1=(cells[1]||'').trim(), c2=(cells[2]||'').trim();
+    // (2) 헤더행 스킵
+    if(/진행\s*프로젝트/.test(c0)) continue;
+    if(c1==='시공사' && /투입인력/.test(c2)) continue;
+    if(c2==='시공사' && /하도사/.test(cells[3]||'')) continue;
+    if(/취약작업자/.test(cells[5]||'') && /작업실적/.test(cells[5]||'')) continue;
+    // (3) 주석·안내행 스킵
+    if(/^※/.test(c0) || /상기 투입인력/.test(line)) continue;
+    if(/프로젝트\s*·\s*시공사\s*·\s*하도사/.test(c1)) continue;
+    // (4) 데이터행: A0 프로젝트/B1 시공사/D3 하도사/E4 인력/F5 취약/G6 소계/H7 작업/I8~N13 Risk/O14 기간/P15 책임자/Q16 안전조치
+    const project=c0||lastProj;
+    const contractor=c1||lastCon;
+    const subcon=(cells[3]||'').trim();
+    const headcount=(cells[4]||'').trim();
+    const vulnerable=(cells[5]||'').trim();
+    const task=(cells[7]||'').trim();
+    const risks=[];
+    for(let k=0;k<6;k++){ const v=(cells[8+k]||'').trim(); if(/[○◯●⚫✓]/.test(v)||/^[oO0ㅇ]$/.test(v)) risks.push(RISK_COLS[k]); }
+    const period=(cells[14]||'').trim();
+    const manager=(cells[15]||'').trim().replace(/\s+/g,' ');
+    const safety=(cells[16]||'').trim().replace(/\s+/g,' ');
+    if(!task && !subcon && !headcount) continue; // 빈 데이터행 스킵
+    if(c0) lastProj=c0;
+    if(c1) lastCon=c1;
+    rows.push({
+      date:curDate, project, contractor, subcon,
+      headcount, headcountN:parseInt(headcount)||0,
+      vulnerable, vuln:parseVuln(vulnerable),
+      task, risk:risks.join(', '), risks, period, manager, safety,
+    });
+  }
+  return rows;
 }
 function parseVuln(s){
   const nums=String(s||'').split(/[\/,\s]+/).filter(x=>x!=='').map(x=>parseInt(x)||0);
@@ -482,28 +532,26 @@ function parseVuln(s){
   o.total=VULN_LABELS.reduce((a,k)=>a+o[k],0);
   return o;
 }
-function parsePaste(text){
-  const lines=text.split(/\r?\n/).map(l=>l.replace(/\s+$/,'')).filter(l=>l.trim());
-  const rows=[];
-  for(const line of lines){
-    if(/프로젝트|시공사|하도/.test(line.split('\t')[0]||'') && /출력|작업내용|Risk/i.test(line)) continue; // 헤더 스킵
-    if(!line.includes('\t')) continue; // 탭 없는 줄 스킵
-    rows.push(parseRow(line));
-  }
-  return rows;
-}
 
 /* 전체 작업 목록 (모든 시공사 합침) */
-function allTasks(){
+function allTasks(dateFilter){
   const out=[];
   for(const con of contractors){
     const rows=inputData[con]||[];
-    rows.forEach(r=>out.push(r));
+    rows.forEach(r=>{ if(!dateFilter || !r.date || r.date===dateFilter) out.push(r); });
   }
   return out;
 }
-function aggregate(){
-  const tasks=allTasks();
+// 입력된 작업들의 날짜 목록 (중복 제거, 정렬)
+function availableDates(){
+  const set=new Set();
+  for(const con of contractors){ (inputData[con]||[]).forEach(r=>{ if(r.date) set.add(r.date); }); }
+  return [...set].sort();
+}
+// 오늘 날짜를 YYYY.MM.DD로
+function todayDot(){ const d=new Date(); return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`; }
+function aggregate(dateFilter){
+  const tasks=allTasks(dateFilter);
   const totalHead=tasks.reduce((a,r)=>a+(r.headcountN||0),0);
   const vulnSum={}; VULN_LABELS.forEach(k=>vulnSum[k]=0);
   tasks.forEach(r=>VULN_LABELS.forEach(k=>vulnSum[k]+=(r.vuln?.[k]||0)));
@@ -638,7 +686,32 @@ function renderToday(){
   $('content').style.display='block'; $('errBox').style.display='none';
   $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()}${wx.demo?' · 데모':''} · v${APP.version}`;
 
-  const agg=aggregate();
+  // 날짜 칩: 입력된 작업의 날짜들
+  const dates=availableDates();
+  const dc=$('dateChips');
+  if(dates.length<=1){
+    dc.style.display='none';
+    selectedDate = dates[0] || '';
+  }else{
+    dc.style.display='flex';
+    // 선택 날짜 기본값: 오늘 있으면 오늘, 없으면 첫 날짜
+    if(!selectedDate || !dates.includes(selectedDate)){
+      selectedDate = dates.includes(todayDot()) ? todayDot() : dates[0];
+    }
+    dc.innerHTML='';
+    dates.forEach(d=>{
+      const cnt=allTasks(d).length;
+      const mm=d.slice(5).replace('.','/');
+      const isToday=d===todayDot();
+      const el=document.createElement('button');
+      el.className='dchip'+(d===selectedDate?' on':'');
+      el.innerHTML=`${mm}${isToday?' (오늘)':''}<span class="dc-cnt">${cnt}</span>`;
+      el.onclick=()=>{ selectedDate=d; openTaskIdx=-1; renderToday(); };
+      dc.appendChild(el);
+    });
+  }
+
+  const agg=aggregate(selectedDate);
   const wxFired=firedWxRules(wx);
   const [gLabel,gCls]=overallGrade(wxFired,agg);
 
@@ -690,9 +763,9 @@ function setMw(id,v,cls){const e=$(id);e.className='mw '+cls;e.querySelector('.v
 
 /* 작업 목록 (누르면 유해위험) */
 function renderTaskList(){
-  const list=$('taskList'); const tasks=allTasks();
+  const list=$('taskList'); const tasks=allTasks(selectedDate);
   if(!tasks.length){
-    list.innerHTML=`<div class="empty"><b>입력된 작업이 없습니다</b>하단 '작업입력' 탭에서 시공사별로 엑셀 작업 행을 붙여넣으면 여기에 표시됩니다.</div>`;
+    list.innerHTML=`<div class="empty"><b>입력된 작업이 없습니다</b>하단 '작업입력' 탭에서 엑셀 작업 표를 붙여넣으면 여기에 표시됩니다.</div>`;
     $('taskCountLabel').textContent='작업 미입력';
     return;
   }
@@ -706,8 +779,8 @@ function renderTaskList(){
       <div class="taskrow-head">
         <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
         <div class="tr-main">
-          <div class="tr-task">${esc(t.task||'(작업내용 없음)')}</div>
-          <div class="tr-meta">${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager)}`:''}</div>
+          <div class="tr-task">${esc(firstTaskLine(t.task))}</div>
+          <div class="tr-meta">${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
         </div>
         <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
         <span class="tr-caret">▶</span>
@@ -717,6 +790,13 @@ function renderTaskList(){
     list.appendChild(el);
   });
 }
+// 작업내용이 여러 줄(- 로 구분)일 때 대표 한 줄 + 개수
+function firstTaskLine(task){
+  if(!task) return '(작업내용 없음)';
+  const parts=task.split(/\s*-\s+/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length<=1) return task;
+  return `${parts[0]} 외 ${parts.length-1}건`;
+}
 function shortCon(name){
   if(/이앤씨|E&C/i.test(name)) return 'E&C';
   if(/플랜텍/i.test(name)) return '플랜텍';
@@ -724,12 +804,20 @@ function shortCon(name){
   return (name||'기타').slice(0,3);
 }
 function renderHazard(t){
+  // 작업 상세: 여러 줄 작업내용 + 기간
+  let head='';
+  const parts=(t.task||'').split(/\s*-\s+/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length>1){
+    head=`<div class="hz-block"><div class="hz-label">작업내용 (${parts.length}건)</div><ul class="hz-acts">${parts.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>${t.period?`<div class="hz-basis">기간: ${esc(t.period)}</div>`:''}</div>`;
+  }else if(t.period){
+    head=`<div class="hz-block"><div class="hz-basis">기간: ${esc(t.period)}</div></div>`;
+  }
   if(!t.risks||!t.risks.length){
-    let s=`<div class="hz-block"><div class="hz-label">유해·위험요인</div><div class="tr-meta">지정된 안전Risk유형이 없습니다.</div></div>`;
+    let s=head+`<div class="hz-block"><div class="hz-label">유해·위험요인</div><div class="tr-meta">지정된 안전Risk유형이 없습니다.</div></div>`;
     if(t.safety) s+=`<div class="hz-safety"><b>현장 안전조치</b> ${esc(t.safety)}</div>`;
     return s;
   }
-  let s='';
+  let s=head;
   t.risks.forEach(r=>{
     const R=RISK_TYPES[r];
     s+=`<div class="hz-block">
@@ -791,22 +879,39 @@ function buildBrief(c,wxFired,agg,gLabel){
 /* ================= 작업입력 탭 ================= */
 function renderInputTab(){
   const st=$('subtabs'); st.innerHTML='';
-  contractors.forEach(con=>{
+  // 저장된 작업이 있는 시공사만 탭으로 표시 (+ 전체 보기)
+  const consWithData=contractors.filter(c=>(inputData[c]||[]).length);
+  if(consWithData.length){
+    const allBtn=document.createElement('button');
+    allBtn.className='subtab'+(activeCon==='__all'?' on':'');
+    const totalCnt=consWithData.reduce((a,c)=>a+(inputData[c]||[]).length,0);
+    allBtn.innerHTML=`전체<span class="cnt">${totalCnt}</span>`;
+    allBtn.onclick=()=>{ activeCon='__all'; renderInputTab(); };
+    st.appendChild(allBtn);
+  }
+  consWithData.forEach(con=>{
     const cnt=(inputData[con]||[]).length;
     const b=document.createElement('button');
     b.className='subtab'+(con===activeCon?' on':'');
-    b.innerHTML=`${esc(con)}${cnt?`<span class="cnt">${cnt}</span>`:''}`;
+    b.innerHTML=`${esc(con)}<span class="cnt">${cnt}</span>`;
     b.onclick=()=>{ activeCon=con; renderInputTab(); };
     st.appendChild(b);
   });
-  const add=document.createElement('button');
-  add.className='subtab-add'; add.textContent='+ 시공사';
-  add.onclick=()=>openModal('conModal');
-  st.appendChild(add);
-  // 현재 시공사의 저장된 원본 표시
-  const rows=inputData[activeCon]||[];
-  $('pasteArea').value = rows.map(rowToLine).join('\n');
-  updatePreview();
+  // 저장된 결과 미리보기 (읽기 전용)
+  renderSavedPreview();
+}
+// 저장된 작업 목록을 시공사별로 보여줌 (붙여넣기 영역과 별개)
+function renderSavedPreview(){
+  const box=$('savedList');
+  if(!box) return;
+  let rows=[];
+  if(activeCon==='__all' || !activeCon){
+    contractors.forEach(c=>(inputData[c]||[]).forEach(r=>rows.push(r)));
+  }else{
+    rows=inputData[activeCon]||[];
+  }
+  if(!rows.length){ box.innerHTML=`<div class="pp-row" style="color:var(--steel)">저장된 작업이 없습니다. 아래에 엑셀 표를 붙여넣고 저장하세요.</div>`; return; }
+  box.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x].short).join('/')||'-'}</span></div>`).join('');
 }
 function rowToLine(r){
   return [r.project,r.contractor,r.subcon,r.headcount,r.vulnerable,r.task,r.risk,r.manager,r.safety].join('\t');
@@ -815,23 +920,40 @@ function updatePreview(){
   const rows=parsePaste($('pasteArea').value);
   const pc=$('parsedCount'), pv=$('parsedPreview');
   if(!$('pasteArea').value.trim()){ pc.textContent=''; pv.innerHTML=''; return; }
-  if(!rows.length){ pc.className='parsed-count err'; pc.textContent='인식된 작업이 없습니다. 엑셀에서 행(탭 구분)을 복사했는지 확인하세요.'; pv.innerHTML=''; return; }
-  pc.className='parsed-count'; pc.textContent=`${rows.length}개 작업 인식됨`;
-  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${esc(r.subcon||'-')} · ${esc(r.task||'(내용없음)')} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x].short).join('/')||'분류없음'}</span></div>`).join('');
+  if(!rows.length){ pc.className='parsed-count err'; pc.textContent='인식된 작업이 없습니다. 엑셀에서 표 전체(헤더 포함)를 복사해 붙여넣었는지 확인하세요.'; pv.innerHTML=''; return; }
+  // 시공사·날짜별 집계 요약
+  const cons=[...new Set(rows.map(r=>r.contractor||'기타'))];
+  const dates=[...new Set(rows.map(r=>r.date).filter(Boolean))];
+  pc.className='parsed-count';
+  pc.textContent=`${rows.length}개 작업 인식됨 · 시공사 ${cons.length}곳${dates.length>1?` · ${dates.length}개 날짜`:''}`;
+  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x].short).join('/')||'분류없음'}</span></div>`).join('');
 }
 function saveInput(){
   const rows=parsePaste($('pasteArea').value);
-  // 붙여넣은 행의 시공사명이 있으면 그걸로, 없으면 activeCon으로 채움
-  rows.forEach(r=>{ if(!r.contractor) r.contractor=activeCon; });
-  inputData[activeCon]=rows;
+  if(!rows.length){ toast('인식된 작업이 없습니다'); return; }
+  // 시공사명으로 자동 분류. 시공사명 없으면 '기타'
+  const byCon={};
+  rows.forEach(r=>{ const con=r.contractor||'기타'; (byCon[con]=byCon[con]||[]).push(r); });
+  // 새로 등장한 시공사는 목록에 추가
+  Object.keys(byCon).forEach(con=>{ if(!contractors.includes(con)) contractors.push(con); });
+  saveJSON(LS_CONS,contractors);
+  // 분류 결과로 저장 (이번 붙여넣기에 포함된 시공사만 갱신, 나머지는 유지)
+  Object.keys(byCon).forEach(con=>{ inputData[con]=byCon[con]; });
   saveJSON(LS_INPUT,inputData);
-  toast(`${activeCon}: ${rows.length}개 작업 저장`);
+  const summary=Object.entries(byCon).map(([c,a])=>`${c} ${a.length}`).join(', ');
+  toast(`저장됨: ${summary}`);
+  selectedDate=''; // 날짜 재계산되도록 초기화
   renderInputTab();
   if(wx) renderToday();
 }
 function clearInput(){
-  inputData[activeCon]=[]; saveJSON(LS_INPUT,inputData);
-  $('pasteArea').value=''; updatePreview(); toast(`${activeCon} 작업 지움`);
+  $('pasteArea').value=''; updatePreview();
+}
+function clearAllInput(){
+  if(!confirm('저장된 모든 작업을 삭제할까요?')) return;
+  inputData={}; saveJSON(LS_INPUT,inputData);
+  selectedDate='';
+  renderInputTab(); toast('전체 작업을 삭제했습니다');
   if(wx) renderToday();
 }
 function addContractor(){
@@ -845,7 +967,7 @@ function addContractor(){
 /* ================= 기록 ================= */
 function saveRecord(){
   if(!wx){ toast('먼저 날씨를 불러오세요'); return; }
-  const agg=aggregate();
+  const agg=aggregate(selectedDate);
   const wxFired=firedWxRules(wx);
   const [gLabel,gCls]=overallGrade(wxFired,agg);
   const now=new Date();
@@ -856,7 +978,7 @@ function saveRecord(){
     maxTmp:wx.maxTmp.toFixed(0), maxAT:wx.maxAT.toFixed(1), maxWind:wx.maxWind.toFixed(1), pm25:wx.pm25||'-',
     totalHead:agg.totalHead, sites:agg.sites, vulnTotal:agg.vulnTotal,
     cons:agg.cons.join('·'), risks:agg.risks.join('/'),
-    tasks:allTasks().map(t=>`${shortCon(t.contractor)}:${t.task}`).join(' / '),
+    tasks:allTasks(selectedDate).map(t=>`${shortCon(t.contractor)}:${firstTaskLine(t.task)}`).join(' / '),
   };
   const list=loadJSON(LS_REC,[]);
   const existIdx=list.findIndex(r=>r.date===rec.date);
@@ -1010,6 +1132,7 @@ $('btnRecord').onclick=saveRecord;
 $('btnCopy').onclick=async()=>{ try{await navigator.clipboard.writeText($('briefTxt').textContent);toast('스크립트가 복사되었습니다');}catch(e){toast('복사 실패 — 길게 눌러 직접 복사하세요');} };
 $('btnSaveInput').onclick=saveInput;
 $('btnClearInput').onclick=clearInput;
+$('btnClearAll').onclick=clearAllInput;
 $('btnExportPdf').onclick=exportPdf;
 $('btnExportXlsx').onclick=exportXlsx;
 $('pasteArea').addEventListener('input',updatePreview);
