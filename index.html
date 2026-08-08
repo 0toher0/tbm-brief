@@ -396,7 +396,7 @@ textarea.f-input{resize:vertical;min-height:56px}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '3.1.0',
+  version : '3.2.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -479,50 +479,57 @@ function apparentTemp(Ta,RH,windMs,month){
 
 /* ================= 작업 입력 파싱 ================= */
 function pad2(n){return String(n).padStart(2,'0');}
-// 실제 시공사 엑셀 붙여넣기 형식 파서 (날짜구분·2줄헤더·○표시·시공사상속 대응)
-const RISK_COLS=['밀폐공간','15m이내 활가스 배관','화재/폭발','철거/낙하','고소작업','중량물협착']; // I~N열 순서
+// v3.2 파서: 취약작업자 셀(0/0/0/0)을 앵커로 찾아 상대 위치 파싱 (앞쪽 빈 셀에 강건)
+const RISK_COLS=['밀폐공간','15m이내 활가스 배관','화재/폭발','철거/낙하','고소작업','중량물협착'];
+function isRiskMark(v){ const s=String(v||'').trim(); return s.length<=2 && /[○◯●⚫✓ㅇoO]/.test(s); }
+function looksVuln(v){ return /^\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*$/.test(String(v||'')); }
 function parsePaste(text){
   const rawLines=text.split(/\r?\n/);
   const rows=[];
   let curDate='', lastCon='', lastProj='';
-  for(let raw of rawLines){
-    const line=raw.replace(/\s+$/,'');
-    if(!line.trim()) continue;
-    const cells=line.split('\t');
-    // (1) 날짜 구분행
-    const dm=(cells[0]||'').match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  for(const raw of rawLines){
+    if(!raw.trim()) continue;
+    const cells=raw.split('\t');
+    const joined=raw.replace(/\t/g,' ').trim();
     const nonEmpty=cells.filter(c=>c.trim()).length;
+    // (1) 날짜행
+    const dm=joined.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
     if(dm && nonEmpty<=2){ curDate=`${dm[1]}.${pad2(dm[2])}.${pad2(dm[3])}`; lastCon=''; lastProj=''; continue; }
-    const c0=(cells[0]||'').trim(), c1=(cells[1]||'').trim(), c2=(cells[2]||'').trim();
-    // (2) 헤더행 스킵
-    if(/진행\s*프로젝트/.test(c0)) continue;
-    if(c1==='시공사' && /투입인력/.test(c2)) continue;
-    if(c2==='시공사' && /하도사/.test(cells[3]||'')) continue;
-    if(/취약작업자/.test(cells[5]||'') && /작업실적/.test(cells[5]||'')) continue;
-    // (3) 주석·안내행 스킵
-    if(/^※/.test(c0) || /상기 투입인력/.test(line)) continue;
-    if(/프로젝트\s*·\s*시공사\s*·\s*하도사/.test(c1)) continue;
-    // (4) 데이터행: A0 프로젝트/B1 시공사/D3 하도사/E4 인력/F5 취약/G6 소계/H7 작업/I8~N13 Risk/O14 기간/P15 책임자/Q16 안전조치
-    const project=c0||lastProj;
-    const contractor=c1||lastCon;
-    const subcon=(cells[3]||'').trim();
-    const headcount=(cells[4]||'').trim();
-    const vulnerable=(cells[5]||'').trim();
-    const task=(cells[7]||'').trim();
+    // (2) 헤더/주석/안내 스킵
+    if(/진행\s*프로젝트|수행업체 투입인력|안전\s*Risk|취약작업자.*소계/.test(joined)) continue;
+    if(/^※|상기 투입인력/.test(joined)) continue;
+    if(/프로젝트\s*·\s*시공사\s*·\s*하도사/.test(joined)) continue;
+    if(/투자엔지니어링실|고위험작업 보고/.test(joined)) continue;
+    // (3) 취약작업자 앵커
+    let vIdx=-1;
+    for(let i=0;i<cells.length;i++){ if(looksVuln(cells[i])){ vIdx=i; break; } }
+    if(vIdx<0) continue;
+    const get=(i)=> (cells[i]||'').trim();
+    const headcount=get(vIdx-1);       // 출력인원 (취약 바로 앞)
+    const subcon=get(vIdx-2);          // 하도사
+    // 시공사·프로젝트: 더 앞쪽 비숫자 텍스트 역순 탐색
+    let contractor='', project='';
+    for(let i=vIdx-3;i>=0;i--){
+      const val=get(i); if(!val) continue;
+      if(!contractor && !/^\d+$/.test(val)){ contractor=val; continue; }
+      if(contractor && !project && !/^\d+$/.test(val)){ project=val; break; }
+    }
+    // 작업내용: 취약 다음(소계 건너뜀)에서 첫 작업성 텍스트
+    let taskIdx=-1;
+    for(let i=vIdx+1;i<cells.length;i++){ const v=get(i); if(v.length>3 && /^-|\s-\s|제작|설치|굴착|용접|해체|철거|배관|비계|포설|정비|보수|작업/.test(v)){ taskIdx=i; break; } }
+    const task=taskIdx>=0?get(taskIdx):'';
+    // Risk 6칸: 작업내용 다음부터
+    const riskStart=taskIdx>=0?taskIdx+1:vIdx+3;
     const risks=[];
-    for(let k=0;k<6;k++){ const v=(cells[8+k]||'').trim(); if(/[○◯●⚫✓]/.test(v)||/^[oO0ㅇ]$/.test(v)) risks.push(RISK_COLS[k]); }
-    const period=(cells[14]||'').trim();
-    const manager=(cells[15]||'').trim().replace(/\s+/g,' ');
-    const safety=(cells[16]||'').trim().replace(/\s+/g,' ');
-    if(!task && !subcon && !headcount) continue; // 빈 데이터행 스킵
-    if(c0) lastProj=c0;
-    if(c1) lastCon=c1;
-    rows.push({
-      date:curDate, project, contractor, subcon,
-      headcount, headcountN:parseInt(headcount)||0,
-      vulnerable, vuln:parseVuln(vulnerable),
-      task, risk:risks.join(', '), risks, period, manager, safety,
-    });
+    for(let k=0;k<6;k++){ if(isRiskMark(get(riskStart+k))) risks.push(RISK_COLS[k]); }
+    const period=get(riskStart+6);
+    const manager=get(riskStart+7).replace(/\s+/g,' ');
+    const safety=get(riskStart+8).replace(/\s+/g,' ');
+    if(contractor) lastCon=contractor; else contractor=lastCon;
+    if(project) lastProj=project; else project=lastProj;
+    if(!task && !subcon && !headcount) continue;
+    rows.push({date:curDate, project, contractor, subcon, headcount, headcountN:parseInt(headcount)||0,
+      vulnerable:get(vIdx), vuln:parseVuln(get(vIdx)), task, risk:risks.join(', '), risks, period, manager, safety});
   }
   return rows;
 }
