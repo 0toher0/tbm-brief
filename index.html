@@ -22,12 +22,14 @@
   --red:#c92a2a; --red-bg:#fbe7e7;
   --accent:#e8590c;
   --duty:#c92a2a; --guide:#1864ab;
+  --posco:#004e9e;
   --num:"Barlow Condensed","Pretendard Variable",sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
-body{font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;padding-bottom:90px}
-button{font-family:inherit;cursor:pointer}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;padding-bottom:88px}
+button,input,textarea,select{font-family:inherit}
+button{cursor:pointer}
 
 /* header */
 header{background:var(--ink);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
@@ -38,115 +40,170 @@ header{background:var(--ink);color:#fff;padding:calc(env(safe-area-inset-top,0px
 .icon-btn{background:#2b323a;border:none;color:#e9ecef;width:38px;height:38px;border-radius:9px;font-size:1.05rem;display:flex;align-items:center;justify-content:center}
 .icon-btn:active{background:#3d444d}
 
-main{max-width:560px;margin:0 auto;padding:14px 14px 0}
+main{max-width:600px;margin:0 auto;padding:14px 14px 0}
 
-/* status hero — 현장 표지판 스타일 */
-.hero{background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 1px 3px rgba(26,30,35,.06)}
-.hero-band{display:flex;align-items:stretch}
-.hero-bar{width:14px;flex:none;background:var(--steel)}
-.hero-body{flex:1;padding:16px 16px 12px}
-.hero.g-good .hero-bar{background:var(--green)} .hero.g-good .grade{color:var(--green)}
-.hero.g-warn .hero-bar{background:var(--amber)} .hero.g-warn .grade{color:var(--amber)}
-.hero.g-stop .hero-bar{background:var(--red)} .hero.g-stop .grade{color:var(--red)}
-.hero-top{display:flex;justify-content:space-between;align-items:baseline}
-.eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.14em;color:var(--steel);text-transform:uppercase}
-.grade{font-family:var(--num);font-size:2.1rem;font-weight:700;letter-spacing:.02em;line-height:1.1;margin-top:2px}
-.at-big{text-align:right}
-.at-big .n{font-family:var(--num);font-size:3.4rem;font-weight:700;line-height:.9}
-.at-big .u{font-size:.72rem;color:var(--steel);font-weight:600}
-.hero-note{font-size:.82rem;color:var(--ink2);margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
-.hero-grid{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
-.hg{padding:10px 6px;text-align:center;border-right:1px solid var(--line)}
-.hg:last-child{border-right:none}
-.hg .v{font-family:var(--num);font-size:1.25rem;font-weight:600}
-.hg .k{font-size:.66rem;color:var(--steel);font-weight:600;letter-spacing:.05em}
-.hg.bad .v{color:var(--red)} .hg.mid .v{color:var(--amber)}
+/* ===== 오늘 종합 (모니터링 대시보드) ===== */
+.mon{background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 1px 3px rgba(26,30,35,.06)}
+.mon-band{display:flex;align-items:stretch}
+.mon-bar{width:12px;flex:none;background:var(--steel)}
+.mon.g-good .mon-bar{background:var(--green)} .mon.g-good .mon-grade{color:var(--green)}
+.mon.g-warn .mon-bar{background:var(--amber)} .mon.g-warn .mon-grade{color:var(--amber)}
+.mon.g-stop .mon-bar{background:var(--red)} .mon.g-stop .mon-grade{color:var(--red)}
+.mon-body{flex:1;padding:14px 16px 4px}
+.mon-eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.12em;color:var(--steel);text-transform:uppercase}
+.mon-grade{font-family:var(--num);font-size:1.7rem;font-weight:700;line-height:1.1;margin:1px 0 3px}
+.mon-summary{font-size:.82rem;color:var(--ink2);padding-bottom:10px}
+/* 인력 집계 3칸 */
+.mon-people{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.mp{padding:11px 6px;text-align:center;border-right:1px solid var(--line)}
+.mp:last-child{border-right:none}
+.mp .v{font-family:var(--num);font-size:1.7rem;font-weight:700;line-height:1}
+.mp .k{font-size:.66rem;color:var(--steel);font-weight:600;margin-top:2px}
+.mp.warn .v{color:var(--red)}
+/* 날씨 4칸 */
+.mon-wx{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:#fafafa}
+.mw{padding:9px 4px;text-align:center;border-right:1px solid var(--line)}
+.mw:last-child{border-right:none}
+.mw .v{font-family:var(--num);font-size:1.2rem;font-weight:600}
+.mw .k{font-size:.62rem;color:var(--steel);font-weight:600;letter-spacing:.02em}
+.mw.bad .v{color:var(--red)} .mw.mid .v{color:var(--amber)} .mw.good .v{color:var(--green)}
+
+/* 취약작업자 분해 */
+.vuln-break{display:flex;flex-wrap:wrap;gap:5px;padding:8px 14px 12px;border-top:1px solid var(--line);font-size:.7rem}
+.vchip{background:var(--red-bg);color:#8c1f1f;border-radius:6px;padding:3px 8px;font-weight:700}
+.vchip.zero{background:#f0f1f2;color:var(--steel)}
 
 /* sections */
-section{margin-top:18px}
+section{margin-top:16px}
 .sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;padding:0 2px}
-.sec-t{font-size:.95rem;font-weight:800;letter-spacing:-.01em}
-.sec-t small{font-weight:600;color:var(--steel);font-size:.72rem;margin-left:6px}
+.sec-t{font-size:.92rem;font-weight:800;letter-spacing:-.01em}
+.sec-t small{font-weight:600;color:var(--steel);font-size:.7rem;margin-left:6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(26,30,35,.05)}
 
-/* hourly strip */
-.strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+/* hourly strip (축소 - 참고값) */
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .strip::-webkit-scrollbar{display:none}
-.hr-card{flex:0 0 74px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center}
+.hr-card{flex:0 0 54px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 3px;text-align:center}
 .hr-card.peak{border-color:var(--red);background:var(--red-bg)}
-.hr-card .t{font-size:.7rem;font-weight:700;color:var(--steel)}
-.hr-card .at{font-family:var(--num);font-size:1.45rem;font-weight:700;line-height:1.15}
-.hr-card .tt{font-size:.68rem;color:var(--ink2)}
-.hr-card .w{font-size:.66rem;color:var(--steel);margin-top:2px}
+.hr-card .t{font-size:.62rem;font-weight:700;color:var(--steel)}
+.hr-card .at{font-family:var(--num);font-size:1.05rem;font-weight:700;line-height:1.2}
+.hr-card .tt{font-size:.58rem;color:var(--steel)}
 
-/* work chips */
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-size:.84rem;font-weight:700;color:var(--ink2)}
-.chip.on{border-color:var(--ink);background:var(--ink);color:#fff}
+/* 작업 목록 (오늘 탭) */
+.tasklist{display:flex;flex-direction:column;gap:8px}
+.taskrow{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.taskrow-head{display:flex;align-items:center;gap:9px;padding:11px 13px;cursor:pointer}
+.taskrow-head:active{background:#fafafa}
+.tr-con{font-size:.64rem;font-weight:800;padding:2px 6px;border-radius:5px;color:#fff;flex:none}
+.tr-con.c-posco{background:var(--posco)} .tr-con.c-plantec{background:#5f3dc4} .tr-con.c-dx{background:#0b7285} .tr-con.c-etc{background:var(--steel)}
+.tr-main{flex:1;min-width:0}
+.tr-task{font-size:.86rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-meta{font-size:.68rem;color:var(--steel);margin-top:1px}
+.tr-risks{display:flex;gap:3px;flex-wrap:wrap;flex:none}
+.rtag{font-size:.6rem;font-weight:700;background:var(--red-bg);color:#8c1f1f;border-radius:4px;padding:2px 5px}
+.tr-caret{color:var(--steel);font-size:.8rem;flex:none;transition:transform .15s}
+.taskrow.open .tr-caret{transform:rotate(90deg)}
+.taskrow-detail{display:none;padding:0 13px 13px;border-top:1px solid var(--line);background:#fafafa}
+.taskrow.open .taskrow-detail{display:block}
+.hz-block{margin-top:10px}
+.hz-label{font-size:.66rem;font-weight:800;color:var(--steel);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.hz-hazard{font-size:.8rem;color:var(--red);font-weight:700}
+.hz-basis{font-size:.68rem;color:var(--steel);margin:3px 0 5px}
+.hz-acts li{font-size:.79rem;color:var(--ink2);margin-left:16px;margin-top:3px}
+.hz-safety{font-size:.78rem;color:var(--ink2);background:var(--green-bg);border-radius:7px;padding:7px 9px;margin-top:8px}
+.hz-safety b{color:var(--green)}
 
-/* rule cards */
-.rule{background:var(--card);border:1px solid var(--line);border-left-width:5px;border-radius:12px;padding:12px 13px;margin-bottom:10px}
+/* 법적 조치사항 (연관작업 표기) */
+.rule{background:var(--card);border:1px solid var(--line);border-left-width:5px;border-radius:11px;padding:11px 13px;margin-bottom:9px}
 .rule.sev-stop{border-left-color:var(--red)}
 .rule.sev-warn{border-left-color:var(--amber)}
 .rule.sev-info{border-left-color:var(--green)}
-.rule-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.badge{font-size:.62rem;font-weight:800;letter-spacing:.06em;padding:3px 7px;border-radius:5px;color:#fff}
+.rule-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.badge{font-size:.6rem;font-weight:800;letter-spacing:.04em;padding:3px 7px;border-radius:5px;color:#fff}
 .badge.duty{background:var(--duty)} .badge.guide{background:var(--guide)}
-.rule-t{font-size:.9rem;font-weight:800}
-.rule-basis{font-size:.7rem;color:var(--steel);margin-top:3px}
-.rule-acts{margin-top:7px;font-size:.83rem;color:var(--ink2)}
-.rule-acts li{margin-left:18px;margin-top:3px}
-.allclear{text-align:center;padding:26px 10px;color:var(--steel);font-size:.88rem}
-.allclear b{display:block;color:var(--green);font-size:1.05rem;margin-bottom:4px}
+.rule-t{font-size:.87rem;font-weight:800}
+.rule-link{font-size:.64rem;color:var(--steel);margin-top:3px}
+.rule-link b{color:var(--ink2)}
+.rule-basis{font-size:.68rem;color:var(--steel);margin-top:2px}
+.rule-acts{margin-top:6px;font-size:.81rem;color:var(--ink2)}
+.rule-acts li{margin-left:17px;margin-top:3px}
+.allclear{text-align:center;padding:22px 10px;color:var(--steel);font-size:.86rem}
+.allclear b{display:block;color:var(--green);font-size:1rem;margin-bottom:4px}
 
-/* briefing */
-.brief-box{white-space:pre-wrap;font-size:.9rem;background:#fbfbfa;border:1px dashed var(--line);border-radius:10px;padding:12px;color:var(--ink2)}
+/* 브리핑 */
+.brief-box{white-space:pre-wrap;font-size:.88rem;background:#fbfbfa;border:1px dashed var(--line);border-radius:10px;padding:12px;color:var(--ink2)}
 .btn-row{display:flex;gap:8px;margin-top:10px}
-.btn{flex:1;border:none;border-radius:10px;padding:13px;font-size:.9rem;font-weight:800}
+.btn{flex:1;border:none;border-radius:10px;padding:12px;font-size:.88rem;font-weight:800}
 .btn.primary{background:var(--ink);color:#fff}
 .btn.ghost{background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
-.btn:active{opacity:.8}
+.btn:active{opacity:.85}
 .btn.done{background:var(--green);color:#fff}
 
+/* TBM 메모 입력 */
+.memo-grid{display:grid;grid-template-columns:auto 1fr;gap:9px 10px;align-items:center;margin-top:12px}
+.memo-grid label{font-size:.76rem;font-weight:700;color:var(--ink2)}
+.f-input{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:10px;font-size:.86rem;background:#fbfbfa}
+.f-input:focus{outline:none;border-color:var(--ink)}
+textarea.f-input{resize:vertical;min-height:56px}
+
+/* 작업입력 탭 */
+.subtabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.subtabs::-webkit-scrollbar{display:none}
+.subtab{flex:none;border:1.5px solid var(--line);background:var(--card);border-radius:9px 9px 0 0;padding:9px 14px;font-size:.82rem;font-weight:700;color:var(--ink2);border-bottom:none;position:relative;top:1px}
+.subtab.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.subtab .cnt{font-size:.64rem;opacity:.7;margin-left:4px}
+.subtab-add{flex:none;border:1.5px dashed var(--line);background:transparent;border-radius:9px;padding:9px 12px;font-size:.82rem;font-weight:700;color:var(--steel)}
+.paste-panel{background:var(--card);border:1.5px solid var(--ink);border-radius:0 11px 11px 11px;padding:13px}
+.paste-hint{font-size:.72rem;color:var(--steel);margin-bottom:8px;line-height:1.5}
+.paste-hint code{background:#f0f1f2;padding:1px 5px;border-radius:4px;font-size:.9em}
+.paste-area{width:100%;min-height:120px;border:1.5px solid var(--line);border-radius:9px;padding:10px;font-size:.8rem;font-family:ui-monospace,monospace;background:#fbfbfa;resize:vertical;white-space:pre;overflow-x:auto}
+.paste-area:focus{outline:none;border-color:var(--ink)}
+.parsed-count{font-size:.78rem;color:var(--green);font-weight:700;margin-top:8px}
+.parsed-count.err{color:var(--red)}
+.parsed-preview{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.pp-row{font-size:.72rem;color:var(--ink2);padding:6px 9px;background:#fafafa;border:1px solid var(--line);border-radius:7px;display:flex;justify-content:space-between;gap:8px}
+.pp-row .pp-risk{color:#8c1f1f;font-weight:700;flex:none}
+
 /* records */
-.rec{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line);font-size:.84rem}
-.rec:last-child{border-bottom:none}
-.rec .d{font-weight:700}
-.rec .m{color:var(--steel);font-size:.74rem}
-.rec .g{font-family:var(--num);font-weight:700;font-size:1rem}
-.rec .g.good{color:var(--green)}.rec .g.warn{color:var(--amber)}.rec .g.stop{color:var(--red)}
+.rec{padding:12px 13px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:var(--card)}
+.rec-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rec-date{font-weight:800;font-size:.9rem}
+.rec-date .wd{color:var(--steel);font-weight:600;font-size:.8rem;margin-left:3px}
+.rec-grade{font-family:var(--num);font-weight:700;font-size:.95rem;flex:none}
+.rec-grade.good{color:var(--green)}.rec-grade.warn{color:var(--amber)}.rec-grade.stop{color:var(--red)}
+.rec-line{font-size:.74rem;color:var(--steel);margin-top:4px}
+.rec-line b{color:var(--ink2);font-weight:700}
+.rec-memo{font-size:.78rem;color:var(--ink2);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);white-space:pre-wrap}
+.rec-del{font-size:.66rem;color:var(--steel);background:none;border:none;text-decoration:underline;margin-top:6px;padding:0}
 
-/* states */
-.empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:26px 18px;text-align:center;color:var(--steel);font-size:.88rem}
+/* misc */
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:24px 18px;text-align:center;color:var(--steel);font-size:.86rem}
 .empty b{color:var(--ink);display:block;margin-bottom:6px;font-size:1rem}
-.loading{text-align:center;padding:34px;color:var(--steel);font-size:.88rem}
-.err{background:var(--red-bg);border:1px solid #f1b5b5;color:#8c1f1f;border-radius:12px;padding:12px;font-size:.83rem;margin-top:12px}
-.stamp{font-size:.7rem;color:var(--steel);text-align:center;margin-top:14px}
+.loading{text-align:center;padding:32px;color:var(--steel);font-size:.86rem}
+.err{background:var(--red-bg);border:1px solid #f1b5b5;color:#8c1f1f;border-radius:12px;padding:12px;font-size:.82rem;margin-top:12px}
+.stamp{font-size:.68rem;color:var(--steel);text-align:center;margin-top:14px}
 
-/* settings modal */
+/* modal (설정 / 시공사추가) */
 .modal-bg{position:fixed;inset:0;background:rgba(15,18,22,.55);z-index:50;display:none;align-items:flex-end}
 .modal-bg.show{display:flex}
-.modal{background:var(--card);width:100%;max-width:560px;margin:0 auto;border-radius:18px 18px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 22px);max-height:88vh;overflow-y:auto}
+.modal{background:var(--card);width:100%;max-width:600px;margin:0 auto;border-radius:18px 18px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 22px);max-height:88vh;overflow-y:auto}
 .modal h2{font-size:1.05rem;margin-bottom:4px}
 .modal .desc{font-size:.78rem;color:var(--steel);margin-bottom:14px}
 .f-label{font-size:.76rem;font-weight:700;color:var(--ink2);display:block;margin:12px 0 4px}
-.f-input{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:11px;font-size:.88rem;font-family:inherit;background:#fbfbfa}
-.f-input:focus{outline:none;border-color:var(--ink)}
 .f-hint{font-size:.7rem;color:var(--steel);margin-top:3px}
 .f-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-/* bottom bar */
-.bottombar{position:fixed;left:0;right:0;bottom:0;background:var(--ink);display:flex;justify-content:space-around;padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 8px);z-index:40}
-.tab-btn{background:none;border:none;color:#8b95a1;font-size:.68rem;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 14px;border-radius:9px}
-.tab-btn .ic{font-size:1.15rem}
+/* bottom nav */
+.bottombar{position:fixed;left:0;right:0;bottom:0;background:var(--ink);display:flex;justify-content:space-around;padding:8px 4px calc(env(safe-area-inset-bottom,0px) + 8px);z-index:40}
+.tab-btn{background:none;border:none;color:#8b95a1;font-size:.66rem;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 10px;border-radius:9px}
+.tab-btn .ic{font-size:1.1rem}
 .tab-btn.on{color:#fff}
 .pg{display:none}.pg.show{display:block}
-.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:.82rem;font-weight:700;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none;white-space:nowrap}
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:.82rem;font-weight:700;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none;white-space:nowrap;max-width:90%}
 .toast.show{opacity:1}
 </style>
 </head>
 <body>
-
 <header>
   <div>
     <div class="h-title">TBM <span>브리핑</span> 보조</div>
@@ -159,66 +216,71 @@ section{margin-top:18px}
 </header>
 
 <main>
-<!-- ============ 오늘 페이지 ============ -->
+<!-- ============ 오늘 ============ -->
 <div class="pg show" id="pgToday">
-  <div id="setupNotice" class="empty" style="display:none">
-    <b>설정이 필요합니다</b>
-    공공데이터포털 서비스키를 입력하면 실시간 기상·대기질 데이터를 불러옵니다.<br><br>
-    <button class="btn primary" style="max-width:220px" onclick="openSettings()">설정 열기</button>
-    <div style="margin-top:10px"><button class="btn ghost" style="max-width:220px" onclick="loadDemo()">데모 데이터로 미리보기</button></div>
-  </div>
-
-  <div id="loading" class="loading" style="display:none">데이터를 불러오는 중…</div>
+  <div id="loading" class="loading" style="display:none">날씨 데이터를 불러오는 중…</div>
   <div id="errBox" class="err" style="display:none"></div>
 
   <div id="content" style="display:none">
-    <div class="hero" id="hero">
-      <div class="hero-band">
-        <div class="hero-bar"></div>
-        <div class="hero-body">
-          <div class="hero-top">
-            <div>
-              <div class="eyebrow">오늘의 작업환경 종합</div>
-              <div class="grade" id="gradeTxt">—</div>
-            </div>
-            <div class="at-big">
-              <div class="n" id="atMax">—</div>
-              <div class="u">최고 체감온도 ℃</div>
-            </div>
-          </div>
-          <div class="hero-note" id="heroNote">—</div>
+    <!-- 작업환경 종합 모니터링 -->
+    <div class="mon" id="mon">
+      <div class="mon-band">
+        <div class="mon-bar"></div>
+        <div class="mon-body">
+          <div class="mon-eyebrow">오늘의 작업환경 종합</div>
+          <div class="mon-grade" id="monGrade">—</div>
+          <div class="mon-summary" id="monSummary">—</div>
         </div>
       </div>
-      <div class="hero-grid">
-        <div class="hg" id="hgTmp"><div class="v">—</div><div class="k">최고기온</div></div>
-        <div class="hg" id="hgWind"><div class="v">—</div><div class="k">최대풍속 m/s</div></div>
-        <div class="hg" id="hgRain"><div class="v">—</div><div class="k">강수확률 %</div></div>
-        <div class="hg" id="hgPm"><div class="v">—</div><div class="k">PM2.5</div></div>
+      <div class="mon-people">
+        <div class="mp"><div class="v" id="mpHead">—</div><div class="k">총 출력인원</div></div>
+        <div class="mp"><div class="v" id="mpSites">—</div><div class="k">작업개소</div></div>
+        <div class="mp" id="mpVulnBox"><div class="v" id="mpVuln">—</div><div class="k">취약작업자</div></div>
+      </div>
+      <div class="vuln-break" id="vulnBreak"></div>
+      <div class="mon-wx">
+        <div class="mw" id="mwTmp"><div class="v">—</div><div class="k">최고기온 ℃</div></div>
+        <div class="mw" id="mwWind"><div class="v">—</div><div class="k">최대풍속 ㎧</div></div>
+        <div class="mw" id="mwRain"><div class="v">—</div><div class="k">강수확률 %</div></div>
+        <div class="mw" id="mwPm"><div class="v">—</div><div class="k">초미세먼지</div></div>
       </div>
     </div>
 
+    <!-- 시간대별 체감온도 (참고값, 축소) -->
     <section>
-      <div class="sec-h"><div class="sec-t">시간대별 체감온도 <small>큰 숫자=체감 / 작은=기온·풍속</small></div></div>
+      <div class="sec-h"><div class="sec-t">시간대별 체감온도 <small>참고값 · 큰 숫자=체감</small></div></div>
       <div class="strip" id="strip"></div>
     </section>
 
+    <!-- 오늘의 작업 (붙여넣은 작업 목록) -->
     <section>
-      <div class="sec-h"><div class="sec-t">오늘의 작업 체크인 <small>해당 공종을 선택하면 관련 기준만 표시</small></div></div>
-      <div class="chips" id="chips"></div>
+      <div class="sec-h"><div class="sec-t">오늘의 작업 <small id="taskCountLabel">작업을 눌러 유해위험 확인</small></div></div>
+      <div id="taskList" class="tasklist"></div>
     </section>
 
+    <!-- 법적 조치사항 (날씨 기반) -->
     <section>
-      <div class="sec-h"><div class="sec-t">법적 조치사항</div></div>
-      <div id="rules"></div>
+      <div class="sec-h"><div class="sec-t">기상 관련 법적 조치사항 <small>옥외작업 전반</small></div></div>
+      <div id="wxRules"></div>
     </section>
 
+    <!-- TBM 브리핑 스크립트 -->
     <section>
       <div class="sec-h"><div class="sec-t">TBM 브리핑 스크립트</div></div>
       <div class="card">
         <div class="brief-box" id="briefTxt">—</div>
         <div class="btn-row">
           <button class="btn ghost" id="btnCopy">스크립트 복사</button>
-          <button class="btn primary" id="btnRecord">브리핑 실시 기록</button>
+        </div>
+        <!-- TBM 실시 기록 메모 -->
+        <div class="memo-grid">
+          <label for="tbmTime">TBM 시작</label>
+          <input class="f-input" type="time" id="tbmTime">
+          <label for="tbmNote" style="align-self:start;padding-top:8px">특이사항</label>
+          <textarea class="f-input" id="tbmNote" placeholder="현장 위치별 유의사항, 조업부서 참여 여부, 기타 특이사항"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="btnRecord">오늘 TBM 기록 저장</button>
         </div>
       </div>
     </section>
@@ -227,34 +289,48 @@ section{margin-top:18px}
   </div>
 </div>
 
-<!-- ============ 기록 페이지 ============ -->
-<div class="pg" id="pgRecords">
+<!-- ============ 작업입력 ============ -->
+<div class="pg" id="pgInput">
   <section>
-    <div class="sec-h">
-      <div class="sec-t">브리핑·측정 기록 <small>이 기기 브라우저에 저장됩니다</small></div>
-      <button class="btn ghost" style="flex:0;padding:7px 12px;font-size:.74rem" id="btnExport">내보내기</button>
+    <div class="sec-h"><div class="sec-t">작업 입력 <small>엑셀에서 행을 복사해 붙여넣기</small></div></div>
+    <div class="subtabs" id="subtabs"></div>
+    <div class="paste-panel">
+      <div class="paste-hint" id="pasteHint">
+        엑셀에서 <b>데이터 행</b>을 선택해 복사한 뒤 아래에 붙여넣으세요. 컬럼 순서:<br>
+        <code>프로젝트 · 시공사 · 하도사 · 출력인원 · 취약작업자(1/2/1/2) · 작업내용 · 안전Risk유형 · 현장책임자 · 안전조치</code><br>
+        취약작업자는 <code>작업실적3회↓ / 65세↑ / 70세↑ / 입사6개월↓</code> 순서입니다.
+      </div>
+      <textarea class="paste-area" id="pasteArea" placeholder="여기에 엑셀 행을 붙여넣기 (Ctrl+V)"></textarea>
+      <div class="parsed-count" id="parsedCount"></div>
+      <div class="parsed-preview" id="parsedPreview"></div>
+      <div class="btn-row">
+        <button class="btn ghost" id="btnClearInput">이 시공사 지우기</button>
+        <button class="btn primary" id="btnSaveInput">저장</button>
+      </div>
     </div>
-    <div class="card" id="recList"></div>
-    <div class="stamp">체감온도 측정·기록 보관 및 근로자 사전 고지 의무 대응용 기초 기록입니다.<br>공식 보존 기록은 사내 절차에 따라 별도 관리하세요.</div>
+    <div class="stamp">입력한 작업은 이 기기에 저장되며 '오늘' 화면의 작업 목록·종합·조치사항에 반영됩니다.</div>
   </section>
 </div>
 
-<!-- ============ 정보 페이지 ============ -->
+<!-- ============ 기록 ============ -->
+<div class="pg" id="pgRecords">
+  <section>
+    <div class="sec-h">
+      <div class="sec-t">TBM 기록 <small>일자별 · 이 기기 저장</small></div>
+    </div>
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn ghost" id="btnExportPdf">PDF 내보내기</button>
+      <button class="btn ghost" id="btnExportXlsx">엑셀 내보내기</button>
+    </div>
+    <div id="recList"></div>
+  </section>
+</div>
+
+<!-- ============ 기준 ============ -->
 <div class="pg" id="pgInfo">
   <section>
     <div class="sec-h"><div class="sec-t">판단 기준 요약</div></div>
-    <div class="card" style="font-size:.84rem;color:var(--ink2)">
-      <p><b>폭염</b> (산업안전보건기준에 관한 규칙, 2025.7.17 시행)<br>
-      · 체감온도 31℃↑ 2시간 이상 작업 = 폭염작업 → 냉방·통풍장치, 시간대 조정, 휴식 중 1개 이상 조치<br>
-      · 33℃↑ → 매 2시간 이내 20분 이상 휴식 <b>의무</b> (1시간 10분 가능, 곤란 시 보냉장구+물+냉방 병행)<br>
-      · 38℃↑ → 매시간 15분 휴식, 14~17시 옥외작업 중지(긴급 제외)<br>
-      · 31℃↑ 시 체감온도 측정·기록·보관 및 근로자 사전 고지 <b>의무</b></p>
-      <p style="margin-top:10px"><b>강풍</b> · 순간풍속 10m/s 초과: 크레인 설치·수리·점검·해체 중지 / 15m/s 초과: 크레인 운전 중지 (규칙 제37조) · 철골작업 평균풍속 10m/s 이상 중지 (제383조)</p>
-      <p style="margin-top:10px"><b>강수·강설</b> · 철골작업: 시간당 강우 1mm 이상, 강설 1cm 이상 중지 (제383조) · 강수 후 굴착면·비계 점검</p>
-      <p style="margin-top:10px"><b>미세먼지</b> (고용노동부 옥외작업자 건강보호 가이드) · 주의보 수준(PM10 150 / PM2.5 75↑): 방진마스크 지급·착용, 민감군 조정 · 경보 수준(PM10 300 / PM2.5 150↑): 중작업 단축, 휴식 확대</p>
-      <p style="margin-top:10px"><b>한파</b> · 체감온도 −12℃ 이하 등 한랭 환경: 보온장구·따뜻한 물 제공, 휴식시간 조정 (2025 개정 한랭 조치 포함)</p>
-      <p style="margin-top:12px;font-size:.72rem;color:var(--steel)">※ 본 앱은 TBM 참고용 보조 도구입니다. 판단 기준은 요약본이며, 실제 적용은 최신 법령 원문과 사내 안전보건 절차를 우선합니다. 예보 풍속은 평균풍속으로 순간풍속(돌풍)은 약 1.5배로 추정 표시합니다.</p>
-    </div>
+    <div class="card" id="infoCard" style="font-size:.82rem;color:var(--ink2)"></div>
   </section>
 </div>
 </main>
@@ -262,184 +338,120 @@ section{margin-top:18px}
 <!-- bottom nav -->
 <nav class="bottombar">
   <button class="tab-btn on" data-pg="pgToday"><span class="ic">☀</span>오늘</button>
+  <button class="tab-btn" data-pg="pgInput"><span class="ic">✎</span>작업입력</button>
   <button class="tab-btn" data-pg="pgRecords"><span class="ic">▤</span>기록</button>
   <button class="tab-btn" data-pg="pgInfo"><span class="ic">§</span>기준</button>
 </nav>
 
-<!-- settings modal -->
+<!-- 설정 모달 -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h2>설정</h2>
-    <div class="desc" id="setDesc">서비스키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다(API 호출 시 공공데이터포털로만 전달).</div>
-
-    <div id="directOnly">
-    <label class="f-label">공공데이터포털 서비스키 (일반 인증키 · Decoding)</label>
-    <input class="f-input" id="inKey" placeholder="발급받은 서비스키 붙여넣기" autocomplete="off">
-    <div class="f-hint">기상청_단기예보 조회서비스와 에어코리아_대기오염정보 두 서비스 모두 활용신청 필요 (키는 하나로 공용)</div>
-    </div>
-
+    <div class="desc" id="setDesc">데이터는 전용 프록시를 통해 조회되며, 서비스키는 이 앱에 저장되지 않습니다.</div>
     <div class="f-two">
-      <div>
-        <label class="f-label">예보지점 격자 X (nx)</label>
-        <input class="f-input" id="inNx" inputmode="numeric" value="74">
-      </div>
-      <div>
-        <label class="f-label">격자 Y (ny)</label>
-        <input class="f-input" id="inNy" inputmode="numeric" value="69">
-      </div>
+      <div><label class="f-label">예보격자 X (nx)</label><input class="f-input" id="inNx" inputmode="numeric" value="74"></div>
+      <div><label class="f-label">격자 Y (ny)</label><input class="f-input" id="inNy" inputmode="numeric" value="69"></div>
     </div>
-    <div class="f-hint">기본값 74,69 = 광양제철소(금호동). 광양읍·중동은 73,70. 기상청 단기예보 격자 안내 엑셀에서 변경 가능</div>
-
+    <div class="f-hint">기본값 74,69 = 광양제철소(금호동)</div>
     <label class="f-label">에어코리아 시도명</label>
     <input class="f-input" id="inSido" value="전남">
-    <label class="f-label">우선 측정소 (쉼표 구분, 앞순서 우선)</label>
+    <label class="f-label">우선 측정소 (쉼표 구분)</label>
     <input class="f-input" id="inStations" value="중동,태인동,골약동,광양읍">
-
-    <div id="directProxy">
-    <label class="f-label">범용 프록시 주소 (선택 · CORS 오류 시)</label>
-    <input class="f-input" id="inProxy" placeholder="예: https://내워커.workers.dev/?url=">
-    <div class="f-hint">비워두면 API를 직접 호출합니다. 브라우저 CORS 차단 시에만 사용</div>
-    </div>
-
     <div class="btn-row">
-      <button class="btn ghost" onclick="closeSettings()">닫기</button>
+      <button class="btn ghost" onclick="closeModal('modalBg')">닫기</button>
       <button class="btn primary" onclick="saveSettings()">저장하고 불러오기</button>
     </div>
     <div class="f-hint" id="buildInfo" style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"></div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- 시공사 추가 모달 -->
+<div class="modal-bg" id="conModal">
+  <div class="modal">
+    <h2>시공사 탭 추가</h2>
+    <div class="desc">작업을 분리해서 입력할 시공사(원청)를 추가합니다.</div>
+    <label class="f-label">시공사명</label>
+    <input class="f-input" id="inConName" placeholder="예: 포스코이앤씨">
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeModal('conModal')">닫기</button>
+      <button class="btn primary" onclick="addContractor()">추가</button>
+    </div>
+  </div>
+</div>
 
+<div class="toast" id="toast"></div>
 <script>
-/* ================= 앱 구성 (빌드별로 이 블록만 바뀜) ================= */
-/* DATA_SOURCE: 데이터를 어디서 가져올지 결정하는 유일한 스위치
-     'direct'   = 브라우저가 공공API 직접 호출 (폰에 키 입력) — 개발/시연용
-     'proxy'    = 개인폰 LTE 정식 버전. Cloudflare 등 서버리스 프록시가 키를 들고 대신 호출 (앱은 키리스)
-     'internal' = POSCO 사내 버전. 사내 프록시가 대신 호출
-   빌드 전환 시 아래 APP 블록의 값만 바꾸면 화면·룰 엔진은 그대로 재사용됨 */
+/* ================= 앱 구성 ================= */
 const APP = {
-  version : '2.2.0',
-  channel : 'LTE',                                        // 화면 표시용 라벨: 'LTE' / '사내' 등
-  dataSource : 'proxy',                                   // 'direct' | 'proxy' | 'internal'
-  proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',   // Cloudflare Worker 주소
-  appToken : 'tbm-gwangyang-2462c30d6a8c52bfa786e99764624a83', // Worker의 SHARED_TOKEN과 동일
+  version : '3.0.0',
+  channel : 'LTE',
+  dataSource : 'proxy',
+  proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
+  appToken : 'tbm-gwangyang-2462c30d6a8c52bfa786e99764624a83',
 };
 
+/* ================= 저장 키 ================= */
+const LS_SET='tbm3_settings', LS_REC='tbm3_records', LS_INPUT='tbm3_input', LS_CONS='tbm3_contractors';
+
 /* ================= 상태 ================= */
-const LS_SET='tbm_settings', LS_REC='tbm_records', LS_WORK='tbm_worktypes';
-let S = loadJSON(LS_SET, {key:'',nx:'74',ny:'69',sido:'전남',stations:'중동,태인동,골약동,광양읍',proxy:''});
-let ctx = null; // 분석 컨텍스트 {hours, maxAT, maxTmp, maxWind, maxGust, maxPop, maxPcp, pm10, pm25, station, fetchedAt, demo}
-let workTypes = loadJSON(LS_WORK, ['crane','steel','outdoor']);
+let S = loadJSON(LS_SET, {nx:'74',ny:'69',sido:'전남',stations:'중동,태인동,골약동,광양읍'});
+let wx = null;               // 날씨 컨텍스트
+let contractors = loadJSON(LS_CONS, ['포스코이앤씨','플랜텍','포스코DX']);
+let inputData = loadJSON(LS_INPUT, {});   // { 시공사명: [rawRow,...] }
+let activeCon = contractors[0] || '';
+let openTaskIdx = -1;
 
-const WORK_DEFS=[
-  {id:'outdoor', label:'옥외 일반'},
-  {id:'crane',   label:'크레인 양중'},
-  {id:'steel',   label:'고소·철골'},
-  {id:'excav',   label:'굴착·토공'},
-  {id:'confined',label:'밀폐·내화물'},
-];
+/* ================= 취약작업자 & 안전Risk유형 ================= */
+const VULN_LABELS=['작업실적3회이하','65세이상','70세이상','입사6개월이하'];
+const VULN_SHORT=['실적3회↓','65세↑','70세↑','입사6개월↓'];
 
-/* ================= 룰 엔진 =================
-   badge: duty(법적 의무) / guide(지침·권고)
-   sev: stop > warn > info  */
-const RULES=[
- {id:'heat31', applies:['all'], sev:'warn', badge:'duty',
-  test:c=>c.maxAT>=31 && c.maxAT<33,
-  title:c=>`폭염작업 해당 (최고 체감 ${c.maxAT.toFixed(1)}℃)`,
-  basis:'산업안전보건기준에 관한 규칙 제558·559조 등 (2025.7.17 시행)',
-  acts:['냉방·통풍 장치 가동, 작업시간대 조정, 적절한 휴식 중 1개 이상 조치','그늘 휴게장소·시원한 물 비치 확인'],
-  brief:c=>`오늘 최고 체감온도 ${c.maxAT.toFixed(1)}도로 폭염작업에 해당합니다. 그늘 휴게장소와 물을 이용하고, 무리한 연속작업을 피하십시오.`},
- {id:'heat33', applies:['all'], sev:'stop', badge:'duty',
-  test:c=>c.maxAT>=33,
-  title:c=>`체감 33℃ 이상 — 매 2시간 이내 20분 휴식 의무 (최고 ${c.maxAT.toFixed(1)}℃)`,
-  basis:'산업안전보건기준에 관한 규칙 (2025.7.17 시행) — 위반 시 5년 이하 징역 또는 5천만 원 이하 벌금',
-  acts:['매 2시간 이내 20분 이상 휴식 부여 (1시간마다 10분 가능)','휴식 곤란 공정은 보냉장구(냉각조끼 등) 지급 + 물·냉방 병행','체감온도 최고 시간대 작업 재배치 검토'],
-  brief:c=>`체감온도가 33도를 넘는 시간대에는 법에 따라 2시간마다 20분 이상 의무 휴식을 실시합니다. 각 조 반장은 휴식시간을 반드시 지켜 주십시오.`},
- {id:'heat38', applies:['all'], sev:'stop', badge:'duty',
-  test:c=>c.maxAT>=38,
-  title:'체감 38℃ 이상 — 매시간 15분 휴식, 14~17시 옥외작업 중지',
-  basis:'산업안전보건기준에 관한 규칙 (2025.7.17 시행)',
-  acts:['매시간 15분 이상 휴식','14~17시 긴급조치 외 옥외작업 중지','작업 전면 재편성 검토'],
-  brief:()=>`체감온도 38도 이상이 예상됩니다. 매시간 15분 휴식하고, 오후 2시부터 5시까지 긴급작업 외 옥외작업은 중지합니다.`},
- {id:'heatRec', applies:['all'], sev:'info', badge:'duty',
-  test:c=>c.maxAT>=31,
-  title:'체감온도 측정·기록·보관 및 근로자 사전 고지',
-  basis:'산업안전보건기준에 관한 규칙 (2025.7.17 시행)',
-  acts:['작업장소 온·습도 측정기 비치, 체감온도 측정값 기록·보관','온열질환 증상·예방·응급조치 요령 사전 고지 (본 브리핑으로 이행)','아래 「브리핑 실시 기록」 버튼으로 오늘자 기록 저장'],
-  brief:()=>`어지러움, 메스꺼움, 두통 등 온열질환 증상이 나타나면 즉시 작업을 멈추고 관리자에게 알려 주십시오. 의식이 흐린 동료 발견 시 그늘로 옮기고 즉시 신고합니다.`},
- {id:'heatSens', applies:['all'], sev:'warn', badge:'guide',
-  test:c=>c.maxAT>=33,
-  title:'온열질환 민감군 옥외작업 제한',
-  basis:'고용노동부 폭염 대비 사업장 대응지침',
-  acts:['고혈압·당뇨 등 민감군 근로자 옥외작업 제한·조정','담당자를 지정해 근로자 건강상태 수시 확인'],
-  brief:()=>`평소 지병이 있거나 몸 상태가 좋지 않은 분은 작업 전 반드시 관리자에게 알려 주십시오.`},
- {id:'wind10', applies:['crane'], sev:'stop', badge:'duty',
-  test:c=>c.maxGust>=10,
-  title:c=>`순간풍속 10m/s 초과 예상 — 크레인 설치·수리·점검·해체 중지 (돌풍 추정 ${c.maxGust.toFixed(1)}m/s)`,
-  basis:'산업안전보건기준에 관한 규칙 제37조 (예보 평균풍속×1.5 추정치, 현장 풍속계 확인 필수)',
-  acts:['크레인 설치·해체·점검·수리 작업 중지','현장 풍속계 실측으로 최종 판단'],
-  brief:c=>`오늘 돌풍이 초속 ${c.maxGust.toFixed(0)}미터에 이를 수 있습니다. 크레인 설치·해체 작업은 중지하고, 양중 전 풍속계를 확인하십시오.`},
- {id:'wind15', applies:['crane'], sev:'stop', badge:'duty',
-  test:c=>c.maxGust>=15,
-  title:'순간풍속 15m/s 초과 예상 — 크레인 운전 중지',
-  basis:'산업안전보건기준에 관한 규칙 제37조',
-  acts:['타워크레인 등 크레인 운전작업 중지','인양물 결속·자재 비산 방지 조치'],
-  brief:()=>`강풍으로 크레인 운전을 중지합니다. 야적 자재와 가설물의 결속 상태를 점검해 주십시오.`},
- {id:'windSteel', applies:['steel'], sev:'stop', badge:'duty',
-  test:c=>c.maxWind>=10,
-  title:c=>`평균풍속 10m/s 이상 — 철골작업 중지 (최대 ${c.maxWind.toFixed(1)}m/s)`,
-  basis:'산업안전보건기준에 관한 규칙 제383조',
-  acts:['철골 조립·해체 등 철골작업 중지','고소작업 안전대 체결 재확인'],
-  brief:()=>`풍속 기준 초과로 철골작업은 중지합니다. 고소작업자는 안전대 체결을 재확인하십시오.`},
- {id:'windCaution', applies:['crane','steel'], sev:'warn', badge:'guide',
-  test:c=>c.maxGust>=8 && c.maxGust<10 && c.maxWind<10,
-  title:c=>`강풍 주의 — 돌풍 추정 ${c.maxGust.toFixed(1)}m/s`,
-  basis:'현장 관리 권고',
-  acts:['양중·고소작업 전 풍속계 확인 후 진행','풍속 상승 시 즉시 작업 조정'],
-  brief:()=>`바람이 강해질 수 있으니 양중·고소작업 전 풍속을 확인하고 진행하십시오.`},
- {id:'rainSteel', applies:['steel'], sev:'stop', badge:'duty',
-  test:c=>c.maxPcp>=1,
-  title:c=>`시간당 강우 1mm 이상 — 철골작업 중지 (최대 ${c.maxPcp}mm/h)`,
-  basis:'산업안전보건기준에 관한 규칙 제383조',
-  acts:['해당 시간대 철골작업 중지','미끄럼·감전 위험 개소 점검'],
-  brief:()=>`비가 오는 시간대에는 철골작업을 중지합니다. 우천 시 미끄럼과 전동공구 감전에 유의하십시오.`},
- {id:'rainExcav', applies:['excav'], sev:'warn', badge:'guide',
-  test:c=>c.maxPop>=60 || c.maxPcp>=1,
-  title:'강수 예상 — 굴착면·비계·배수 점검',
-  basis:'악천후 시 작업장 점검 (규칙 제37조 취지)',
-  acts:['굴착면 붕괴 징후·흙막이 점검','배수로 확보, 비계·가설통로 결속 확인'],
-  brief:()=>`비가 예보되어 있습니다. 굴착면과 흙막이 상태를 점검하고 배수로를 확보해 주십시오.`},
- {id:'pmWarn', applies:['all'], sev:'warn', badge:'guide',
-  test:c=>(c.pm10>=150&&c.pm10<300)||(c.pm25>=75&&c.pm25<150),
-  title:c=>`미세먼지 주의보 수준 (PM10 ${c.pm10} / PM2.5 ${c.pm25})`,
-  basis:'고용노동부 옥외작업자 건강보호 가이드',
-  acts:['방진마스크 지급·착용','호흡기 질환자 등 민감군 작업 조정'],
-  brief:()=>`미세먼지 농도가 높습니다. 옥외작업 시 지급된 방진마스크를 착용해 주십시오.`},
- {id:'pmAlert', applies:['all'], sev:'stop', badge:'guide',
-  test:c=>c.pm10>=300||c.pm25>=150,
-  title:c=>`미세먼지 경보 수준 (PM10 ${c.pm10} / PM2.5 ${c.pm25})`,
-  basis:'고용노동부 옥외작업자 건강보호 가이드',
-  acts:['중작업 단축·조정, 휴식시간 확대','민감군 옥외작업 제한'],
-  brief:()=>`미세먼지 경보 수준입니다. 중작업은 단축 운영하고 휴식을 늘립니다. 마스크를 반드시 착용하십시오.`},
- {id:'cold', applies:['all'], sev:'warn', badge:'duty',
-  test:c=>c.minAT<=-12,
-  title:c=>`한파 — 최저 체감 ${c.minAT.toFixed(1)}℃`,
-  basis:'산업안전보건기준에 관한 규칙 한랭 조치 (2025 개정)',
-  acts:['보온장구 지급, 따뜻한 물·휴게장소 제공','동상·저체온 증상 확인, 휴식시간 조정'],
-  brief:c=>`오늘 체감온도가 영하 ${Math.abs(c.minAT).toFixed(0)}도까지 떨어집니다. 보온장구를 착용하고 손발 감각 이상 시 즉시 휴식하십시오.`},
-];
+const RISK_TYPES = {
+  '밀폐공간': { short:'밀폐', hazard:'산소결핍·유해가스(질식), 화재·폭발',
+    basis:'산업안전보건기준에 관한 규칙 제619조·제619조의2·제620조',
+    acts:['작업 전·중 산소 및 유해가스 농도 측정(적정공기 확인)','작업 전·중 충분한 환기, 작업허가서 발급·게시','감시인 배치 및 외부 연락체계 유지','송기마스크·공기호흡기, 안전대·구명줄 착용','연결 배관·펌프 잠금 및 조작금지 통지'] },
+  '15m이내 활가스 배관': { short:'활가스', hazard:'가동 배관 가스(COG·BFG·LDG 등) 누출·중독·폭발',
+    basis:'사내 가스안전 절차 및 화학설비 안전기준',
+    acts:['작업 전 가스농도 측정(CO 등) 및 지속 모니터링','가스방지마스크·CO경보기 휴대, 풍상 위치 작업','해당 배관 조업부서 통보 및 밸브 상태 확인','비상대피 경로·집결지 사전 확인, 감시인 배치'] },
+  '화재/폭발': { short:'화재폭발', hazard:'용접·용단 등 화기작업으로 인한 화재·폭발',
+    basis:'산업안전보건기준에 관한 규칙 제241조(화재위험작업)',
+    acts:['화기작업 허가서 발급, 작업절차 수립','인근 가연물 방호조치·이격, 소화기구 비치','화재감시인 배치(작업 중 및 작업 후 30분 이상)','통풍·환기 시 산소 사용 금지'] },
+  '철거/낙하': { short:'철거낙하', hazard:'구조물 철거 중 붕괴, 자재·공구 낙하',
+    basis:'산업안전보건기준에 관한 규칙 제20조 및 해체작업 기준',
+    acts:['해체작업계획서 작성·준수, 작업구역 출입통제','낙하물 방지망·방호선반 설치, 하부 통제','자재·공구 결속·정리, 상하 동시작업 금지','안전모 착용 확인'] },
+  '고소작업': { short:'고소', hazard:'추락(작업발판·개구부·비계)',
+    basis:'산업안전보건기준에 관한 규칙 제42조(추락방지)·제43조(개구부 방호)',
+    acts:['작업발판 설치, 곤란 시 추락방호망(수직거리 10m 이하)','안전대 착용 및 부착설비 확인','개구부·단부 안전난간·덮개 등 방호조치','악천후(강풍·강우) 시 작업 재검토'] },
+  '중량물협착': { short:'협착', hazard:'중량물 취급·양중 중 협착·충돌',
+    basis:'산업안전보건기준에 관한 규칙(양중기·중량물 취급 기준)',
+    acts:['작업지휘자·유도자(신호수) 배치, 신호체계 통일','인양물 하부 및 선회반경 출입금지','줄걸이·후크해지장치 등 양중장비 점검','중량물 취급 작업계획서 준수'] },
+};
+function normalizeRisk(raw){
+  if(!raw) return [];
+  const s=String(raw); const found=[];
+  const map=[[/밀폐/,'밀폐공간'],[/활\s*가스|활가스|15\s*m/i,'15m이내 활가스 배관'],[/화재|폭발|화기/,'화재/폭발'],[/철거|낙하/,'철거/낙하'],[/고소|추락/,'고소작업'],[/중량물|협착|중량/,'중량물협착']];
+  for(const [re,key] of map){ if(re.test(s)&&!found.includes(key)) found.push(key); }
+  return found;
+}
+
+/* 시공사 → 색상 클래스 */
+function conClass(name){
+  if(/이앤씨|E&C|EC/i.test(name)) return 'c-posco';
+  if(/플랜텍|plantec/i.test(name)) return 'c-plantec';
+  if(/DX|디엑스/i.test(name)) return 'c-dx';
+  return 'c-etc';
+}
 
 /* ================= 유틸 ================= */
 function loadJSON(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function pad(n){return String(n).padStart(2,'0')}
 function todayStr(d=new Date()){return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`}
 function fmtDate(d=new Date()){const w='일월화수목금토'[d.getDay()];return `${d.getMonth()+1}/${d.getDate()}(${w})`}
 
-/* 체감온도: 여름(5~9월) = 습구온도 기반(고용노동부/기상청 산식), 그 외 저온·풍속 시 바람냉각 */
+/* 체감온도 (여름 습구 기반 / 겨울 바람냉각) */
 function apparentTemp(Ta,RH,windMs,month){
   if(month>=5&&month<=9){
     const Tw=Ta*Math.atan(0.151977*Math.sqrt(RH+8.313659))+Math.atan(Ta+RH)-Math.atan(RH-1.676331)
@@ -447,336 +459,566 @@ function apparentTemp(Ta,RH,windMs,month){
     return -0.2442+0.55399*Tw+0.45535*Ta-0.0022*Tw*Tw+0.00278*Tw*Ta+3.0;
   }
   const V=windMs*3.6;
-  if(Ta<=10&&V>=4.8){
-    return 13.12+0.6215*Ta-11.37*Math.pow(V,0.16)+0.3965*Ta*Math.pow(V,0.16);
-  }
+  if(Ta<=10&&V>=4.8) return 13.12+0.6215*Ta-11.37*Math.pow(V,0.16)+0.3965*Ta*Math.pow(V,0.16);
   return Ta;
 }
 
-/* ================= 데이터 소스 추상화 계층 =================
-   설계 원칙: 앱 본체는 "무엇을 원하는지"(feed id + params)만 말하고,
-   "어떻게 가져올지"(URL 조립·키 부착·프록시 경유)는 어댑터가 전담한다.
-   → 사내 버전 전환 시 internal 어댑터 주소만 바꾸면 화면·룰은 그대로 재사용.
-
-   [피드 카탈로그] 각 공공데이터를 논리적 이름(id)으로 정의.
-   endpoint/query는 direct 모드에서 URL을 만들 때만 쓰이고,
-   proxy/internal 모드에서는 프록시가 이 매핑을 대신 알고 있으면 됨(앱은 id만 전달). */
-const FEEDS = {
-  forecast: {  // 기상청 단기예보
-    host:'https://apis.data.go.kr', path:'/1360000/VilageFcstInfoService_2.0/getVilageFcst',
-    fixed:{numOfRows:'500', pageNo:'1', dataType:'JSON'},
-  },
-  air: {       // 에어코리아 시도별 실시간 측정정보
-    host:'https://apis.data.go.kr', path:'/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty',
-    fixed:{returnType:'json', numOfRows:'200', pageNo:'1', ver:'1.0'},
-  },
-};
-
-/* 어댑터: feedId와 동적 params를 받아 JSON을 돌려주는 단일 관문.
-   여기 한 곳만 모드별로 분기하고, 나머지 코드는 fetchFeed()만 호출한다. */
-async function fetchFeed(feedId, params){
-  const feed=FEEDS[feedId];
-  const mode=APP.dataSource;
-
-  if(mode==='direct'){
-    // 브라우저가 공공API 직접 호출. 키는 폰(S.key)에서 부착.
-    const qs=new URLSearchParams({serviceKey:S.key, ...feed.fixed, ...params});
-    let url=feed.host+feed.path+'?'+qs.toString();
-    if(S.proxy) url=S.proxy+encodeURIComponent(url); // CORS 회피용 범용 프록시(선택)
-    return fetchJSON(url);
+/* ================= 작업 입력 파싱 ================= */
+function parseRow(line){
+  const c=line.split('\t');
+  const row={
+    project:(c[0]||'').trim(), contractor:(c[1]||'').trim(), subcon:(c[2]||'').trim(),
+    headcount:(c[3]||'').trim(), vulnerable:(c[4]||'').trim(), task:(c[5]||'').trim(),
+    risk:(c[6]||'').trim(), manager:(c[7]||'').trim(), safety:(c[8]||'').trim(),
+  };
+  row.headcountN=parseInt(row.headcount)||0;
+  row.vuln=parseVuln(row.vulnerable);
+  row.risks=normalizeRisk(row.risk);
+  return row;
+}
+function parseVuln(s){
+  const nums=String(s||'').split(/[\/,\s]+/).filter(x=>x!=='').map(x=>parseInt(x)||0);
+  const o={}; VULN_LABELS.forEach((k,i)=>o[k]=nums[i]||0);
+  o.total=VULN_LABELS.reduce((a,k)=>a+o[k],0);
+  return o;
+}
+function parsePaste(text){
+  const lines=text.split(/\r?\n/).map(l=>l.replace(/\s+$/,'')).filter(l=>l.trim());
+  const rows=[];
+  for(const line of lines){
+    if(/프로젝트|시공사|하도/.test(line.split('\t')[0]||'') && /출력|작업내용|Risk/i.test(line)) continue; // 헤더 스킵
+    if(!line.includes('\t')) continue; // 탭 없는 줄 스킵
+    rows.push(parseRow(line));
   }
-
-  // proxy / internal: 앱은 키를 모른다. 프록시가 feedId를 보고 키·엔드포인트를 붙인다.
-  // 규약: {proxyBase}/{feedId}?<동적 params만>  (serviceKey·고정값은 프록시가 주입)
-  const base=APP.proxyBase.replace(/\/$/,'');
-  const qs=new URLSearchParams(params);
-  const headers=APP.appToken? {'X-App-Token':APP.appToken} : {};
-  return fetchJSON(`${base}/${feedId}?${qs.toString()}`, {headers});
+  return rows;
 }
 
-async function fetchJSON(url, opts){
-  const r=await fetch(url, opts);
+/* 전체 작업 목록 (모든 시공사 합침) */
+function allTasks(){
+  const out=[];
+  for(const con of contractors){
+    const rows=inputData[con]||[];
+    rows.forEach(r=>out.push(r));
+  }
+  return out;
+}
+function aggregate(){
+  const tasks=allTasks();
+  const totalHead=tasks.reduce((a,r)=>a+(r.headcountN||0),0);
+  const vulnSum={}; VULN_LABELS.forEach(k=>vulnSum[k]=0);
+  tasks.forEach(r=>VULN_LABELS.forEach(k=>vulnSum[k]+=(r.vuln?.[k]||0)));
+  const vulnTotal=VULN_LABELS.reduce((a,k)=>a+vulnSum[k],0);
+  const cons=[...new Set(tasks.map(r=>r.contractor).filter(Boolean))];
+  const risks=[...new Set(tasks.flatMap(r=>r.risks||[]))];
+  return {sites:tasks.length, totalHead, vulnSum, vulnTotal, cons, risks};
+}
+
+/* ================= 데이터 소스 (프록시) ================= */
+const FEEDS={
+  forecast:{fixed:{numOfRows:'500',pageNo:'1',dataType:'JSON'}},
+  air:{fixed:{returnType:'json',numOfRows:'200',pageNo:'1',ver:'1.0'}},
+};
+async function fetchFeed(feedId, params){
+  const base=APP.proxyBase.replace(/\/$/,'');
+  const qs=new URLSearchParams(params);
+  const headers=APP.appToken?{'X-App-Token':APP.appToken}:{};
+  const r=await fetch(`${base}/${feedId}?${qs.toString()}`,{headers});
   if(!r.ok)throw new Error('HTTP '+r.status);
   return r.json();
 }
-
-/* ---- 피드별 파라미터 구성 + 응답 파싱 (모드와 무관, 순수 로직) ---- */
 async function fetchForecast(){
-  // 발표시각: 02,05,08,11,14,17,20,23시 (+10분 이후 제공)
-  const now=new Date();
-  let base=new Date(now.getTime()-15*60000); // 15분 여유
+  const now=new Date(); let base=new Date(now.getTime()-15*60000);
   const slots=[23,20,17,14,11,8,5,2];
-  let bh=slots.find(h=>base.getHours()>=h);
-  let bd=new Date(base);
+  let bh=slots.find(h=>base.getHours()>=h); let bd=new Date(base);
   if(bh===undefined){bh=23;bd.setDate(bd.getDate()-1);}
-  const base_date=todayStr(bd), base_time=pad(bh)+'00';
   let j;
-  try{
-    j=await fetchFeed('forecast', {base_date, base_time, nx:S.nx, ny:S.ny});
-  }catch(e){ throw new Error('기상청 API '+e.message); }
+  try{ j=await fetchFeed('forecast',{base_date:todayStr(bd),base_time:pad(bh)+'00',nx:S.nx,ny:S.ny}); }
+  catch(e){ throw new Error('기상청 '+e.message); }
   const hdr=j?.response?.header;
-  if(hdr?.resultCode!=='00')throw new Error('기상청 API: '+(hdr?.resultMsg||'응답 오류')+' (서비스키·활용신청 확인)');
+  if(hdr?.resultCode!=='00')throw new Error('기상청: '+(hdr?.resultMsg||'응답오류'));
   return j.response.body.items.item;
 }
-
 async function fetchAir(){
   let j;
-  try{
-    j=await fetchFeed('air', {sidoName:S.sido});
-  }catch(e){ throw new Error('에어코리아 API '+e.message); }
+  try{ j=await fetchFeed('air',{sidoName:S.sido}); }catch(e){ throw new Error('에어코리아 '+e.message); }
   const items=j?.response?.body?.items;
-  if(!items)throw new Error('에어코리아 API 응답 오류 (활용신청 승인 확인)');
+  if(!items)throw new Error('에어코리아 응답오류');
   const prefs=S.stations.split(',').map(s=>s.trim()).filter(Boolean);
-  for(const p of prefs){
-    const hit=items.find(it=>it.stationName===p && it.pm10Value!=='-' );
-    if(hit)return hit;
-  }
+  for(const p of prefs){ const hit=items.find(it=>it.stationName===p&&it.pm10Value!=='-'); if(hit)return hit; }
   return items.find(it=>it.pm10Value!=='-')||items[0];
 }
-
-function buildCtx(fcItems,air,demo=false){
-  const today=todayStr();
-  const byTime={};
-  for(const it of fcItems){
-    if(it.fcstDate!==today)continue;
-    (byTime[it.fcstTime]=byTime[it.fcstTime]||{})[it.category]=it.fcstValue;
-  }
+function buildWx(fcItems,air){
+  const today=todayStr(); const byTime={};
+  for(const it of fcItems){ if(it.fcstDate!==today)continue; (byTime[it.fcstTime]=byTime[it.fcstTime]||{})[it.category]=it.fcstValue; }
   const month=new Date().getMonth()+1;
   const hours=Object.keys(byTime).sort().map(t=>{
-    const o=byTime[t];
-    const tmp=parseFloat(o.TMP), reh=parseFloat(o.REH), wsd=parseFloat(o.WSD)||0;
-    const pcpRaw=o.PCP||'강수없음';
-    const pcp=/^[\d.]/.test(pcpRaw)?parseFloat(pcpRaw):0;
+    const o=byTime[t]; const tmp=parseFloat(o.TMP),reh=parseFloat(o.REH),wsd=parseFloat(o.WSD)||0;
+    const pcpRaw=o.PCP||'강수없음'; const pcp=/^[\d.]/.test(pcpRaw)?parseFloat(pcpRaw):0;
     if(isNaN(tmp))return null;
-    return {time:t, tmp, reh:isNaN(reh)?60:reh, wsd, pop:parseFloat(o.POP)||0, pcp,
-      at:apparentTemp(tmp,isNaN(reh)?60:reh,wsd,month)};
+    return {time:t,tmp,reh:isNaN(reh)?60:reh,wsd,pop:parseFloat(o.POP)||0,pcp,at:apparentTemp(tmp,isNaN(reh)?60:reh,wsd,month)};
   }).filter(Boolean);
-  if(!hours.length)throw new Error('오늘자 예보 데이터가 없습니다. 잠시 후 새로고침하세요.');
-  const maxAT=Math.max(...hours.map(h=>h.at));
-  const minAT=Math.min(...hours.map(h=>h.at));
+  if(!hours.length)throw new Error('오늘자 예보 없음. 잠시 후 새로고침.');
+  const maxAT=Math.max(...hours.map(h=>h.at)), minAT=Math.min(...hours.map(h=>h.at));
   const maxWind=Math.max(...hours.map(h=>h.wsd));
   const pm10=parseFloat(air?.pm10Value)||0, pm25=parseFloat(air?.pm25Value)||0;
-  return {hours,maxAT,minAT,maxTmp:Math.max(...hours.map(h=>h.tmp)),
-    maxWind,maxGust:maxWind*1.5,maxPop:Math.max(...hours.map(h=>h.pop)),
-    maxPcp:Math.max(...hours.map(h=>h.pcp)),
-    pm10,pm25,station:air?.stationName||'—',fetchedAt:new Date(),demo};
+  return {hours,maxAT,minAT,maxTmp:Math.max(...hours.map(h=>h.tmp)),maxWind,maxGust:maxWind*1.5,
+    maxPop:Math.max(...hours.map(h=>h.pop)),maxPcp:Math.max(...hours.map(h=>h.pcp)),
+    pm10,pm25,station:air?.stationName||'—',fetchedAt:new Date(),demo:false};
 }
 
-/* ================= 렌더 ================= */
-function grade(c,fired){
-  if(fired.some(r=>r.sev==='stop'))return ['중지·조정','stop','일부 작업에 중지 또는 의무 조치 기준이 적용됩니다. 아래 조치사항을 TBM에서 안내하세요.'];
-  if(fired.some(r=>r.sev==='warn'))return ['주의','warn','주의 기준에 해당하는 항목이 있습니다. 조치사항을 확인하세요.'];
-  return ['양호','good','오늘 옥외작업 제한 기준에 해당하는 항목이 없습니다. 기본 안전수칙을 준수하세요.'];
+/* ================= 날씨 룰 (옥외작업 전반) ================= */
+const WX_RULES=[
+ {id:'heat31',sev:'warn',badge:'duty',test:c=>c.maxAT>=31&&c.maxAT<33,
+  title:c=>`폭염작업 해당 (최고 체감 ${c.maxAT.toFixed(1)}℃)`,
+  basis:'산업안전보건기준에 관한 규칙 (2025.7.17 시행)',
+  acts:['냉방·통풍장치, 작업시간대 조정, 휴식 중 1개 이상','그늘 휴게장소·시원한 물 비치'],
+  brief:c=>`최고 체감온도 ${c.maxAT.toFixed(1)}도로 폭염작업에 해당합니다. 그늘 휴게장소와 물을 이용하고 무리한 연속작업을 피하십시오.`},
+ {id:'heat33',sev:'stop',badge:'duty',test:c=>c.maxAT>=33&&c.maxAT<38,
+  title:c=>`체감 33℃ 이상 — 매 2시간 이내 20분 휴식 의무 (최고 ${c.maxAT.toFixed(1)}℃)`,
+  basis:'산업안전보건기준에 관한 규칙 (2025.7.17) — 위반 시 5년 이하 징역 또는 5천만원 이하 벌금',
+  acts:['매 2시간 이내 20분 이상 휴식 (1시간 10분 가능)','곤란 공정은 보냉장구+물+냉방 병행','체감 최고 시간대 작업 재배치'],
+  brief:c=>`체감온도가 33도를 넘는 시간대에는 법에 따라 2시간마다 20분 이상 의무 휴식을 실시합니다.`},
+ {id:'heat38',sev:'stop',badge:'duty',test:c=>c.maxAT>=38,
+  title:c=>`체감 38℃ 이상 — 매시간 15분 휴식, 14~17시 옥외작업 중지 (최고 ${c.maxAT.toFixed(1)}℃)`,
+  basis:'산업안전보건기준에 관한 규칙 (2025.7.17 시행)',
+  acts:['매시간 15분 이상 휴식','14~17시 긴급조치 외 옥외작업 중지','작업 재편성 검토'],
+  brief:c=>`체감온도 38도 이상이 예상됩니다. 매시간 15분 휴식하고 오후 2~5시 긴급 외 옥외작업은 중지합니다.`},
+ {id:'heatRec',sev:'info',badge:'duty',test:c=>c.maxAT>=31,
+  title:'체감온도 측정·기록·보관 및 근로자 사전 고지',
+  basis:'산업안전보건기준에 관한 규칙 (2025.7.17 시행)',
+  acts:['체감온도 측정값 기록·보관','온열질환 증상·예방·응급조치 사전 고지(본 브리핑으로 이행)'],
+  brief:c=>`어지러움·메스꺼움·두통 등 온열질환 증상이 나타나면 즉시 작업을 멈추고 관리자에게 알려 주십시오.`},
+ {id:'wind10',sev:'stop',badge:'duty',test:c=>c.maxGust>=10&&c.maxGust<15,
+  title:c=>`순간풍속 10㎧ 초과 — 크레인 설치·해체 중지 (돌풍 추정 ${c.maxGust.toFixed(1)}㎧)`,
+  basis:'산업안전보건기준에 관한 규칙 제37조 (예보 평균풍속×1.5 추정)',
+  acts:['크레인 설치·해체·점검·수리 중지','현장 풍속계 실측 확인'],
+  brief:c=>`돌풍이 초속 ${c.maxGust.toFixed(0)}미터에 이를 수 있습니다. 크레인 설치·해체는 중지하고 양중 전 풍속계를 확인하십시오.`},
+ {id:'wind15',sev:'stop',badge:'duty',test:c=>c.maxGust>=15,
+  title:c=>`순간풍속 15㎧ 초과 — 크레인 운전 중지 (돌풍 추정 ${c.maxGust.toFixed(1)}㎧)`,
+  basis:'산업안전보건기준에 관한 규칙 제37조',
+  acts:['크레인 운전작업 중지','인양물 결속·자재 비산 방지'],
+  brief:c=>`강풍으로 크레인 운전을 중지합니다. 야적 자재와 가설물 결속을 점검하십시오.`},
+ {id:'rain',sev:'warn',badge:'guide',test:c=>c.maxPcp>=1||c.maxPop>=60,
+  title:c=>`강수 예상 (최대 ${c.maxPcp}㎜/h, 확률 ${c.maxPop}%)`,
+  basis:'악천후 시 작업장 점검 (규칙 제37조 취지)',
+  acts:['철골·고소작업 시간대 조정','굴착면·비계·배수 점검, 미끄럼·감전 유의'],
+  brief:c=>`비가 예보되어 있습니다. 우천 시간대 고소·철골작업을 조정하고 미끄럼·감전에 유의하십시오.`},
+ {id:'pmWarn',sev:'warn',badge:'guide',test:c=>(c.pm10>=150&&c.pm10<300)||(c.pm25>=75&&c.pm25<150),
+  title:c=>`미세먼지 주의보 수준 (PM10 ${c.pm10}, 초미세 ${c.pm25})`,
+  basis:'고용노동부 옥외작업자 건강보호 가이드',
+  acts:['방진마스크 지급·착용','호흡기 질환자 등 민감군 작업 조정'],
+  brief:c=>`미세먼지 농도가 높습니다. 옥외작업 시 방진마스크를 착용해 주십시오.`},
+ {id:'pmAlert',sev:'stop',badge:'guide',test:c=>c.pm10>=300||c.pm25>=150,
+  title:c=>`미세먼지 경보 수준 (PM10 ${c.pm10}, 초미세 ${c.pm25})`,
+  basis:'고용노동부 옥외작업자 건강보호 가이드',
+  acts:['중작업 단축·조정, 휴식 확대','민감군 옥외작업 제한'],
+  brief:c=>`미세먼지 경보 수준입니다. 중작업은 단축하고 휴식을 늘립니다. 마스크를 반드시 착용하십시오.`},
+ {id:'cold',sev:'warn',badge:'duty',test:c=>c.minAT<=-12,
+  title:c=>`한파 — 최저 체감 ${c.minAT.toFixed(1)}℃`,
+  basis:'산업안전보건기준에 관한 규칙 한랭 조치 (2025 개정)',
+  acts:['보온장구·따뜻한 물 제공','동상·저체온 증상 확인, 휴식 조정'],
+  brief:c=>`체감온도가 영하 ${Math.abs(c.minAT).toFixed(0)}도까지 떨어집니다. 보온장구를 착용하고 손발 감각 이상 시 즉시 휴식하십시오.`},
+];
+function firedWxRules(c){ return WX_RULES.filter(r=>r.test(c)).sort((a,b)=>({stop:0,warn:1,info:2}[a.sev]-{stop:0,warn:1,info:2}[b.sev])); }
+
+/* 종합 등급: 날씨 stop 또는 작업위험 존재 여부 종합 */
+function overallGrade(wxFired, agg){
+  if(wxFired.some(r=>r.sev==='stop')) return ['중지·조정','stop'];
+  if(wxFired.some(r=>r.sev==='warn')||agg.risks.length) return ['주의','warn'];
+  return ['양호','good'];
 }
 
-function firedRules(c){
-  return RULES.filter(r=>{
-    const apply=r.applies.includes('all')||r.applies.some(a=>workTypes.includes(a));
-    return apply&&r.test(c);
-  }).sort((a,b)=>({stop:0,warn:1,info:2}[a.sev]-{stop:0,warn:1,info:2}[b.sev]));
+/* ================= 렌더: 오늘 ================= */
+function pmLabel(pm25){
+  if(pm25>=76) return ['매우나쁨','bad']; if(pm25>=36) return ['나쁨','mid'];
+  if(pm25>=16) return ['보통','']; return ['좋음','good'];
 }
+function renderToday(){
+  if(!wx) return;
+  $('content').style.display='block'; $('errBox').style.display='none';
+  $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()}${wx.demo?' · 데모':''} · v${APP.version}`;
 
-function buildBrief(c,fired,gLabel){
-  const d=new Date();
-  const lines=[];
-  lines.push(`[${fmtDate(d)} TBM 안전 브리핑 · 광양 2고로 개수 현장]`);
-  lines.push(`오늘 최고기온 ${c.maxTmp.toFixed(0)}도, 최고 체감온도 ${c.maxAT.toFixed(1)}도, 최대풍속 ${c.maxWind.toFixed(0)}m/s, 강수확률 ${c.maxPop}%, 미세먼지 PM2.5 ${c.pm25||'-'}(${c.station}). 종합 등급은 「${gLabel}」입니다.`);
-  const seen=new Set();
-  for(const r of fired){
-    const s=r.brief(c);
-    if(s&&!seen.has(s)){lines.push('· '+s);seen.add(s);}
+  const agg=aggregate();
+  const wxFired=firedWxRules(wx);
+  const [gLabel,gCls]=overallGrade(wxFired,agg);
+
+  // 종합 신호판
+  $('mon').className='mon g-'+gCls;
+  $('monGrade').textContent=gLabel;
+  const conLine = agg.cons.length? agg.cons.join('·') : '작업 미입력';
+  const riskLine = agg.risks.length? ' · 위험작업 '+agg.risks.map(r=>RISK_TYPES[r].short).join('/') : '';
+  $('monSummary').textContent = `${conLine}${riskLine}`;
+
+  // 인력 집계
+  $('mpHead').textContent=agg.totalHead||'0';
+  $('mpSites').textContent=agg.sites||'0';
+  $('mpVuln').textContent=agg.vulnTotal||'0';
+  $('mpVulnBox').className='mp'+(agg.vulnTotal>0?' warn':'');
+
+  // 취약작업자 분해
+  const vb=$('vulnBreak'); vb.innerHTML='';
+  if(agg.sites===0){ vb.innerHTML=`<span class="vchip zero">작업입력 탭에서 오늘 작업을 붙여넣으세요</span>`; }
+  else{
+    VULN_LABELS.forEach((k,i)=>{
+      const n=agg.vulnSum[k]||0;
+      vb.innerHTML+=`<span class="vchip${n?'':' zero'}">${VULN_SHORT[i]} ${n}</span>`;
+    });
   }
-  lines.push('· 시원한 물과 휴게장소는 지정 위치에 준비되어 있습니다. 이상 증상 시 즉시 작업을 멈추고 보고해 주십시오.');
-  return lines.join('\n');
-}
 
-function render(){
-  if(!ctx)return;
-  $('setupNotice').style.display='none';
-  $('content').style.display='block';
-  $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()}${ctx.demo?' · 데모':''} · v${APP.version} ${APP.channel}`;
+  // 날씨 4칸
+  setMw('mwTmp',wx.maxTmp.toFixed(0),wx.maxTmp>=33?'bad':wx.maxTmp>=30?'mid':'');
+  setMw('mwWind',wx.maxWind.toFixed(1),wx.maxWind>=10?'bad':wx.maxWind>=7?'mid':'');
+  setMw('mwRain',wx.maxPop,wx.maxPop>=60?'mid':'');
+  const [pl,pc]=pmLabel(wx.pm25);
+  setMw('mwPm',pl,pc); // 초미세먼지는 라벨로
 
-  const fired=firedRules(ctx);
-  const [gLabel,gCls,gNote]=grade(ctx,fired);
-  const hero=$('hero');
-  hero.className='hero g-'+gCls;
-  $('gradeTxt').textContent=gLabel;
-  $('atMax').textContent=ctx.maxAT.toFixed(1);
-  $('heroNote').textContent=gNote;
-
-  setHg('hgTmp',ctx.maxTmp.toFixed(0),ctx.maxTmp>=33?'bad':ctx.maxTmp>=30?'mid':'');
-  setHg('hgWind',ctx.maxWind.toFixed(1),ctx.maxWind>=10?'bad':ctx.maxWind>=7?'mid':'');
-  setHg('hgRain',ctx.maxPop,ctx.maxPop>=60?'mid':'');
-  setHg('hgPm',ctx.pm25||'-',ctx.pm25>=75?'bad':ctx.pm25>=36?'mid':'');
-
-  // hourly strip
-  const strip=$('strip');strip.innerHTML='';
-  const peakAt=ctx.maxAT;
-  for(const h of ctx.hours){
-    const el=document.createElement('div');
-    el.className='hr-card'+(h.at===peakAt&&h.at>=31?' peak':'');
-    el.innerHTML=`<div class="t">${parseInt(h.time.slice(0,2))}시</div>
-      <div class="at">${h.at.toFixed(1)}</div>
-      <div class="tt">${h.tmp.toFixed(0)}℃ · ${h.reh.toFixed(0)}%</div>
-      <div class="w">풍 ${h.wsd.toFixed(0)}${h.pcp?` · 비${h.pcp}`:''}</div>`;
+  // 시간대별 스트립 (축소)
+  const strip=$('strip'); strip.innerHTML='';
+  for(const h of wx.hours){
+    const peak=(h.at===wx.maxAT&&h.at>=31);
+    const el=document.createElement('div'); el.className='hr-card'+(peak?' peak':'');
+    el.innerHTML=`<div class="t">${parseInt(h.time.slice(0,2))}시</div><div class="at">${h.at.toFixed(0)}</div><div class="tt">${h.tmp.toFixed(0)}°</div>`;
     strip.appendChild(el);
   }
 
-  // chips
-  const chips=$('chips');chips.innerHTML='';
-  for(const w of WORK_DEFS){
-    const b=document.createElement('button');
-    b.className='chip'+(workTypes.includes(w.id)?' on':'');
-    b.textContent=w.label;
-    b.onclick=()=>{workTypes=workTypes.includes(w.id)?workTypes.filter(x=>x!==w.id):[...workTypes,w.id];saveJSON(LS_WORK,workTypes);render();};
-    chips.appendChild(b);
-  }
-
-  // rules
-  const rl=$('rules');rl.innerHTML='';
-  if(!fired.length){
-    rl.innerHTML=`<div class="card allclear"><b>해당 기준 없음</b>선택한 공종에 적용되는 중지·조치 기준이 없습니다.</div>`;
-  }else{
-    for(const r of fired){
-      const el=document.createElement('div');
-      el.className='rule sev-'+r.sev;
-      el.innerHTML=`<div class="rule-top">
-          <span class="badge ${r.badge}">${r.badge==='duty'?'법적 의무':'지침·권고'}</span>
-          <span class="rule-t">${typeof r.title==='function'?r.title(ctx):r.title}</span></div>
-        <div class="rule-basis">${r.basis}</div>
-        <ul class="rule-acts">${r.acts.map(a=>`<li>${a}</li>`).join('')}</ul>`;
-      rl.appendChild(el);
-    }
-  }
-
-  // brief
-  $('briefTxt').textContent=buildBrief(ctx,fired,gLabel);
-  $('stamp').textContent=`데이터 기준: ${ctx.fetchedAt.toLocaleString('ko-KR')} · 측정소 ${ctx.station} · 기상청 단기예보${ctx.demo?' (데모 데이터)':''}`;
-  renderRecords();
+  renderTaskList();
+  renderWxRules(wxFired);
+  $('briefTxt').textContent=buildBrief(wx,wxFired,agg,gLabel);
+  $('stamp').textContent=`날씨 기준: ${wx.fetchedAt.toLocaleString('ko-KR')} · 측정소 ${wx.station} · 초미세먼지 PM2.5 ${wx.pm25||'-'}㎍/㎥`;
 }
-function setHg(id,v,cls){const e=$(id);e.className='hg '+cls;e.querySelector('.v').textContent=v;}
+function setMw(id,v,cls){const e=$(id);e.className='mw '+cls;e.querySelector('.v').textContent=v;}
+
+/* 작업 목록 (누르면 유해위험) */
+function renderTaskList(){
+  const list=$('taskList'); const tasks=allTasks();
+  if(!tasks.length){
+    list.innerHTML=`<div class="empty"><b>입력된 작업이 없습니다</b>하단 '작업입력' 탭에서 시공사별로 엑셀 작업 행을 붙여넣으면 여기에 표시됩니다.</div>`;
+    $('taskCountLabel').textContent='작업 미입력';
+    return;
+  }
+  $('taskCountLabel').textContent=`${tasks.length}개 작업 · 눌러서 유해위험 확인`;
+  list.innerHTML='';
+  tasks.forEach((t,i)=>{
+    const risksTags=(t.risks||[]).map(r=>`<span class="rtag">${RISK_TYPES[r].short}</span>`).join('');
+    const el=document.createElement('div');
+    el.className='taskrow'+(i===openTaskIdx?' open':'');
+    el.innerHTML=`
+      <div class="taskrow-head">
+        <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
+        <div class="tr-main">
+          <div class="tr-task">${esc(t.task||'(작업내용 없음)')}</div>
+          <div class="tr-meta">${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager)}`:''}</div>
+        </div>
+        <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
+        <span class="tr-caret">▶</span>
+      </div>
+      <div class="taskrow-detail">${renderHazard(t)}</div>`;
+    el.querySelector('.taskrow-head').onclick=()=>{ openTaskIdx=(openTaskIdx===i?-1:i); renderTaskList(); };
+    list.appendChild(el);
+  });
+}
+function shortCon(name){
+  if(/이앤씨|E&C/i.test(name)) return 'E&C';
+  if(/플랜텍/i.test(name)) return '플랜텍';
+  if(/DX|디엑스/i.test(name)) return 'DX';
+  return (name||'기타').slice(0,3);
+}
+function renderHazard(t){
+  if(!t.risks||!t.risks.length){
+    let s=`<div class="hz-block"><div class="hz-label">유해·위험요인</div><div class="tr-meta">지정된 안전Risk유형이 없습니다.</div></div>`;
+    if(t.safety) s+=`<div class="hz-safety"><b>현장 안전조치</b> ${esc(t.safety)}</div>`;
+    return s;
+  }
+  let s='';
+  t.risks.forEach(r=>{
+    const R=RISK_TYPES[r];
+    s+=`<div class="hz-block">
+      <div class="hz-label">${esc(r)}</div>
+      <div class="hz-hazard">⚠ ${esc(R.hazard)}</div>
+      <div class="hz-basis">${esc(R.basis)}</div>
+      <ul class="hz-acts">${R.acts.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>
+    </div>`;
+  });
+  if(t.safety) s+=`<div class="hz-safety"><b>현장 안전조치</b> ${esc(t.safety)}</div>`;
+  return s;
+}
+
+/* 날씨 조치사항 (연관 표기) */
+function renderWxRules(fired){
+  const box=$('wxRules');
+  if(!fired.length){ box.innerHTML=`<div class="card allclear"><b>해당 기준 없음</b>오늘 옥외작업 제한 기상 기준에 해당하는 항목이 없습니다.</div>`; return; }
+  box.innerHTML='';
+  for(const r of fired){
+    const scope = r.id.startsWith('wind')?'크레인·양중 작업':r.id.startsWith('heat')?'옥외작업 전반':r.id.startsWith('pm')?'옥외작업 전반':r.id==='rain'?'고소·철골·굴착':'옥외작업 전반';
+    const el=document.createElement('div');
+    el.className='rule sev-'+r.sev;
+    el.innerHTML=`<div class="rule-top">
+        <span class="badge ${r.badge}">${r.badge==='duty'?'법적 의무':'지침·권고'}</span>
+        <span class="rule-t">${typeof r.title==='function'?r.title(wx):r.title}</span></div>
+      <div class="rule-link">연관 <b>${scope}</b></div>
+      <div class="rule-basis">${r.basis}</div>
+      <ul class="rule-acts">${r.acts.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`;
+    box.appendChild(el);
+  }
+}
+
+/* ================= TBM 브리핑 스크립트 ================= */
+function buildBrief(c,wxFired,agg,gLabel){
+  const d=new Date(); const L=[];
+  L.push(`[${fmtDate(d)} 광양 2고로 개수 현장 안전 브리핑]`);
+  // 1) 최고/체감온도
+  L.push(`오늘 최고기온 ${c.maxTmp.toFixed(0)}도, 최고 체감온도 ${c.maxAT.toFixed(1)}도입니다.`);
+  // 2) 체감온도 유의 (폭염 룰 중 대표 1개)
+  const heat=wxFired.find(r=>r.id.startsWith('heat')&&r.id!=='heatRec');
+  if(heat) L.push('· '+heat.brief(c));
+  L.push('· 어지러움·메스꺼움·두통 등 온열질환 증상이 나타나면 즉시 작업을 멈추고 관리자에게 알려 주십시오.');
+  // 3) 풍속이 법정 기준 초과 시
+  const wind=wxFired.find(r=>r.id.startsWith('wind'));
+  if(wind) L.push('· '+wind.brief(c));
+  // 4) 기타 날씨(강수·미세먼지·한파)
+  wxFired.filter(r=>r.id==='rain'||r.id.startsWith('pm')||r.id==='cold').forEach(r=>L.push('· '+r.brief(c)));
+  // 5) 오늘 위험작업 요약
+  if(agg.risks.length){
+    L.push(`· 오늘은 ${agg.risks.map(r=>r).join(', ')} 작업이 있습니다. 해당 작업조는 유해위험요인과 안전조치를 반드시 확인하십시오.`);
+  }
+  // 6) 현장위치별 유의사항 (메모 입력 유도 placeholder)
+  L.push('· [현장위치별 유의사항: 작업 위치에 따라 추가 안전내용을 여기서 안내하십시오.]');
+  // 7) 조업중 설비 인근 안전 당부 (마무리)
+  L.push('· 고로 조업 중 가동설비 인근에서 작업하는 경우 조업부서의 안내를 받고, 관련 위험과 안전수칙을 충분히 숙지한 뒤 안전하게 작업합시다.');
+  return L.join('\n');
+}
+
+/* ================= 작업입력 탭 ================= */
+function renderInputTab(){
+  const st=$('subtabs'); st.innerHTML='';
+  contractors.forEach(con=>{
+    const cnt=(inputData[con]||[]).length;
+    const b=document.createElement('button');
+    b.className='subtab'+(con===activeCon?' on':'');
+    b.innerHTML=`${esc(con)}${cnt?`<span class="cnt">${cnt}</span>`:''}`;
+    b.onclick=()=>{ activeCon=con; renderInputTab(); };
+    st.appendChild(b);
+  });
+  const add=document.createElement('button');
+  add.className='subtab-add'; add.textContent='+ 시공사';
+  add.onclick=()=>openModal('conModal');
+  st.appendChild(add);
+  // 현재 시공사의 저장된 원본 표시
+  const rows=inputData[activeCon]||[];
+  $('pasteArea').value = rows.map(rowToLine).join('\n');
+  updatePreview();
+}
+function rowToLine(r){
+  return [r.project,r.contractor,r.subcon,r.headcount,r.vulnerable,r.task,r.risk,r.manager,r.safety].join('\t');
+}
+function updatePreview(){
+  const rows=parsePaste($('pasteArea').value);
+  const pc=$('parsedCount'), pv=$('parsedPreview');
+  if(!$('pasteArea').value.trim()){ pc.textContent=''; pv.innerHTML=''; return; }
+  if(!rows.length){ pc.className='parsed-count err'; pc.textContent='인식된 작업이 없습니다. 엑셀에서 행(탭 구분)을 복사했는지 확인하세요.'; pv.innerHTML=''; return; }
+  pc.className='parsed-count'; pc.textContent=`${rows.length}개 작업 인식됨`;
+  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${esc(r.subcon||'-')} · ${esc(r.task||'(내용없음)')} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x].short).join('/')||'분류없음'}</span></div>`).join('');
+}
+function saveInput(){
+  const rows=parsePaste($('pasteArea').value);
+  // 붙여넣은 행의 시공사명이 있으면 그걸로, 없으면 activeCon으로 채움
+  rows.forEach(r=>{ if(!r.contractor) r.contractor=activeCon; });
+  inputData[activeCon]=rows;
+  saveJSON(LS_INPUT,inputData);
+  toast(`${activeCon}: ${rows.length}개 작업 저장`);
+  renderInputTab();
+  if(wx) renderToday();
+}
+function clearInput(){
+  inputData[activeCon]=[]; saveJSON(LS_INPUT,inputData);
+  $('pasteArea').value=''; updatePreview(); toast(`${activeCon} 작업 지움`);
+  if(wx) renderToday();
+}
+function addContractor(){
+  const name=$('inConName').value.trim();
+  if(!name){ toast('시공사명을 입력하세요'); return; }
+  if(contractors.includes(name)){ toast('이미 있는 시공사입니다'); activeCon=name; }
+  else{ contractors.push(name); saveJSON(LS_CONS,contractors); activeCon=name; }
+  $('inConName').value=''; closeModal('conModal'); renderInputTab();
+}
 
 /* ================= 기록 ================= */
-function renderRecords(){
-  const list=loadJSON(LS_REC,[]);
-  const box=$('recList');
-  if(!list.length){box.innerHTML=`<div class="allclear"><b>기록 없음</b>「브리핑 실시 기록」 버튼으로 오늘의 측정값과 브리핑 이력을 저장하세요.</div>`;return;}
-  box.innerHTML=list.slice().reverse().map(r=>`
-    <div class="rec">
-      <div><div class="d">${r.date}</div><div class="m">${r.time} 기록 · 체감 ${r.maxAT}℃ · 풍속 ${r.maxWind}m/s · PM2.5 ${r.pm25} · ${r.works}</div></div>
-      <div class="g ${r.gradeCls}">${r.grade}</div>
-    </div>`).join('');
-}
 function saveRecord(){
-  if(!ctx){toast('먼저 데이터를 불러오세요');return;}
-  const fired=firedRules(ctx);
-  const [gLabel,gCls]=grade(ctx,fired);
+  if(!wx){ toast('먼저 날씨를 불러오세요'); return; }
+  const agg=aggregate();
+  const wxFired=firedWxRules(wx);
+  const [gLabel,gCls]=overallGrade(wxFired,agg);
   const now=new Date();
+  const rec={
+    date:todayStr(now), dateLabel:fmtDate(now), year:now.getFullYear(),
+    tbmTime:$('tbmTime').value||'', note:$('tbmNote').value.trim(),
+    grade:gLabel, gradeCls:gCls,
+    maxTmp:wx.maxTmp.toFixed(0), maxAT:wx.maxAT.toFixed(1), maxWind:wx.maxWind.toFixed(1), pm25:wx.pm25||'-',
+    totalHead:agg.totalHead, sites:agg.sites, vulnTotal:agg.vulnTotal,
+    cons:agg.cons.join('·'), risks:agg.risks.join('/'),
+    tasks:allTasks().map(t=>`${shortCon(t.contractor)}:${t.task}`).join(' / '),
+  };
   const list=loadJSON(LS_REC,[]);
-  list.push({date:fmtDate(now)+' '+now.getFullYear(),time:`${pad(now.getHours())}:${pad(now.getMinutes())}`,
-    maxAT:ctx.maxAT.toFixed(1),maxWind:ctx.maxWind.toFixed(1),pm25:ctx.pm25||'-',
-    grade:gLabel,gradeCls:gCls,
-    works:WORK_DEFS.filter(w=>workTypes.includes(w.id)).map(w=>w.label).join('/')||'미선택',
-    rules:fired.map(r=>typeof r.title==='function'?r.title(ctx):r.title)});
+  const existIdx=list.findIndex(r=>r.date===rec.date);
+  if(existIdx>=0){ list[existIdx]=rec; toast('오늘 기록을 갱신했습니다'); }
+  else{ list.push(rec); toast('오늘 TBM 기록을 저장했습니다'); }
   saveJSON(LS_REC,list);
-  const b=$('btnRecord');b.classList.add('done');b.textContent='기록 완료 ✓';
-  setTimeout(()=>{b.classList.remove('done');b.textContent='브리핑 실시 기록';},2500);
-  toast('오늘 브리핑이 기록되었습니다');
+  const b=$('btnRecord'); b.classList.add('done'); b.textContent='기록 완료 ✓';
+  setTimeout(()=>{b.classList.remove('done');b.textContent='오늘 TBM 기록 저장';},2200);
   renderRecords();
 }
-function exportRecords(){
-  const list=loadJSON(LS_REC,[]);
-  if(!list.length){toast('내보낼 기록이 없습니다');return;}
-  const rows=[['날짜','시각','종합등급','최고체감온도','최대풍속','PM2.5','선택공종','적용기준'].join(',')];
-  for(const r of list)rows.push([r.date,r.time,r.grade,r.maxAT,r.maxWind,r.pm25,`"${r.works}"`,`"${(r.rules||[]).join(' / ')}"`].join(','));
-  const blob=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='TBM기록.csv';a.click();
+function renderRecords(){
+  const list=loadJSON(LS_REC,[]).slice().reverse();
+  const box=$('recList');
+  if(!list.length){ box.innerHTML=`<div class="empty"><b>기록 없음</b>'오늘' 화면에서 TBM 시간·특이사항을 입력하고 저장하면 일자별로 여기에 쌓입니다.</div>`; return; }
+  box.innerHTML=list.map((r,i)=>`
+    <div class="rec">
+      <div class="rec-top">
+        <div class="rec-date">${esc(r.dateLabel)} <span class="wd">${r.year}${r.tbmTime?` · TBM ${r.tbmTime}`:''}</span></div>
+        <div class="rec-grade ${r.gradeCls}">${esc(r.grade)}</div>
+      </div>
+      <div class="rec-line">기온 <b>${r.maxTmp}°</b> · 체감 <b>${r.maxAT}°</b> · 풍속 <b>${r.maxWind}㎧</b> · 초미세 <b>${r.pm25}</b> · 인원 <b>${r.totalHead}</b>(취약 ${r.vulnTotal}) · ${r.sites}개소</div>
+      ${r.risks?`<div class="rec-line">위험작업 <b>${esc(r.risks)}</b></div>`:''}
+      ${r.tasks?`<div class="rec-line">${esc(r.tasks)}</div>`:''}
+      ${r.note?`<div class="rec-memo">${esc(r.note)}</div>`:''}
+      <button class="rec-del" onclick="delRecord('${r.date}')">삭제</button>
+    </div>`).join('');
+}
+function delRecord(date){
+  if(!confirm('이 기록을 삭제할까요?'))return;
+  let list=loadJSON(LS_REC,[]).filter(r=>r.date!==date);
+  saveJSON(LS_REC,list); renderRecords(); toast('삭제했습니다');
+}
+
+/* ================= 내보내기 ================= */
+function recordsForExport(){
+  return loadJSON(LS_REC,[]).map(r=>({
+    날짜:r.dateLabel, 연도:r.year, TBM시작:r.tbmTime||'', 종합:r.grade,
+    최고기온:r.maxTmp, 체감온도:r.maxAT, 최대풍속:r.maxWind, 초미세먼지:r.pm25,
+    출력인원:r.totalHead, 취약작업자:r.vulnTotal, 작업개소:r.sites,
+    시공사:r.cons, 위험작업:r.risks, 작업내용:r.tasks, 특이사항:r.note||'',
+  }));
+}
+function exportXlsx(){
+  const rows=recordsForExport();
+  if(!rows.length){ toast('내보낼 기록이 없습니다'); return; }
+  const cols=Object.keys(rows[0]);
+  const csv=[cols.join(',')].concat(rows.map(r=>cols.map(c=>`"${String(r[c]).replace(/"/g,'""')}"`).join(','))).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`TBM기록_${todayStr()}.csv`; a.click();
+  toast('엑셀(CSV)로 저장했습니다');
+}
+function exportPdf(){
+  const rows=loadJSON(LS_REC,[]).slice().reverse();
+  if(!rows.length){ toast('내보낼 기록이 없습니다'); return; }
+  const w=window.open('','_blank');
+  if(!w){ toast('팝업이 차단되었습니다. 허용 후 다시 시도하세요.'); return; }
+  const style=`<style>
+    body{font-family:'Pretendard Variable',sans-serif;padding:24px;color:#1a1e23;font-size:12px}
+    h1{font-size:17px;margin-bottom:2px} .sub{color:#6b7480;font-size:11px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse} th,td{border:1px solid #d8dcdf;padding:6px 7px;text-align:left;vertical-align:top}
+    th{background:#f2f3f1;font-size:10px} td{font-size:10.5px} .g-stop{color:#c92a2a;font-weight:700} .g-warn{color:#e07b00;font-weight:700} .g-good{color:#2b8a3e;font-weight:700}
+    @media print{ button{display:none} }
+  </style>`;
+  const rowsHtml=rows.map(r=>`<tr>
+    <td>${r.dateLabel}<br><span style="color:#6b7480">${r.year}</span></td>
+    <td>${r.tbmTime||'-'}</td>
+    <td class="g-${r.gradeCls}">${r.grade}</td>
+    <td>${r.maxTmp}° / 체감${r.maxAT}°<br>풍속${r.maxWind}㎧ · 초미세${r.pm25}</td>
+    <td>${r.totalHead}명<br>취약${r.vulnTotal} · ${r.sites}개소</td>
+    <td>${r.risks||'-'}</td>
+    <td>${(r.tasks||'').replace(/</g,'&lt;')}</td>
+    <td>${(r.note||'').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</td>
+  </tr>`).join('');
+  w.document.write(`<html><head><meta charset="utf-8"><title>TBM 기록</title>${style}</head><body>
+    <h1>TBM 브리핑 기록 · 광양 2고로 개수 현장</h1>
+    <div class="sub">출력일: ${new Date().toLocaleString('ko-KR')} · 총 ${rows.length}건</div>
+    <button onclick="window.print()" style="margin-bottom:12px;padding:8px 14px">인쇄 / PDF 저장</button>
+    <table><thead><tr><th>날짜</th><th>TBM</th><th>종합</th><th>날씨</th><th>인력</th><th>위험작업</th><th>작업내용</th><th>특이사항</th></tr></thead>
+    <tbody>${rowsHtml}</tbody></table>
+    <p style="color:#6b7480;margin-top:14px;font-size:10px">※ 인쇄 창에서 '대상'을 'PDF로 저장'으로 선택하면 PDF 파일로 저장됩니다.</p>
+    </body></html>`);
+  w.document.close();
+  toast('PDF용 인쇄 창을 열었습니다');
+}
+
+/* ================= 기준 탭 ================= */
+function renderInfo(){
+  let risk=Object.entries(RISK_TYPES).map(([k,v])=>`<p style="margin-top:8px"><b>${esc(k)}</b> — ${esc(v.hazard)}<br><span style="color:var(--steel);font-size:.92em">${esc(v.basis)}</span></p>`).join('');
+  $('infoCard').innerHTML=`
+    <p><b>기상 기반 조치</b> (옥외작업 전반)</p>
+    <p style="margin-top:4px">· 폭염: 체감 31℃↑ 폭염작업 / 33℃↑ 매2시간 20분 휴식 의무 / 38℃↑ 매시간 15분·14~17시 중지 (2025.7.17 시행)<br>
+    · 강풍: 순간풍속 10㎧↑ 크레인 설치·해체 중지, 15㎧↑ 운전 중지 (제37조)<br>
+    · 강수: 철골·고소 조정, 굴착면·비계 점검 · 미세먼지: 주의보 마스크, 경보 중작업 단축 · 한파: 체감 -12℃↓ 보온조치</p>
+    <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+    <p><b>작업 기반 조치</b> (안전Risk유형 6종)</p>
+    ${risk}
+    <p style="margin-top:12px;font-size:.9em;color:var(--steel)">※ 본 앱은 TBM 참고용 보조 도구입니다. 실제 적용은 최신 법령 원문과 사내 안전보건 절차를 우선합니다. 예보 풍속은 평균풍속이며 순간풍속(돌풍)은 약 1.5배로 추정합니다.</p>`;
+}
+
+/* ================= 설정 ================= */
+function openModal(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+function openSettings(){
+  $('inNx').value=S.nx;$('inNy').value=S.ny;$('inSido').value=S.sido;$('inStations').value=S.stations;
+  $('buildInfo').innerHTML=`버전 v${APP.version} · 채널 ${APP.channel} · 데이터소스 <b>${APP.dataSource}</b><br>프록시: ${APP.proxyBase}`;
+  openModal('modalBg');
+}
+function saveSettings(){
+  S={nx:$('inNx').value.trim()||'74',ny:$('inNy').value.trim()||'69',sido:$('inSido').value.trim()||'전남',stations:$('inStations').value.trim()};
+  saveJSON(LS_SET,S); closeModal('modalBg'); loadAll();
 }
 
 /* ================= 로드 흐름 ================= */
 async function loadAll(){
-  // direct 모드에서만 폰에 키가 필요. proxy/internal은 키 없이 바로 로드.
-  if(APP.dataSource==='direct' && !S.key){
-    $('setupNotice').style.display='block';$('content').style.display='none';return;
-  }
-  $('setupNotice').style.display='none';$('errBox').style.display='none';
-  $('loading').style.display='block';$('content').style.display='none';
+  $('errBox').style.display='none'; $('loading').style.display='block'; $('content').style.display='none';
   try{
     const [fc,air]=await Promise.all([fetchForecast(),fetchAir().catch(e=>({pm10Value:'0',pm25Value:'0',stationName:'조회실패'}))]);
-    ctx=buildCtx(fc,air);
-    render();
+    wx=buildWx(fc,air); renderToday();
   }catch(e){
-    const directHelp=`· 서비스키가 정확한지(Decoding 키), 두 API 모두 활용신청 승인됐는지 확인<br>
-      · 브라우저 콘솔에 CORS 오류가 보이면 설정에서 프록시 주소를 입력<br>`;
-    const proxyHelp=`· 프록시(${APP.dataSource}) 주소가 정상 동작하는지, 프록시 측 서비스키가 유효한지 확인<br>
-      · 프록시 기본 주소: ${APP.proxyBase||'(미설정)'}<br>`;
     $('errBox').style.display='block';
-    $('errBox').innerHTML=`<b>데이터를 불러오지 못했습니다.</b><br>${e.message}<br><br>
-      ${APP.dataSource==='direct'?directHelp:proxyHelp}
-      · <u onclick="loadDemo()" style="font-weight:700">데모 데이터로 UI 확인하기</u>`;
-  }finally{$('loading').style.display='none';}
+    $('errBox').innerHTML=`<b>날씨 데이터를 불러오지 못했습니다.</b><br>${esc(e.message)}<br><br>
+      · 프록시(${APP.dataSource}) 상태 및 서비스키 유효성 확인<br>
+      · <u onclick="loadDemo()" style="font-weight:700">데모 데이터로 화면 확인</u>`;
+  }finally{ $('loading').style.display='none'; }
 }
-
 function loadDemo(){
   const today=todayStr();
-  const mk=(t,TMP,REH,WSD,POP,PCP)=>[
-    {fcstDate:today,fcstTime:t,category:'TMP',fcstValue:String(TMP)},
-    {fcstDate:today,fcstTime:t,category:'REH',fcstValue:String(REH)},
-    {fcstDate:today,fcstTime:t,category:'WSD',fcstValue:String(WSD)},
-    {fcstDate:today,fcstTime:t,category:'POP',fcstValue:String(POP)},
-    {fcstDate:today,fcstTime:t,category:'PCP',fcstValue:PCP},
-  ];
-  const items=[
-    ...mk('0800',28,80,3,10,'강수없음'),...mk('1000',31,72,4,10,'강수없음'),
-    ...mk('1200',33,66,5,10,'강수없음'),...mk('1400',35,60,6,20,'강수없음'),
-    ...mk('1600',34,62,7,30,'강수없음'),...mk('1800',31,70,5,30,'강수없음'),
-  ];
-  ctx=buildCtx(items,{pm10Value:'88',pm25Value:'41',stationName:'중동(데모)'},true);
-  render();
-  $('errBox').style.display='none';$('loading').style.display='none';
-  toast('데모 데이터를 표시합니다');
+  const mk=(t,TMP,REH,WSD,POP,PCP)=>['TMP','REH','WSD','POP','PCP'].map((cat,idx)=>({fcstDate:today,fcstTime:t,category:cat,fcstValue:[TMP,REH,WSD,POP,PCP][idx]+''}));
+  const items=[].concat(mk('0800',28,80,3,10,'강수없음'),mk('1000',31,72,4,10,'강수없음'),mk('1200',33,66,5,10,'강수없음'),mk('1400',35,60,6,20,'강수없음'),mk('1600',34,62,7,30,'강수없음'),mk('1800',31,70,5,30,'강수없음'));
+  // 데모 작업도 없으면 하나 넣어 미리보기
+  if(allTasks().length===0){
+    inputData['포스코이앤씨']=[parseRow('2고로개수\t포스코이앤씨\t대한기공\t12\t1/2/1/2\t노체 철피 용접\t고소작업, 화재/폭발\t김현장\t안전대·화재감시인 배치')];
+    saveJSON(LS_INPUT,inputData);
+  }
+  wx=buildWx(items,{pm10Value:'88',pm25Value:'41',stationName:'중동(데모)'}); wx.demo=true;
+  renderToday(); $('errBox').style.display='none'; toast('데모 데이터를 표시합니다');
 }
 
-/* ================= 설정/네비 ================= */
-function openSettings(){
-  $('inKey').value=S.key;$('inNx').value=S.nx;$('inNy').value=S.ny;
-  $('inSido').value=S.sido;$('inStations').value=S.stations;$('inProxy').value=S.proxy;
-  // 데이터 소스 모드에 따라 direct 전용 입력 표시/숨김
-  const isDirect=APP.dataSource==='direct';
-  $('directOnly').style.display=isDirect?'block':'none';
-  $('directProxy').style.display=isDirect?'block':'none';
-  $('setDesc').textContent=isDirect
-    ? '서비스키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다(API 호출 시 공공데이터포털로만 전달).'
-    : `데이터는 ${APP.dataSource==='internal'?'사내':'전용'} 프록시를 통해 조회되며, 서비스키는 이 앱에 저장되지 않습니다. 아래는 조회 지점·측정소 설정입니다.`;
-  $('buildInfo').innerHTML=`버전 v${APP.version} · 채널 ${APP.channel} · 데이터소스 <b>${APP.dataSource}</b>`
-    +(isDirect?'':`<br>프록시: ${APP.proxyBase||'(미설정)'}`);
-  $('modalBg').classList.add('show');
-}
-function closeSettings(){$('modalBg').classList.remove('show')}
-function saveSettings(){
-  S={key:$('inKey').value.trim(),nx:$('inNx').value.trim()||'74',ny:$('inNy').value.trim()||'69',
-     sido:$('inSido').value.trim()||'전남',stations:$('inStations').value.trim(),proxy:$('inProxy').value.trim()};
-  saveJSON(LS_SET,S);closeSettings();loadAll();
-}
-
+/* ================= 네비/이벤트 ================= */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===b.dataset.pg));
+  if(b.dataset.pg==='pgInput') renderInputTab();
+  if(b.dataset.pg==='pgRecords') renderRecords();
+  if(b.dataset.pg==='pgInfo') renderInfo();
 });
 $('btnSettings').onclick=openSettings;
 $('btnRefresh').onclick=loadAll;
 $('btnRecord').onclick=saveRecord;
-$('btnExport').onclick=exportRecords;
-$('btnCopy').onclick=async()=>{
-  try{await navigator.clipboard.writeText($('briefTxt').textContent);toast('스크립트가 복사되었습니다');}
-  catch(e){toast('복사 실패 — 길게 눌러 직접 복사하세요');}
-};
-$('modalBg').onclick=e=>{if(e.target===$('modalBg'))closeSettings()};
+$('btnCopy').onclick=async()=>{ try{await navigator.clipboard.writeText($('briefTxt').textContent);toast('스크립트가 복사되었습니다');}catch(e){toast('복사 실패 — 길게 눌러 직접 복사하세요');} };
+$('btnSaveInput').onclick=saveInput;
+$('btnClearInput').onclick=clearInput;
+$('btnExportPdf').onclick=exportPdf;
+$('btnExportXlsx').onclick=exportXlsx;
+$('pasteArea').addEventListener('input',updatePreview);
+document.querySelectorAll('.modal-bg').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('show');});
 
-// 초기 헤더 표시 (데이터 로드 전에도 버전·채널·현장 보이도록)
 $('hSub').textContent=`광양 2고로 개수 현장 · v${APP.version} ${APP.channel}`;
-
 loadAll();
 </script>
+
+
 </body>
 </html>
