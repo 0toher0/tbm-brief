@@ -34,6 +34,17 @@ button{cursor:pointer}
 /* 날짜 선택 칩 */
 .date-chips{display:flex;gap:6px;overflow-x:auto;padding:0 2px 12px;scrollbar-width:none}
 .date-chips::-webkit-scrollbar{display:none}
+/* 공용/개인 작업 구분 */
+.src-badge{font-size:.58rem;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px;vertical-align:middle}
+.src-badge.my{background:#e7f0ff;color:#1864ab}
+.task-actions{margin-top:10px;display:flex;gap:8px;justify-content:flex-end}
+.mini-btn{font-size:.7rem;font-weight:700;color:var(--steel);background:#f0f1f2;border:none;border-radius:7px;padding:6px 12px}
+.mini-btn:active{background:#e0e2e4}
+.mp-detail{font-size:.8rem;color:var(--ink2)}
+.mp-detail b{color:var(--ink)}
+.hz-safety-check{margin-top:10px;background:var(--green-bg);border-radius:8px;padding:9px 11px}
+.chk-row{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:.8rem;color:var(--ink2);cursor:pointer}
+.chk-row input{margin-top:3px;flex:none;width:16px;height:16px;accent-color:var(--green)}
 .dchip{flex:none;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.8rem;font-weight:700;color:var(--ink2);white-space:nowrap}
 .dchip.on{border-color:var(--ink);background:var(--ink);color:#fff}
 .dchip .dc-cnt{font-size:.66rem;opacity:.65;margin-left:4px}
@@ -310,18 +321,30 @@ textarea.f-input{resize:vertical;min-height:56px}
       <div class="parsed-preview" id="parsedPreview"></div>
       <div class="btn-row">
         <button class="btn ghost" id="btnClearInput">붙여넣기 지우기</button>
-        <button class="btn primary" id="btnSaveInput">인식 결과 저장</button>
+        <button class="btn primary" id="btnSaveInput">내 화면에 추가</button>
+      </div>
+      <!-- 관리자 전체 공유 -->
+      <div id="adminShareBox" style="margin-top:10px;padding-top:12px;border-top:1px dashed var(--line)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:.8rem;font-weight:800;color:var(--accent)">⬆ 전체 공유 (관리자)</span>
+          <span id="adminStatus" style="font-size:.7rem;color:var(--steel)"></span>
+        </div>
+        <div class="paste-hint" style="margin-bottom:8px">인식된 작업을 <b>모든 사용자에게</b> 기본으로 뿌립니다. 날짜별로 저장되어 각 날짜에 해당 작업이 표시됩니다.</div>
+        <div class="btn-row">
+          <input class="f-input" id="adminPassInput" type="password" placeholder="관리자 암호" style="flex:1">
+          <button class="btn done" id="btnPushShared" style="flex:1">전체 공유 업로드</button>
+        </div>
       </div>
     </div>
   </section>
   <section>
-    <div class="sec-h"><div class="sec-t">저장된 작업 <small>시공사별</small></div></div>
+    <div class="sec-h"><div class="sec-t">저장된 작업 <small>공용 + 내 추가</small></div></div>
     <div class="subtabs" id="subtabs"></div>
     <div class="parsed-preview" id="savedList" style="margin-top:8px"></div>
     <div class="btn-row" style="margin-top:10px">
-      <button class="btn ghost" id="btnClearAll">전체 작업 삭제</button>
+      <button class="btn ghost" id="btnClearAll">내 추가 작업 전체 삭제</button>
     </div>
-    <div class="stamp">저장된 작업은 이 기기에 보관되며 '오늘' 화면의 날짜별 작업·종합·조치사항에 반영됩니다.</div>
+    <div class="stamp" id="inputStamp">공용 작업은 관리자가 올린 것으로 모두에게 보입니다. '내 화면에 추가'한 작업과 개인 변경은 이 기기에만 저장됩니다.</div>
   </section>
 </div>
 
@@ -396,7 +419,7 @@ textarea.f-input{resize:vertical;min-height:56px}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '4.1.0',
+  version : '5.0.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -405,10 +428,14 @@ const APP = {
 
 /* ================= 저장 키 ================= */
 const LS_SET='tbm3_settings', LS_REC='tbm3_records', LS_INPUT='tbm3_input', LS_CONS='tbm3_contractors';
+const LS_OVERLAY='tbm3_overlay', LS_ADMIN='tbm3_admin_pass', LS_SHARED_CACHE='tbm3_shared_cache';
 
 /* ================= 상태 ================= */
 let S = loadJSON(LS_SET, {nx:'74',ny:'69',sido:'전남',stations:'중동,태인동,골약동,광양읍'});
 let wx = null;               // 날씨 컨텍스트
+let sharedData = loadJSON(LS_SHARED_CACHE, {updatedAt:null, dates:{}}); // 공용 작업 (서버 KV 캐시)
+let overlay = loadJSON(LS_OVERLAY, {hidden:{}, added:{}, checked:{}});  // 개인 오버레이: 숨김/추가/체크
+let adminPass = loadJSON(LS_ADMIN, '');   // 관리자 인증(로컬 기억)
 let contractors = loadJSON(LS_CONS, ['포스코이앤씨','플랜텍','포스코DX']);
 let inputData = loadJSON(LS_INPUT, {});   // { 시공사명: [rawRow,...] }
 let activeCon = contractors[0] || '';
@@ -580,22 +607,69 @@ function parseVuln(s){
 }
 
 /* 전체 작업 목록 (모든 시공사 합침) */
+// 작업 고유 id 생성 (공용/개인 구분 + 날짜+시공사+하도사+작업내용 해시)
+function taskId(r, src){
+  const base=`${src}|${r.date||''}|${r.contractor||''}|${r.subcon||''}|${(r.task||'').slice(0,20)}`;
+  let h=0; for(let i=0;i<base.length;i++){ h=(h*31+base.charCodeAt(i))|0; }
+  return src+'_'+(h>>>0).toString(36);
+}
+// 공용 작업 + 개인 추가 작업을 합치고, 개인 숨김/체크 오버레이 적용
 function allTasks(dateFilter){
   const out=[];
+  // 1) 공용 작업 (서버 KV 캐시)
+  const dates = dateFilter ? [dateFilter] : Object.keys(sharedData.dates||{});
+  for(const d of dates){
+    (sharedData.dates?.[d]||[]).forEach(r=>{
+      const id=taskId(r,'pub');
+      if(overlay.hidden[id]) return; // 개인이 숨긴 공용 작업
+      out.push({...r, _id:id, _src:'pub', _checked:overlay.checked[id]||{}});
+    });
+  }
+  // 2) 개인 추가 작업 (각자 폰) — inputData
   for(const con of contractors){
-    const rows=inputData[con]||[];
-    rows.forEach(r=>{ if(!dateFilter || !r.date || r.date===dateFilter) out.push(r); });
+    (inputData[con]||[]).forEach(r=>{
+      if(dateFilter && r.date && r.date!==dateFilter) return;
+      const id=taskId(r,'my');
+      if(overlay.hidden[id]) return;
+      out.push({...r, _id:id, _src:'my', _checked:overlay.checked[id]||{}});
+    });
   }
   return out;
 }
-// 입력된 작업들의 날짜 목록 (중복 제거, 정렬)
+// 공용+개인 통틀어 날짜 목록
 function availableDates(){
   const set=new Set();
+  Object.keys(sharedData.dates||{}).forEach(d=>{ if((sharedData.dates[d]||[]).length) set.add(d); });
   for(const con of contractors){ (inputData[con]||[]).forEach(r=>{ if(r.date) set.add(r.date); }); }
   return [...set].sort();
 }
 // 오늘 날짜를 YYYY.MM.DD로
 function todayDot(){ const d=new Date(); return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`; }
+
+/* ===== 공용 작업 서버 연동 ===== */
+async function fetchSharedTasks(){
+  try{
+    const base=APP.proxyBase.replace(/\/$/,'');
+    const headers=APP.appToken?{'X-App-Token':APP.appToken}:{};
+    const r=await fetch(`${base}/tasks`,{headers});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(data && data.dates){ sharedData=data; saveJSON(LS_SHARED_CACHE,sharedData); }
+    return data;
+  }catch(e){ console.warn('공용작업 로드 실패(캐시 사용):',e.message); return null; }
+}
+// 관리자: 공용 작업 올리기 (여러 날짜 한번에)
+async function pushSharedTasks(byDate, pass){
+  const base=APP.proxyBase.replace(/\/$/,'');
+  const r=await fetch(`${base}/tasks`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-App-Token':APP.appToken,'X-Admin-Pass':pass},
+    body:JSON.stringify({pass, all:byDate}),
+  });
+  const data=await r.json();
+  if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
+  return data;
+}
 function aggregate(dateFilter){
   const tasks=allTasks(dateFilter);
   const totalHead=tasks.reduce((a,r)=>a+(r.headcountN||0),0);
@@ -811,30 +885,62 @@ function setMw(id,v,cls){const e=$(id);e.className='mw '+cls;e.querySelector('.v
 function renderTaskList(){
   const list=$('taskList'); const tasks=allTasks(selectedDate);
   if(!tasks.length){
-    list.innerHTML=`<div class="empty"><b>입력된 작업이 없습니다</b>하단 '작업입력' 탭에서 엑셀 작업 표를 붙여넣으면 여기에 표시됩니다.</div>`;
-    $('taskCountLabel').textContent='작업 미입력';
+    list.innerHTML=`<div class="empty"><b>표시할 작업이 없습니다</b>관리자가 공유한 작업이 여기 표시됩니다. 직접 추가하려면 '작업입력' 탭을 이용하세요.</div>`;
+    $('taskCountLabel').textContent='작업 없음';
     return;
   }
-  $('taskCountLabel').textContent=`${tasks.length}개 작업 · 눌러서 유해위험 확인`;
+  const pubN=tasks.filter(t=>t._src==='pub').length, myN=tasks.filter(t=>t._src==='my').length;
+  $('taskCountLabel').textContent=`${tasks.length}개 · 눌러서 상세 확인${myN?` · 내 추가 ${myN}`:''}`;
   list.innerHTML='';
   tasks.forEach((t,i)=>{
-    const risksTags=(t.risks||[]).map(r=>`<span class="rtag">${RISK_TYPES[r].short}</span>`).join('');
+    const risksTags=(t.risks||[]).map(r=>`<span class="rtag">${RISK_TYPES[r]?RISK_TYPES[r].short:r}</span>`).join('');
+    const srcBadge = t._src==='my' ? `<span class="src-badge my">내 추가</span>` : '';
     const el=document.createElement('div');
     el.className='taskrow'+(i===openTaskIdx?' open':'');
     el.innerHTML=`
       <div class="taskrow-head">
         <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
         <div class="tr-main">
-          <div class="tr-task">${esc(firstTaskLine(t.task))}</div>
+          <div class="tr-task">${srcBadge}${esc(firstTaskLine(t.task))}</div>
           <div class="tr-meta">${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
         </div>
         <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
         <span class="tr-caret">▶</span>
       </div>
-      <div class="taskrow-detail">${renderHazard(t)}</div>`;
+      <div class="taskrow-detail">${renderHazard(t)}
+        <div class="task-actions">
+          <button class="mini-btn" data-act="hide" data-id="${t._id}">${t._src==='pub'?'내 화면에서 숨기기':'삭제'}</button>
+        </div>
+      </div>`;
     el.querySelector('.taskrow-head').onclick=()=>{ openTaskIdx=(openTaskIdx===i?-1:i); renderTaskList(); };
+    // 체크박스 이벤트
+    el.querySelectorAll('.chk-item').forEach(cb=>{
+      cb.onchange=()=>{ toggleCheck(t._id, cb.dataset.key, cb.checked); };
+    });
+    // 숨김/삭제
+    const hideBtn=el.querySelector('[data-act="hide"]');
+    if(hideBtn) hideBtn.onclick=()=>{ hideTask(t); };
     list.appendChild(el);
   });
+}
+function toggleCheck(id,key,val){
+  if(!overlay.checked[id]) overlay.checked[id]={};
+  overlay.checked[id][key]=val; saveJSON(LS_OVERLAY,overlay);
+}
+function hideTask(t){
+  if(t._src==='my'){
+    if(!confirm('내가 추가한 이 작업을 삭제할까요?')) return;
+    // inputData에서 제거
+    for(const con of contractors){
+      inputData[con]=(inputData[con]||[]).filter(r=>taskId(r,'my')!==t._id);
+    }
+    saveJSON(LS_INPUT,inputData);
+    toast('삭제했습니다');
+  }else{
+    overlay.hidden[t._id]=true; saveJSON(LS_OVERLAY,overlay);
+    toast('내 화면에서 숨겼습니다');
+  }
+  openTaskIdx=-1; renderToday();
 }
 // 작업내용이 여러 줄(- 로 구분)일 때 대표 한 줄 + 개수
 function firstTaskLine(task){
@@ -850,6 +956,12 @@ function shortCon(name){
   return (name||'기타').slice(0,3);
 }
 function renderHazard(t){
+  // 인력 상세 (출력인원 + 취약작업자 종류별)
+  let manpower='';
+  const vparts=[];
+  if(t.vuln){ VULN_LABELS.forEach((k,i)=>{ if(t.vuln[k]) vparts.push(`${VULN_SHORT[i]} ${t.vuln[k]}`); }); }
+  manpower=`<div class="hz-block"><div class="hz-label">인력</div>
+    <div class="mp-detail">출력 <b>${t.headcountN}명</b>${vparts.length?` · 취약작업자 ${vparts.join(', ')}`:' · 취약작업자 없음'}${t.manager?`<br>현장책임: ${esc(t.manager)}`:''}</div></div>`;
   // 작업 상세: 여러 줄 작업내용 + 기간
   let head='';
   const parts=(t.task||'').split(/\s*-\s+/).map(s=>s.trim()).filter(Boolean);
@@ -859,11 +971,11 @@ function renderHazard(t){
     head=`<div class="hz-block"><div class="hz-basis">기간: ${esc(t.period)}</div></div>`;
   }
   if(!t.risks||!t.risks.length){
-    let s=head+`<div class="hz-block"><div class="hz-label">유해·위험요인</div><div class="tr-meta">지정된 안전Risk유형이 없습니다.</div></div>`;
-    if(t.safety) s+=`<div class="hz-safety"><b>현장 안전조치</b> ${esc(t.safety)}</div>`;
+    let s=manpower+head+`<div class="hz-block"><div class="hz-label">유해·위험요인</div><div class="tr-meta">지정된 안전Risk유형이 없습니다.</div></div>`;
+    if(t.safety) s+=renderSafetyChecks(t);
     return s;
   }
-  let s=head;
+  let s=manpower+head;
   t.risks.forEach(r=>{
     const R=RISK_TYPES[r];
     s+=`<div class="hz-block">
@@ -873,11 +985,22 @@ function renderHazard(t){
       <ul class="hz-acts">${R.acts.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>
     </div>`;
   });
-  if(t.safety) s+=`<div class="hz-safety"><b>현장 안전조치</b> ${esc(t.safety)}</div>`;
+  if(t.safety) s+=renderSafetyChecks(t);
   return s;
 }
 
 /* 날씨 조치사항 (연관 표기) */
+// 안전조치를 개별 항목으로 쪼개 확인 체크박스 제공 (체크는 개인 오버레이에 저장)
+function renderSafetyChecks(t){
+  const items=(t.safety||'').split(/\s*-\s+|\n/).map(s=>s.trim()).filter(Boolean);
+  if(!items.length) return '';
+  const rows=items.map((it,idx)=>{
+    const key='s'+idx; const on=(t._checked&&t._checked[key])?'checked':'';
+    return `<label class="chk-row"><input type="checkbox" class="chk-item" data-key="${key}" ${on}><span>${esc(it)}</span></label>`;
+  }).join('');
+  return `<div class="hz-safety-check"><div class="hz-label" style="color:var(--green)">현장 안전조치 · 확인</div>${rows}</div>`;
+}
+
 function renderWxRules(fired){
   const box=$('wxRules');
   if(!fired.length){ box.innerHTML=`<div class="card allclear"><b>해당 기준 없음</b>오늘 옥외작업 제한 기상 기준에 해당하는 항목이 없습니다.</div>`; return; }
@@ -950,14 +1073,11 @@ function renderInputTab(){
 function renderSavedPreview(){
   const box=$('savedList');
   if(!box) return;
-  let rows=[];
-  if(activeCon==='__all' || !activeCon){
-    contractors.forEach(c=>(inputData[c]||[]).forEach(r=>rows.push(r)));
-  }else{
-    rows=inputData[activeCon]||[];
-  }
-  if(!rows.length){ box.innerHTML=`<div class="pp-row" style="color:var(--steel)">저장된 작업이 없습니다. 아래에 엑셀 표를 붙여넣고 저장하세요.</div>`; return; }
-  box.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x].short).join('/')||'-'}</span></div>`).join('');
+  const rows=allTasks(activeCon&&activeCon!=='__all'?null:null); // 전체
+  // 공용/개인 모두 표시
+  const all=allTasks(null);
+  if(!all.length){ box.innerHTML=`<div class="pp-row" style="color:var(--steel)">표시할 작업이 없습니다. 관리자 공유를 받거나 위에서 붙여넣어 추가하세요.</div>`; return; }
+  box.innerHTML=all.map(r=>`<div class="pp-row"><span>${r._src==='my'?'<span class="src-badge my">내</span>':''}${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'-'}</span></div>`).join('');
 }
 function rowToLine(r){
   return [r.project,r.contractor,r.subcon,r.headcount,r.vulnerable,r.task,r.risk,r.manager,r.safety].join('\t');
@@ -977,20 +1097,42 @@ function updatePreview(){
 function saveInput(){
   const rows=parsePaste($('pasteArea').value);
   if(!rows.length){ toast('인식된 작업이 없습니다'); return; }
-  // 시공사명으로 자동 분류. 시공사명 없으면 '기타'
   const byCon={};
   rows.forEach(r=>{ const con=r.contractor||'기타'; (byCon[con]=byCon[con]||[]).push(r); });
-  // 새로 등장한 시공사는 목록에 추가
   Object.keys(byCon).forEach(con=>{ if(!contractors.includes(con)) contractors.push(con); });
   saveJSON(LS_CONS,contractors);
-  // 분류 결과로 저장 (이번 붙여넣기에 포함된 시공사만 갱신, 나머지는 유지)
   Object.keys(byCon).forEach(con=>{ inputData[con]=byCon[con]; });
   saveJSON(LS_INPUT,inputData);
   const summary=Object.entries(byCon).map(([c,a])=>`${c} ${a.length}`).join(', ');
-  toast(`저장됨: ${summary}`);
-  selectedDate=''; // 날짜 재계산되도록 초기화
+  toast(`내 화면에 추가됨: ${summary}`);
+  selectedDate='';
   renderInputTab();
   if(wx) renderToday();
+}
+// 관리자: 인식된 작업을 날짜별로 묶어 전체 공유 업로드
+async function pushShared(){
+  const rows=parsePaste($('pasteArea').value);
+  if(!rows.length){ toast('먼저 작업을 붙여넣으세요'); return; }
+  const pass=$('adminPassInput').value.trim();
+  if(!pass){ toast('관리자 암호를 입력하세요'); return; }
+  // 날짜별로 그룹핑
+  const byDate={};
+  rows.forEach(r=>{ const d=r.date||todayDot(); (byDate[d]=byDate[d]||[]).push(r); });
+  const btn=$('btnPushShared'); const old=btn.textContent; btn.textContent='업로드 중…'; btn.disabled=true;
+  try{
+    const res=await pushSharedTasks(byDate, pass);
+    adminPass=pass; saveJSON(LS_ADMIN,pass);
+    await fetchSharedTasks(); // 갱신된 공용 데이터 다시 로드
+    const dcnt=Object.entries(byDate).map(([d,a])=>`${d.slice(5)} ${a.length}건`).join(', ');
+    toast(`전체 공유 완료: ${dcnt}`);
+    $('adminStatus').textContent=`마지막 공유: ${new Date().toLocaleString('ko-KR')}`;
+    selectedDate='';
+    if(wx) renderToday();
+    renderInputTab();
+  }catch(e){
+    if(/admin_auth_failed/.test(e.message)) toast('관리자 암호가 틀렸습니다');
+    else toast('공유 실패: '+e.message);
+  }finally{ btn.textContent=old; btn.disabled=false; }
 }
 function clearInput(){
   $('pasteArea').value=''; updatePreview();
@@ -1141,6 +1283,8 @@ function saveSettings(){
 /* ================= 로드 흐름 ================= */
 async function loadAll(){
   $('errBox').style.display='none'; $('loading').style.display='block'; $('content').style.display='none';
+  // 공용 작업 먼저 로드 (실패해도 캐시로 진행)
+  await fetchSharedTasks();
   try{
     const [fc,air]=await Promise.all([fetchForecast(),fetchAir().catch(e=>({pm10Value:'0',pm25Value:'0',stationName:'조회실패'}))]);
     wx=buildWx(fc,air); renderToday();
@@ -1177,6 +1321,7 @@ $('btnRefresh').onclick=loadAll;
 $('btnRecord').onclick=saveRecord;
 $('btnCopy').onclick=async()=>{ try{await navigator.clipboard.writeText($('briefTxt').textContent);toast('스크립트가 복사되었습니다');}catch(e){toast('복사 실패 — 길게 눌러 직접 복사하세요');} };
 $('btnSaveInput').onclick=saveInput;
+$('btnPushShared').onclick=pushShared;
 $('btnClearInput').onclick=clearInput;
 $('btnClearAll').onclick=clearAllInput;
 $('btnExportPdf').onclick=exportPdf;
@@ -1185,6 +1330,7 @@ $('pasteArea').addEventListener('input',updatePreview);
 document.querySelectorAll('.modal-bg').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('show');});
 
 $('hSub').textContent=`광양 2고로 개수 현장 · v${APP.version} ${APP.channel}`;
+if(adminPass){ $('adminPassInput').value=adminPass; }
 loadAll();
 </script>
 
