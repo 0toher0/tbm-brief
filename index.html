@@ -241,6 +241,7 @@ textarea.f-input{resize:vertical;min-height:56px}
 
   <div id="content" style="display:none">
     <div id="dateChips" class="date-chips"></div>
+    <div id="conChips" class="date-chips"></div>
     <!-- 작업환경 종합 모니터링 -->
     <div class="mon" id="mon">
       <div class="mon-band">
@@ -441,6 +442,7 @@ let inputData = loadJSON(LS_INPUT, {});   // { 시공사명: [rawRow,...] }
 let activeCon = contractors[0] || '';
 let openTaskIdx = -1;
 let selectedDate = '';   // '오늘' 화면에서 선택된 작업 날짜 (빈값=전체)
+let selectedCon = '';    // '오늘' 화면에서 선택된 시공사 필터 (빈값=전체)
 
 /* ================= 취약작업자 & 안전Risk유형 ================= */
 const VULN_LABELS=['작업실적3회이하','65세이상','70세이상','입사6개월이하'];
@@ -614,12 +616,14 @@ function taskId(r, src){
   return src+'_'+(h>>>0).toString(36);
 }
 // 공용 작업 + 개인 추가 작업을 합치고, 개인 숨김/체크 오버레이 적용
-function allTasks(dateFilter){
+// conFilter를 주면 해당 시공사 작업만 반환 (오늘 탭 시공사별 정렬용)
+function allTasks(dateFilter, conFilter){
   const out=[];
   // 1) 공용 작업 (서버 KV 캐시)
   const dates = dateFilter ? [dateFilter] : Object.keys(sharedData.dates||{});
   for(const d of dates){
     (sharedData.dates?.[d]||[]).forEach(r=>{
+      if(conFilter && r.contractor!==conFilter) return;
       const id=taskId(r,'pub');
       if(overlay.hidden[id]) return; // 개인이 숨긴 공용 작업
       out.push({...r, _id:id, _src:'pub', _checked:overlay.checked[id]||{}});
@@ -627,6 +631,7 @@ function allTasks(dateFilter){
   }
   // 2) 개인 추가 작업 (각자 폰) — inputData
   for(const con of contractors){
+    if(conFilter && con!==conFilter) continue;
     (inputData[con]||[]).forEach(r=>{
       if(dateFilter && r.date && r.date!==dateFilter) return;
       const id=taskId(r,'my');
@@ -670,8 +675,8 @@ async function pushSharedTasks(byDate, pass){
   if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
   return data;
 }
-function aggregate(dateFilter){
-  const tasks=allTasks(dateFilter);
+function aggregate(dateFilter, conFilter){
+  const tasks=allTasks(dateFilter, conFilter);
   const totalHead=tasks.reduce((a,r)=>a+(r.headcountN||0),0);
   const vulnSum={}; VULN_LABELS.forEach(k=>vulnSum[k]=0);
   tasks.forEach(r=>VULN_LABELS.forEach(k=>vulnSum[k]+=(r.vuln?.[k]||0)));
@@ -831,7 +836,25 @@ function renderToday(){
     });
   }
 
-  const agg=aggregate(selectedDate);
+  // 시공사 칩: 해당 날짜에 작업이 있는 시공사들 (전체 보기 포함)
+  const aggAllCon=aggregate(selectedDate);
+  const cc=$('conChips');
+  if(!selectedCon || !aggAllCon.cons.includes(selectedCon)) selectedCon='';
+  if(aggAllCon.cons.length<=1){
+    cc.style.display='none'; selectedCon='';
+  }else{
+    cc.style.display='flex';
+    cc.innerHTML=`<button class="dchip${!selectedCon?' on':''}" data-con="">전체</button>`+
+      aggAllCon.cons.map(c=>{
+        const cnt=allTasks(selectedDate,c).length;
+        return `<button class="dchip${c===selectedCon?' on':''}" data-con="${esc(c)}">${esc(shortCon(c))}<span class="dc-cnt">${cnt}</span></button>`;
+      }).join('');
+    cc.querySelectorAll('.dchip').forEach(b=>{
+      b.onclick=()=>{ selectedCon=b.dataset.con; openTaskIdx=-1; renderToday(); };
+    });
+  }
+
+  const agg=aggregate(selectedDate, selectedCon);
   const wxFired=firedWxRules(wx);
   const [gLabel,gCls]=overallGrade(wxFired,agg);
 
@@ -883,14 +906,15 @@ function setMw(id,v,cls){const e=$(id);e.className='mw '+cls;e.querySelector('.v
 
 /* 작업 목록 (누르면 유해위험) */
 function renderTaskList(){
-  const list=$('taskList'); const tasks=allTasks(selectedDate);
+  const list=$('taskList'); const tasks=allTasks(selectedDate, selectedCon);
+  const filterTag = selectedCon? ` · ${shortCon(selectedCon)}만 보는 중`:'';
   if(!tasks.length){
     list.innerHTML=`<div class="empty"><b>표시할 작업이 없습니다</b>관리자가 공유한 작업이 여기 표시됩니다. 직접 추가하려면 '작업입력' 탭을 이용하세요.</div>`;
-    $('taskCountLabel').textContent='작업 없음';
+    $('taskCountLabel').textContent='작업 없음'+filterTag;
     return;
   }
   const pubN=tasks.filter(t=>t._src==='pub').length, myN=tasks.filter(t=>t._src==='my').length;
-  $('taskCountLabel').textContent=`${tasks.length}개 · 눌러서 상세 확인${myN?` · 내 추가 ${myN}`:''}`;
+  $('taskCountLabel').textContent=`${tasks.length}개 · 눌러서 상세 확인${myN?` · 내 추가 ${myN}`:''}${filterTag}`;
   list.innerHTML='';
   tasks.forEach((t,i)=>{
     const risksTags=(t.risks||[]).map(r=>`<span class="rtag">${RISK_TYPES[r]?RISK_TYPES[r].short:r}</span>`).join('');
