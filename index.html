@@ -1254,17 +1254,66 @@ function exportPdf(){
 }
 
 /* ================= 기준 탭 ================= */
-function renderInfo(){
-  let risk=Object.entries(RISK_TYPES).map(([k,v])=>`<p style="margin-top:8px"><b>${esc(k)}</b> — ${esc(v.hazard)}<br><span style="color:var(--steel);font-size:.92em">${esc(v.basis)}</span></p>`).join('');
-  $('infoCard').innerHTML=`
-    <p><b>기상 기반 조치</b> (옥외작업 전반)</p>
-    <p style="margin-top:4px">· 폭염: 체감 31℃↑ 폭염작업 / 33℃↑ 매2시간 20분 휴식 의무 / 38℃↑ 매시간 15분·14~17시 중지 (2025.7.17 시행)<br>
-    · 강풍: 순간풍속 10㎧↑ 크레인 설치·해체 중지, 15㎧↑ 운전 중지 (제37조)<br>
-    · 강수: 철골·고소 조정, 굴착면·비계 점검 · 미세먼지: 주의보 마스크, 경보 중작업 단축 · 한파: 체감 -12℃↓ 보온조치</p>
-    <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
-    <p><b>작업 기반 조치</b> (안전Risk유형 6종)</p>
-    ${risk}
+// 기준 탭 분류: 안전Risk유형 6종 + 기상 5종. laws.json/cases.json의 키와 정확히 일치해야 함.
+const INFO_CATS=['밀폐공간','15m이내 활가스 배관','화재/폭발','철거/낙하','고소작업','중량물협착','폭염','강풍','강수','미세먼지','한파'];
+const INFO_LABELS={'밀폐공간':'밀폐','15m이내 활가스 배관':'활가스','화재/폭발':'화재폭발','철거/낙하':'철거낙하','고소작업':'고소','중량물협착':'협착',
+  '폭염':'폭염','강풍':'강풍','강수':'강수','미세먼지':'미세먼지','한파':'한파'};
+let infoCat=INFO_CATS[0];
+let LAWS={}, CASES={};
+let referenceDataPromise=null;
+// data/laws.json, data/cases.json은 index.html과 같은 위치(GitHub Pages)에서 상대경로로 불러옴
+function ensureReferenceData(){
+  if(!referenceDataPromise){
+    referenceDataPromise=Promise.all([
+      fetch('data/laws.json').then(r=>r.json()).catch(e=>{console.warn('laws.json 로드 실패:',e.message);return{};}),
+      fetch('data/cases.json').then(r=>r.json()).catch(e=>{console.warn('cases.json 로드 실패:',e.message);return{};}),
+    ]).then(([l,c])=>{ LAWS=l; CASES=c; });
+  }
+  return referenceDataPromise;
+}
+async function renderInfo(){
+  const box=$('infoCard');
+  box.innerHTML='<div class="loading">참고자료 불러오는 중…</div>';
+  await ensureReferenceData();
+  if(!INFO_CATS.includes(infoCat)) infoCat=INFO_CATS[0];
+
+  const chipsHtml=INFO_CATS.map(c=>`<button class="dchip${c===infoCat?' on':''}" data-cat="${esc(c)}">${esc(INFO_LABELS[c]||c)}</button>`).join('');
+
+  const R=RISK_TYPES[infoCat];
+  const summaryHtml = R
+    ? `<p style="margin-top:12px"><b>${esc(infoCat)}</b> — ${esc(R.hazard)}</p><ul class="hz-acts">${R.acts.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`
+    : '';
+
+  const laws=LAWS[infoCat]||[];
+  const lawsHtml = laws.length ? laws.map(l=>`
+    <div class="rule sev-info">
+      <div class="rule-top"><span class="rule-t">${esc(l.법령명||'')}</span></div>
+      <div class="rule-basis">${esc(l.조문||'')}</div>
+      <div class="mp-detail" style="margin-top:6px">${esc(l.해설||l.요약||'')}</div>
+      ${l.원문링크?`<div class="rule-link"><a href="${esc(l.원문링크)}" target="_blank" rel="noopener">원문 보기 →</a></div>`:''}
+    </div>`).join('') : `<div class="tr-meta">등록된 법령 자료가 없습니다.</div>`;
+
+  const cases=CASES[infoCat]||[];
+  const casesHtml = cases.length ? cases.map(cs=>`
+    <div class="rule sev-warn">
+      <div class="rule-top"><span class="rule-t">${esc(cs.제목||'')}</span>${cs.발생연도?`<span class="rule-link">${esc(cs.발생연도)}</span>`:''}</div>
+      ${cs.개요?`<div class="mp-detail" style="margin-top:4px"><b>개요</b> ${esc(cs.개요)}</div>`:''}
+      ${cs.원인?`<div class="mp-detail" style="margin-top:4px"><b>원인</b> ${esc(cs.원인)}</div>`:''}
+      ${cs.교훈?`<div class="mp-detail" style="margin-top:4px"><b>교훈</b> ${esc(cs.교훈)}</div>`:''}
+      ${cs.출처링크?`<div class="rule-link"><a href="${esc(cs.출처링크)}" target="_blank" rel="noopener">출처 →</a></div>`:''}
+    </div>`).join('') : `<div class="tr-meta">등록된 사고사례가 없습니다.</div>`;
+
+  box.innerHTML=`
+    <div class="date-chips" id="infoChips">${chipsHtml}</div>
+    ${summaryHtml}
+    <div class="sec-h" style="margin-top:14px"><div class="sec-t">📖 법령 원문·해설</div></div>
+    ${lawsHtml}
+    <div class="sec-h" style="margin-top:14px"><div class="sec-t">⚠ 사고사례</div></div>
+    ${casesHtml}
     <p style="margin-top:12px;font-size:.9em;color:var(--steel)">※ 본 앱은 TBM 참고용 보조 도구입니다. 실제 적용은 최신 법령 원문과 사내 안전보건 절차를 우선합니다. 예보 풍속은 평균풍속이며 순간풍속(돌풍)은 약 1.5배로 추정합니다.</p>`;
+  document.querySelectorAll('#infoChips .dchip').forEach(b=>{
+    b.onclick=()=>{ infoCat=b.dataset.cat; renderInfo(); };
+  });
 }
 
 /* ================= 설정 ================= */
