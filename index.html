@@ -319,6 +319,9 @@ textarea.f-input{resize:vertical;min-height:56px}
       </div>
       <textarea class="paste-area" id="pasteArea" placeholder="여기에 엑셀 표를 붙여넣기 (Ctrl+V)"></textarea>
       <div class="parsed-count" id="parsedCount"></div>
+      <div id="aiParseBox" style="display:none;margin:8px 0">
+        <button class="btn ghost" id="btnAiParse" style="width:100%">✨ AI로 다시 인식해보기 (양식이 달라서 자동인식이 안 될 때)</button>
+      </div>
       <div class="parsed-preview" id="parsedPreview"></div>
       <div class="btn-row">
         <button class="btn ghost" id="btnClearInput">붙여넣기 지우기</button>
@@ -1106,20 +1109,72 @@ function renderSavedPreview(){
 function rowToLine(r){
   return [r.project,r.contractor,r.subcon,r.headcount,r.vulnerable,r.task,r.risk,r.manager,r.safety].join('\t');
 }
-function updatePreview(){
-  const rows=parsePaste($('pasteArea').value);
+// AI(LLM) 폴백 파싱 결과 (양식이 달라 결정론적 파서가 실패했을 때만 채워짐)
+let aiParsedRows=null;
+function currentRows(){ return (aiParsedRows&&aiParsedRows.length)?aiParsedRows:parsePaste($('pasteArea').value); }
+function renderParsedRows(rows,label){
   const pc=$('parsedCount'), pv=$('parsedPreview');
-  if(!$('pasteArea').value.trim()){ pc.textContent=''; pv.innerHTML=''; return; }
-  if(!rows.length){ pc.className='parsed-count err'; pc.textContent='인식된 작업이 없습니다. 표준 양식의 헤더행(날짜·시공사·하도사…)부터 데이터까지 함께 복사했는지 확인하세요.'; pv.innerHTML=''; return; }
-  // 시공사·날짜별 집계 요약
   const cons=[...new Set(rows.map(r=>r.contractor||'기타'))];
   const dates=[...new Set(rows.map(r=>r.date).filter(Boolean))];
   pc.className='parsed-count';
-  pc.textContent=`${rows.length}개 작업 인식됨 · 시공사 ${cons.length}곳${dates.length>1?` · ${dates.length}개 날짜`:''}`;
-  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x].short).join('/')||'분류없음'}</span></div>`).join('');
+  pc.textContent=`${label?label+' · ':''}${rows.length}개 작업 인식됨 · 시공사 ${cons.length}곳${dates.length>1?` · ${dates.length}개 날짜`:''}`;
+  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'분류없음'}</span></div>`).join('');
+}
+function updatePreview(){
+  aiParsedRows=null; // 원문이 바뀌면 이전 AI 인식 결과는 버림
+  $('aiParseBox').style.display='none';
+  const rows=parsePaste($('pasteArea').value);
+  const pc=$('parsedCount'), pv=$('parsedPreview');
+  if(!$('pasteArea').value.trim()){ pc.textContent=''; pv.innerHTML=''; return; }
+  if(!rows.length){
+    pc.className='parsed-count err';
+    pc.textContent='인식된 작업이 없습니다. 표준 양식의 헤더행(날짜·시공사·하도사…)부터 데이터까지 함께 복사했는지 확인하거나, 아래 AI 인식을 시도해보세요.';
+    pv.innerHTML='';
+    $('aiParseBox').style.display='block';
+    return;
+  }
+  renderParsedRows(rows,'');
+}
+// 결정론적 파서가 실패했을 때(양식이 다름) AI에게 대신 추출을 맡김
+async function tryAiParse(){
+  const text=$('pasteArea').value;
+  if(!text.trim()){ toast('먼저 표를 붙여넣으세요'); return; }
+  const btn=$('btnAiParse'); const old=btn.textContent; btn.textContent='AI 인식 중… (몇 초 걸릴 수 있음)'; btn.disabled=true;
+  try{
+    const base=APP.proxyBase.replace(/\/$/,'');
+    const r=await fetch(`${base}/parse-ai`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-App-Token':APP.appToken},
+      body:JSON.stringify({text}),
+    });
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
+    const rows=normalizeAiRows(data.rows||[]);
+    if(!rows.length){ toast('AI도 작업을 인식하지 못했습니다. 표 형식을 확인해주세요'); return; }
+    aiParsedRows=rows;
+    renderParsedRows(rows,'✨ AI 인식');
+    toast(`AI가 ${rows.length}개 작업을 인식했습니다 — 저장 전에 꼭 확인하세요`);
+  }catch(e){
+    if(/ai_not_configured/.test(e.message)) toast('AI 인식이 아직 설정되지 않았습니다 (관리자 설정 필요)');
+    else toast('AI 인식 실패: '+e.message);
+  }finally{ btn.textContent=old; btn.disabled=false; }
+}
+// AI가 반환한 행을 앱 내부 데이터 형태(parsePaste 결과와 동일한 필드)로 맞춤
+function normalizeAiRows(aiRows){
+  return aiRows.map(r=>{
+    const vulnerable=r.vulnerable||'0/0/0/0';
+    const risks=Array.isArray(r.risks)?r.risks.filter(x=>RISK_TYPES[x]):[];
+    return {
+      date:r.date||'', project:'', contractor:r.contractor||'기타', subcon:r.subcon||'',
+      headcount:r.headcount||'', headcountN:parseInt(r.headcount)||0,
+      vulnerable, vuln:parseVuln(vulnerable),
+      task:r.task||'', risk:risks.join(', '), risks,
+      period:r.period||'', manager:r.manager||'', safety:r.safety||'',
+    };
+  });
 }
 function saveInput(){
-  const rows=parsePaste($('pasteArea').value);
+  const rows=currentRows();
   if(!rows.length){ toast('인식된 작업이 없습니다'); return; }
   const byCon={};
   rows.forEach(r=>{ const con=r.contractor||'기타'; (byCon[con]=byCon[con]||[]).push(r); });
