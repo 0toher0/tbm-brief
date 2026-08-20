@@ -1450,6 +1450,7 @@ $('btnRecord').onclick=saveRecord;
 $('btnCopy').onclick=async()=>{ try{await navigator.clipboard.writeText($('briefTxt').textContent);toast('스크립트가 복사되었습니다');}catch(e){toast('복사 실패 — 길게 눌러 직접 복사하세요');} };
 $('btnSaveInput').onclick=saveInput;
 $('btnPushShared').onclick=pushShared;
+$('btnAiParse').onclick=tryAiParse;
 $('btnClearInput').onclick=clearInput;
 $('btnClearAll').onclick=clearAllInput;
 $('btnExportPdf').onclick=exportPdf;
