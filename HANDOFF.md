@@ -16,8 +16,8 @@
 
 ### 배포 필요 (다음 세션에서 할 것)
 1. Cloudflare 대시보드 → Workers → tbm-proxy → 편집기에 `worker/worker.js` 최신 내용 붙여넣고 배포
-2. Settings → Variables → `ANTHROPIC_API_KEY` (Secret) 추가 — console.anthropic.com에서 발급한 키. 이거 없으면 AI 인식 버튼은 "설정 안됨" 에러만 뜨고 나머지 기능엔 영향 없음
-3. `/health`로 `ANTHROPIC_API_KEY: set`, `version: 2.1.0` 확인
+2. Settings → Variables → `GEMINI_API_KEY` (Secret) 추가 — aistudio.google.com/apikey 에서 무료로 발급한 키(신용카드 불필요, 발급 화면에서 재확인). 이거 없으면 AI 인식 버튼은 "설정 안됨" 에러만 뜨고 나머지 기능엔 영향 없음
+3. `/health`로 `GEMINI_API_KEY: set`, `version: 2.1.0` 확인
 
 ---
 
@@ -53,7 +53,7 @@
   - `SHARED_TOKEN` (Secret): 앱↔Worker 인증용. ⚠️ 참고: `index.html`의 `APP.appToken`에 그대로 박혀있어 클라이언트에서 view-source하면 보임 — 완전한 비밀이 아니라 단순 남용 방지 토큰. 값 변경 시 이 두 곳(Worker 환경변수 + index.html)을 같이 바꿔야 함.
   - `ADMIN_PASS` (Secret): 관리자 공유 업로드 암호. 진짜 비밀 — 서버(Worker)에서만 검증하고 클라이언트 코드엔 없음.
   - `ALLOWED_ORIGINS` (Text): 비어있음(전체 허용). 보안 강화 시 `https://0toher0.github.io` 넣고 재배포.
-  - `ANTHROPIC_API_KEY` (Secret, **아직 미설정**): AI 기반 엑셀 인식(`/parse-ai`)용. console.anthropic.com에서 발급. 없어도 나머지 기능은 정상 동작(그 기능만 에러).
+  - `GEMINI_API_KEY` (Secret, **아직 미설정**): AI 기반 엑셀 인식(`/parse-ai`)용. aistudio.google.com/apikey 에서 무료 발급. 없어도 나머지 기능은 정상 동작(그 기능만 에러).
 - **KV 저장소:** namespace명 `tbm_tasks`, Worker에 `TBM_KV`로 바인딩됨
 
 ### 공공데이터포털 (data.go.kr)
@@ -65,7 +65,7 @@
 - `GET /air?sidoName=전남` → 에어코리아 대기질
 - `GET /tasks` 또는 `/tasks?date=YYYY.MM.DD` → 공용 작업 조회 (모든 사용자)
 - `POST /tasks` → 공용 작업 저장 (관리자만, X-Admin-Pass 헤더로 ADMIN_PASS 검증)
-- `POST /parse-ai` → 엑셀 표 텍스트를 AI로 구조화 추출(결정론적 파서 실패시 폴백). body: `{text}`. ANTHROPIC_API_KEY 없으면 `ai_not_configured` 에러
+- `POST /parse-ai` → 엑셀 표 텍스트를 AI로 구조화 추출(결정론적 파서 실패시 폴백). body: `{text}`. GEMINI_API_KEY 없으면 `ai_not_configured` 에러
 - `GET /health` → 상태 확인
 - 모든 요청에 헤더 `X-App-Token: {SHARED_TOKEN}` 필요
 
@@ -76,7 +76,7 @@
 ### APP 설정 블록 (스크립트 최상단)
 ```js
 const APP = {
-  version : '5.0.0',
+  version : '5.1.0',
   channel : 'LTE',
   dataSource : 'proxy',   // direct(폰에 키입력) | proxy(현재) | internal(사내용,미래)
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -121,7 +121,7 @@ const APP = {
 
 ### 작업입력 탭
 - 엑셀 표 붙여넣기 → 자동 인식 (원본 보고서 / 표준 양식 둘 다 지원)
-- **AI 인식 폴백**: 자동 인식이 0건이면 "✨ AI로 다시 인식해보기" 버튼 노출 → Worker `/parse-ai`(Anthropic API)로 재시도. Worker에 `ANTHROPIC_API_KEY` 설정 전에는 에러 토스트만 뜸(정상)
+- **AI 인식 폴백**: 자동 인식이 0건이면 "✨ AI로 다시 인식해보기" 버튼 노출 → Worker `/parse-ai`(Gemini API, 무료 등급)로 재시도. Worker에 `GEMINI_API_KEY` 설정 전에는 에러 토스트만 뜸(정상)
 - **"내 화면에 추가"** (개인) vs **"전체 공유 업로드"** (관리자 암호 필요, 초록 버튼) — 둘 다 AI 인식 결과 반영됨
 - 저장된 작업 목록(공용+개인 통합)
 
@@ -191,7 +191,7 @@ const APP = {
 ## 9. 아직 안 한 것 / 다음 작업
 
 ### 지금 당장 (배포 관련)
-- Worker 재배포 + `ANTHROPIC_API_KEY` 설정 (1장 "배포 필요" 참고) — 이거 안 하면 AI 인식 버튼이 에러만 뜸
+- Worker 재배포 + `GEMINI_API_KEY` 설정 (1장 "배포 필요" 참고) — 이거 안 하면 AI 인식 버튼이 에러만 뜸
 - `resources.json`(교육자료, 3순위) — laws/cases와 같은 구조로 아직 미착수
 - '기준' 탭에 강수·미세먼지·한파 사고사례 추가 (조사 범위 밖으로 남겨둠, 필요시 조사)
 
