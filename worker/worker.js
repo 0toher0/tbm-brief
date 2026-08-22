@@ -38,7 +38,25 @@ const FEED_MAP = {
 };
 
 export default {
+  // 이 밑에서 무슨 에러가 나든(어디서든) Cloudflare의 뭉뚱그린 1101 에러 대신
+  // 실제 에러 메시지를 JSON으로 그대로 돌려준다 — Observability 설정 없이도 디버깅 가능.
   async fetch(request, env) {
+    try {
+      return await handleRequest(request, env);
+    } catch (e) {
+      return new Response(JSON.stringify({
+        error: 'unhandled_exception',
+        message: String((e && e.message) || e),
+        stack: e && e.stack ? String(e.stack) : undefined,
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+  },
+};
+
+async function handleRequest(request, env) {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -220,8 +238,7 @@ ${text}
     } catch (e) {
       return json({ error: 'upstream_failed', message: String(e) }, 502, cors);
     }
-  },
-};
+}
 
 function json(obj, status, headers) {
   return new Response(JSON.stringify(obj), {
