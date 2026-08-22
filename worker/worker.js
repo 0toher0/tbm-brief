@@ -17,6 +17,9 @@
  *   [Secret] DATA_GO_KR_KEY   : 공공데이터포털 일반 인증키(Decoding). 절대 코드에 넣지 말 것.
  *   [Secret] SHARED_TOKEN     : 앱과 나눠 갖는 임의 문자열(아무 긴 랜덤값). 아래 앱 APP.appToken과 동일해야 함.
  *   [Var]    ALLOWED_ORIGINS  : 앱이 배포된 주소(쉼표 구분). 예) https://xxx.netlify.app,https://아이디.github.io
+ *   [Secret] ANTHROPIC_API_KEY: (선택) 엑셀 표 형식이 달라 자동인식 실패 시 AI로 대신 추출하는 /parse-ai용.
+ *                               console.anthropic.com에서 발급. 없으면 /parse-ai는 ai_not_configured 에러만 반환하고
+ *                               나머지 기능(날씨/공용작업)은 그대로 동작함.
  */
 
 // 논리적 피드 id → 실제 공공API 매핑. 새 API 추가 시 여기에 한 줄만.
@@ -56,13 +59,14 @@ export default {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.0.0',
+        version: '2.1.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
           ALLOWED_ORIGINS: env.ALLOWED_ORIGINS || '(open: all origins)',
           ADMIN_PASS: env.ADMIN_PASS ? 'set' : 'MISSING',
           TBM_KV: env.TBM_KV ? 'bound' : 'MISSING',
+          ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ? 'set' : 'MISSING (optional — /parse-ai만 영향)',
         },
       }, 200, cors);
     }
@@ -128,6 +132,76 @@ export default {
       }
 
       return json({ error: 'method_not_allowed' }, 405, cors);
+    }
+
+    // ===== AI 기반 작업표 파싱 (Anthropic API) =====
+    // POST /parse-ai  body: { text: "<붙여넣은 원본 텍스트>" }
+    // 결정론적 파서(parsePaste, 앱 쪽)가 실패했을 때만 클라이언트가 호출하는 폴백.
+    if (path0 === 'parse-ai') {
+      if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+      if (!env.ANTHROPIC_API_KEY) return json({ error: 'ai_not_configured' }, 500, cors);
+      let body;
+      try { body = await request.json(); } catch (e) { return json({ error: 'bad_json' }, 400, cors); }
+      const text = String(body.text || '').slice(0, 20000); // 과금 방지용 길이 상한
+      if (!text.trim()) return json({ error: 'empty_text' }, 400, cors);
+
+      const schema = {
+        type: 'object',
+        properties: {
+          rows: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                date: { type: 'string', description: '작업 날짜, YYYY.MM.DD 형식. 없으면 빈 문자열' },
+                contractor: { type: 'string', description: '시공사(원청)명' },
+                subcon: { type: 'string', description: '하도사명' },
+                headcount: { type: 'string', description: '출력인원 숫자(문자열)' },
+                vulnerable: { type: 'string', description: '취약작업자 4종을 "실적3회이하/65세이상/70세이상/입사6개월이하" 순서로 슬래시 구분한 숫자, 예: "0/2/0/1". 정보 없으면 "0/0/0/0"' },
+                task: { type: 'string', description: '작업내용 전체 텍스트' },
+                risks: {
+                  type: 'array',
+                  items: { type: 'string', enum: ['밀폐공간', '15m이내 활가스 배관', '화재/폭발', '철거/낙하', '고소작업', '중량물협착'] },
+                  description: '표에 체크·마킹된 위험유형 전부',
+                },
+                period: { type: 'string', description: '작업기간' },
+                manager: { type: 'string', description: '현장책임자명(연락처 포함 가능)' },
+                safety: { type: 'string', description: '안전조치 내용 전체 텍스트' },
+              },
+              required: ['contractor', 'task'],
+            },
+          },
+        },
+        required: ['rows'],
+      };
+
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 4096,
+            tools: [{ name: 'extract_tasks', description: '작업표에서 행을 구조화해 추출', input_schema: schema }],
+            tool_choice: { type: 'tool', name: 'extract_tasks' },
+            messages: [{
+              role: 'user',
+              content: `아래는 건설현장 TBM(작업 전 안전미팅)용으로 붙여넣은 작업표입니다. 엑셀에서 복사한 표라 형식이 정형화되어 있지 않을 수 있습니다. 표에 있는 각 작업 행을 정확히 추출해주세요. 원문에 없는 정보는 지어내지 말고 빈 문자열/빈 배열로 두세요.\n\n---\n${text}\n---`,
+            }],
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) return json({ error: 'anthropic_error', detail: data }, 502, cors);
+        const toolUse = (data.content || []).find(c => c.type === 'tool_use');
+        if (!toolUse) return json({ error: 'no_structured_output' }, 502, cors);
+        return json({ rows: toolUse.input.rows || [] }, 200, cors);
+      } catch (e) {
+        return json({ error: 'ai_request_failed', message: String(e) }, 502, cors);
+      }
     }
 
     // 경로 → 피드

@@ -1190,7 +1190,7 @@ function saveInput(){
 }
 // 관리자: 인식된 작업을 날짜별로 묶어 전체 공유 업로드
 async function pushShared(){
-  const rows=parsePaste($('pasteArea').value);
+  const rows=currentRows();
   if(!rows.length){ toast('먼저 작업을 붙여넣으세요'); return; }
   const pass=$('adminPassInput').value.trim();
   if(!pass){ toast('관리자 암호를 입력하세요'); return; }
