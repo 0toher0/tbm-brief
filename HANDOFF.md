@@ -7,20 +7,25 @@
 
 ## 1. 현재 상태 (2026년 8월 기준)
 
-**앱(GitHub Pages)·Worker 둘 다 최신 코드 배포 완료. 단, AI 인식 폴백 기능은 실사용 불가 상태로 보류 중(아래 참고).**
+**앱(GitHub Pages)·Worker 코드 다 준비됨. Worker는 코드 수정 완료했으나 재배포 + Cloudflare 환경변수 교체가 아직 필요(아래 참고).**
 
 - 앱 주소: `https://0toher0.github.io/tbm-brief/` (배포됨, v5.1.0)
-- Worker: `https://tbm-proxy.st4gi720.workers.dev` (배포됨, v2.1.1-debug — `worker/worker.js`와 대시보드 코드 일치 확인함)
+- Worker: `https://tbm-proxy.st4gi720.workers.dev` (⚠️ 코드는 v2.2.0으로 로컬 수정됨, **아직 재배포 안 됨** — 현재 서버는 여전히 v2.1.1-debug)
 - 4개 탭: 오늘 / 작업입력 / 기록 / 기준
 - 핵심 기능: **관리자 공유(공용 저장)**, **기준 탭 법령·사고사례 조회**, **오늘 탭 시공사별 필터** — 전부 정상 동작
 
-### ⚠️ AI 인식 폴백 — 보류 중 (2026-08-22)
-`/parse-ai`(Gemini API 호출)가 실제 배포 후 `"User location is not supported for the API use."` 에러를 계속 반환함. 개발자 세션에서도, 실제 사용자(한국)가 앱에서 버튼을 눌러도 **동일하게** 발생 — 즉 최종 사용자 위치 문제가 아니라 **Cloudflare Worker가 실행되는 데이터센터의 발신 IP를 Gemini 쪽이 통째로 막고 있을 가능성이 높음**(무료 등급에서 흔한 제약). Cloudflare Workers는 요청마다 다른 전세계 데이터센터에서 실행될 수 있어 특정 국가로 고정할 방법이 마땅치 않음.
+### ✅ AI 인식 폴백 — Gemini→Anthropic API로 교체 완료, 재배포 대기 (2026-09-18)
+기존 문제: `/parse-ai`(Gemini API 호출)가 `"User location is not supported for the API use."` 에러를 계속 반환. 개발자 세션에서도, 실사용자(한국)가 앱에서 버튼을 눌러도 동일하게 발생 — **Cloudflare Worker가 실행되는 데이터센터의 발신 IP를 Gemini 쪽이 통째로 지역차단**한 것으로 결론(무료 등급에서 흔한 제약, Cloudflare Workers는 요청마다 다른 데이터센터에서 실행돼 특정 국가로 고정 불가).
 
-**코드는 그대로 남겨둠**(`/parse-ai` 엔드포인트, 클라이언트 버튼 다 살아있음 — 그냥 에러가 뜰 뿐, 다른 기능엔 영향 없음). 사용자 결정: 지금은 이 기능 보류하고 다른 작업 우선. 재개 시 후보:
-- Anthropic API로 되돌리기 (과금 있지만 이 정도 용량이면 소액. 지오차단 없음은 이미 확인됨 — 이전에 모델명 오류(404)는 받았지만 지역차단은 없었음)
-- Groq 등 다른 무료 API 시도 (지역차단 여부 재조사 필요)
-- Cloudflare 대신 다른 곳(예: Vercel Edge Function)에서 AI 호출 부분만 분리 실행 (인프라 복잡도 증가)
+**조치**: `worker/worker.js`의 `/parse-ai`를 Gemini → **Anthropic Claude API**(`claude-haiku-4-5-20251001`, Messages API + JSON 프리필)로 교체(지오차단 없음 — 이전에 모델명 오류(404)는 받았지만 지역차단은 없었음을 이미 확인함). 클라이언트(`index.html`)는 요청/응답 계약(`POST /parse-ai {text}` → `{rows:[...]}`)이 그대로라 수정 불필요.
+
+**남은 작업 (사용자가 해야 함 — AI가 대신 못 함):**
+1. console.anthropic.com에서 API 키 발급 (사용량 기반 소액 과금 — TBM 작업표 파싱 정도 호출량이면 부담 거의 없음, 최신 단가는 anthropic.com/pricing 참고)
+2. Cloudflare 대시보드 → Workers → tbm-proxy → Settings → Variables에서 **`GEMINI_API_KEY` 대신 `ANTHROPIC_API_KEY`(Secret)** 추가
+3. `worker/worker.js` 최신본을 Cloudflare 편집기에 붙여넣고 재배포 (iframe 격리로 AI가 직접 못 넣음 — 4장 참고)
+4. `/health`로 `ANTHROPIC_API_KEY: set` 확인 후, 앱에서 양식 다른 표 붙여넣어 "✨ AI로 다시 인식해보기" 버튼 실사용 테스트
+
+재배포 전까지는 `/parse-ai`가 계속 `ai_not_configured`(구 키 미인식) 또는 이전과 같은 지역차단 에러를 낼 수 있음 — 정상, 위 4단계 완료 전 상태임.
 
 ---
 
@@ -56,7 +61,7 @@
   - `SHARED_TOKEN` (Secret): 앱↔Worker 인증용. ⚠️ 참고: `index.html`의 `APP.appToken`에 그대로 박혀있어 클라이언트에서 view-source하면 보임 — 완전한 비밀이 아니라 단순 남용 방지 토큰. 값 변경 시 이 두 곳(Worker 환경변수 + index.html)을 같이 바꿔야 함.
   - `ADMIN_PASS` (Secret): 관리자 공유 업로드 암호. 진짜 비밀 — 서버(Worker)에서만 검증하고 클라이언트 코드엔 없음.
   - `ALLOWED_ORIGINS` (Text): 비어있음(전체 허용). 보안 강화 시 `https://0toher0.github.io` 넣고 재배포.
-  - `GEMINI_API_KEY` (Secret, **아직 미설정**): AI 기반 엑셀 인식(`/parse-ai`)용. aistudio.google.com/apikey 에서 무료 발급. 없어도 나머지 기능은 정상 동작(그 기능만 에러).
+  - `ANTHROPIC_API_KEY` (Secret, **아직 미설정 — 이 이름으로 새로 추가 필요, 옛 `GEMINI_API_KEY`는 삭제해도 됨**): AI 기반 엑셀 인식(`/parse-ai`)용. console.anthropic.com에서 발급(사용량 기반 소액 과금). 없어도 나머지 기능은 정상 동작(그 기능만 에러). 1장 "AI 인식 폴백" 참고.
 - **KV 저장소:** namespace명 `tbm_tasks`, Worker에 `TBM_KV`로 바인딩됨
 
 ### 공공데이터포털 (data.go.kr)
@@ -68,7 +73,7 @@
 - `GET /air?sidoName=전남` → 에어코리아 대기질
 - `GET /tasks` 또는 `/tasks?date=YYYY.MM.DD` → 공용 작업 조회 (모든 사용자)
 - `POST /tasks` → 공용 작업 저장 (관리자만, X-Admin-Pass 헤더로 ADMIN_PASS 검증)
-- `POST /parse-ai` → 엑셀 표 텍스트를 AI로 구조화 추출(결정론적 파서 실패시 폴백). body: `{text}`. GEMINI_API_KEY 없으면 `ai_not_configured` 에러
+- `POST /parse-ai` → 엑셀 표 텍스트를 AI(Anthropic Claude)로 구조화 추출(결정론적 파서 실패시 폴백). body: `{text}`. ANTHROPIC_API_KEY 없으면 `ai_not_configured` 에러
 - `GET /health` → 상태 확인
 - 모든 요청에 헤더 `X-App-Token: {SHARED_TOKEN}` 필요
 
@@ -193,8 +198,10 @@ const APP = {
 
 ## 9. 아직 안 한 것 / 다음 작업
 
+### 재배포 대기 (사용자 액션 필요)
+- Worker `worker/worker.js` v2.2.0(Gemini→Anthropic API 교체) 로컬 수정 완료, **Cloudflare 재배포 + `ANTHROPIC_API_KEY` 설정 대기 중** (1장 참고)
+
 ### 보류 중
-- AI 인식 폴백 재개 (1장 "AI 인식 폴백 — 보류 중" 참고 — Gemini 지역차단 문제, 대안 검토 필요)
 - `resources.json`(교육자료, 3순위) — laws/cases와 같은 구조로 아직 미착수
 - '기준' 탭에 강수·미세먼지·한파 사고사례 추가 (조사 범위 밖으로 남겨둠, 필요시 조사)
 
@@ -224,4 +231,5 @@ const APP = {
 - v4.0.0: 표준 입력 양식 도입
 - v4.1.0: 원본+양식 둘 다 지원, 셀 안 줄바꿈(TSV) 처리
 - v5.0.0: 관리자 공유(공용 저장) — Cloudflare KV 연동, 관리자 암호, 개인 오버레이. 전체 흐름 실동작 검증 완료.
-- **v5.1.0: 기준 탭 개편(법령·사고사례 data/ 분리), 오늘 탭 시공사 필터 — 배포·실사용 확인 완료. 작업입력 AI 인식 폴백(Worker `/parse-ai`)은 코드·배포 다 끝났지만 Gemini 지역차단으로 실사용 불가, 보류 중(1장 참고).**
+- v5.1.0: 기준 탭 개편(법령·사고사례 data/ 분리), 오늘 탭 시공사 필터 — 배포·실사용 확인 완료. 작업입력 AI 인식 폴백(Worker `/parse-ai`)은 코드·배포 다 끝났지만 Gemini 지역차단으로 실사용 불가, 보류.
+- **Worker v2.2.0: `/parse-ai`를 Gemini→Anthropic Claude API로 교체(지오차단 회피, JSON 프리필 방식) — 로컬 코드 수정 완료, Cloudflare 재배포·`ANTHROPIC_API_KEY` 설정은 아직 (1장 참고). 클라이언트(index.html)는 계약 불변이라 수정 없음.**

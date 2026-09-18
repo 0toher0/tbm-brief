@@ -17,10 +17,13 @@
  *   [Secret] DATA_GO_KR_KEY   : 공공데이터포털 일반 인증키(Decoding). 절대 코드에 넣지 말 것.
  *   [Secret] SHARED_TOKEN     : 앱과 나눠 갖는 임의 문자열(아무 긴 랜덤값). 아래 앱 APP.appToken과 동일해야 함.
  *   [Var]    ALLOWED_ORIGINS  : 앱이 배포된 주소(쉼표 구분). 예) https://xxx.netlify.app,https://아이디.github.io
- *   [Secret] GEMINI_API_KEY   : (선택) 엑셀 표 형식이 달라 자동인식 실패 시 AI로 대신 추출하는 /parse-ai용.
- *                               aistudio.google.com/apikey 에서 무료로 발급(신용카드 불필요,
- *                               발급 시 화면에서 재확인). 없으면 /parse-ai는 ai_not_configured 에러만
- *                               반환하고 나머지 기능(날씨/공용작업)은 그대로 동작함.
+ *   [Secret] ANTHROPIC_API_KEY : (선택) 엑셀 표 형식이 달라 자동인식 실패 시 AI로 대신 추출하는 /parse-ai용.
+ *                               console.anthropic.com → API Keys에서 발급(사용량 기반 소액 과금,
+ *                               현재 호출량 기준 부담 거의 없음 — 최신 요금은 anthropic.com/pricing 참고).
+ *                               없으면 /parse-ai는 ai_not_configured 에러만 반환하고
+ *                               나머지 기능(날씨/공용작업)은 그대로 동작함.
+ *                               (2026-08: Gemini 무료 API를 썼었으나 Cloudflare Worker 발신 IP가
+ *                               지역차단당해 실사용 불가 확인 → Anthropic API로 교체, 지오차단 없음 확인됨)
  */
 
 // 논리적 피드 id → 실제 공공API 매핑. 새 API 추가 시 여기에 한 줄만.
@@ -78,14 +81,14 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.1.1-debug',
+        version: '2.2.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
           ALLOWED_ORIGINS: env.ALLOWED_ORIGINS || '(open: all origins)',
           ADMIN_PASS: env.ADMIN_PASS ? 'set' : 'MISSING',
           TBM_KV: env.TBM_KV ? 'bound' : 'MISSING',
-          GEMINI_API_KEY: env.GEMINI_API_KEY ? 'set' : 'MISSING (optional — /parse-ai만 영향)',
+          ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ? 'set' : 'MISSING (optional — /parse-ai만 영향)',
         },
       }, 200, cors);
     }
@@ -153,21 +156,21 @@ async function handleRequest(request, env) {
       return json({ error: 'method_not_allowed' }, 405, cors);
     }
 
-    // ===== AI 기반 작업표 파싱 (Gemini API, 무료 등급) =====
+    // ===== AI 기반 작업표 파싱 (Anthropic Claude API) =====
     // POST /parse-ai  body: { text: "<붙여넣은 원본 텍스트>" }
     // 결정론적 파서(parsePaste, 앱 쪽)가 실패했을 때만 클라이언트가 호출하는 폴백.
-    // 스키마 강제(responseSchema)는 출처마다 표기법(대문자/소문자 type)이 달라 신뢰도가
-    // 낮아서 안 쓰고, 프롬프트에 원하는 JSON 구조를 명시 + responseMimeType만 사용한다.
-    // 응답은 클라이언트의 normalizeAiRows()가 필드 누락을 방어하므로 여기선 그대로 통과시킨다.
+    // 2026-08엔 Gemini 무료 API를 썼으나 Cloudflare Worker 발신 IP가 지역차단당해
+    // 실사용 불가였음 → Anthropic API로 교체(지오차단 없음 확인됨). 응답은 클라이언트의
+    // normalizeAiRows()가 필드 누락을 방어하므로 여기선 그대로 통과시킨다.
     if (path0 === 'parse-ai') {
       if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
-      if (!env.GEMINI_API_KEY) return json({ error: 'ai_not_configured' }, 500, cors);
+      if (!env.ANTHROPIC_API_KEY) return json({ error: 'ai_not_configured' }, 500, cors);
       let body;
       try { body = await request.json(); } catch (e) { return json({ error: 'bad_json' }, 400, cors); }
-      const text = String(body.text || '').slice(0, 20000); // 과금(및 무료 등급 토큰 한도) 방지용 길이 상한
+      const text = String(body.text || '').slice(0, 20000); // 과금 방지용 길이 상한
       if (!text.trim()) return json({ error: 'empty_text' }, 400, cors);
 
-      const prompt = `아래는 건설현장 TBM(작업 전 안전미팅)용으로 붙여넣은 작업표입니다. 엑셀에서 복사한 표라 형식이 정형화되어 있지 않을 수 있습니다. 표에 있는 각 작업 행을 정확히 추출해서, 다음 JSON 형식으로만 응답하세요(다른 텍스트 없이 JSON만):
+      const prompt = `아래는 건설현장 TBM(작업 전 안전미팅)용으로 붙여넣은 작업표입니다. 엑셀에서 복사한 표라 형식이 정형화되어 있지 않을 수 있습니다(열 순서가 다르거나, 표준 양식이 아니거나, 여러 표가 섞여 있을 수 있음). 표에 있는 각 작업 행을 정확히 추출해서, 다음 JSON 형식으로만 응답하세요(다른 텍스트나 설명, 마크다운 코드펜스 없이 JSON 객체만):
 
 {"rows":[{
   "date": "작업 날짜, YYYY.MM.DD 형식. 없으면 빈 문자열",
@@ -189,22 +192,28 @@ ${text}
 ---`;
 
       try {
-        const model = 'gemini-3.5-flash-lite';
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        const model = 'claude-haiku-4-5-20251001';
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': env.GEMINI_API_KEY,
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: 'application/json' },
+            model,
+            max_tokens: 8192,
+            messages: [
+              { role: 'user', content: prompt },
+              { role: 'assistant', content: '{' }, // JSON 시작을 강제(프리필)해 형식 이탈 방지
+            ],
           }),
         });
         const data = await r.json();
-        if (!r.ok) return json({ error: 'gemini_error', detail: data }, 502, cors);
-        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!raw) return json({ error: 'no_structured_output', detail: data }, 502, cors);
+        if (!r.ok) return json({ error: 'anthropic_error', detail: data }, 502, cors);
+        const continuation = data?.content?.[0]?.text;
+        if (continuation === undefined) return json({ error: 'no_structured_output', detail: data }, 502, cors);
+        const raw = '{' + continuation;
         let parsed;
         try { parsed = JSON.parse(raw); } catch (e) { return json({ error: 'bad_ai_json', raw }, 502, cors); }
         return json({ rows: parsed.rows || [] }, 200, cors);
