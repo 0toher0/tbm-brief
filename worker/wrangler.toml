@@ -1,0 +1,21 @@
+# 명령줄 배포 설정 (2026-11-16부터). 이 폴더에서: npx wrangler@4.162.0 deploy
+# 비밀값(ADMIN_PASS 등)은 여기 넣지 않는다 — Cloudflare에 이미 저장돼 있고 배포해도 유지됨.
+# 새 비밀값: npx wrangler@4.162.0 secret put 이름 --name tbm-proxy
+name = "tbm-proxy"
+main = "worker.js"
+compatibility_date = "2026-07-29"
+workers_dev = true
+keep_vars = true
+
+# 로그 수집 끔 — 현장톡 알림이 쿼리 파라미터로 대화 내용을 싣고 오므로 로그에 남기지 않는다
+[observability]
+enabled = false
+
+[[kv_namespaces]]
+binding = "TBM_KV"
+id = "2501b0cd7c764e63b0e172ee8b73ae15"
+
+[[d1_databases]]
+binding = "KAKAO_DB"
+database_name = "tbm-kakao"
+database_id = "e06028c6-c645-4667-a0a1-65a32b5db66d"

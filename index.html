@@ -217,6 +217,50 @@ textarea.f-input{resize:vertical;min-height:56px}
 .tab-btn .ic{font-size:1.1rem}
 .tab-btn.on{color:#fff}
 .pg{display:none}.pg.show{display:block}
+
+/* ===== 현장톡 (카톡 수집·분석) ===== */
+.k-stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}
+.k-stat{padding:10px 4px;text-align:center;border-right:1px solid var(--line)}
+.k-stat:last-child{border-right:none}
+.k-stat .v{font-family:var(--num);font-size:1.5rem;font-weight:700;line-height:1}
+.k-stat .k{font-size:.64rem;color:var(--steel);font-weight:700;margin-top:3px}
+.k-stat.done .v{color:var(--green)} .k-stat.open .v{color:var(--amber)} .k-stat.issue .v{color:var(--red)}
+.k-summary{white-space:pre-wrap;font-size:.82rem;color:var(--ink2);line-height:1.6}
+.k-ev{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card)}
+.k-ev:last-child{border-bottom:none}
+.k-ev input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--green)}
+.k-ev.done .k-ev-t{color:var(--steel);text-decoration:line-through}
+.k-ev-t{font-size:.86rem;font-weight:800}
+.k-ev-d{font-size:.76rem;color:var(--ink2);margin-top:2px;white-space:pre-wrap}
+.k-ev-m{font-size:.66rem;color:var(--steel);margin-top:3px}
+.k-list{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.k-kind{display:inline-block;font-size:.6rem;font-weight:800;padding:1px 6px;border-radius:4px;margin-right:5px;vertical-align:1px;background:#f0f1f2;color:var(--ink2)}
+.k-kind.완료{background:var(--green-bg);color:var(--green)}
+.k-kind.이슈,.k-kind.안전{background:var(--red-bg);color:var(--red)}
+.k-kind.지시,.k-kind.일정{background:var(--amber-bg);color:#9a5300}
+.k-kind.자재·장비{background:#e7f0ff;color:#1864ab}
+.k-room{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:.8rem;background:var(--card)}
+.k-room:last-child{border-bottom:none}
+.k-room .nm{flex:1;font-weight:700;word-break:break-all}
+.k-room .ct{font-size:.66rem;color:var(--steel)}
+.k-msg{font-size:.76rem;padding:5px 0;border-bottom:1px dashed var(--line);color:var(--ink2)}
+.k-msg b{color:var(--ink)}
+.k-msg .t{font-family:var(--num);color:var(--steel);margin-right:5px}
+details.k-more{margin-top:10px}
+details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6px 2px}
+.k-empty{font-size:.8rem;color:var(--steel);text-align:center;padding:16px}
+.k-work{padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
+.k-work:last-child{border-bottom:none}
+.k-work:active{background:#f6f7f7}
+.k-wtime{font-family:var(--num);font-size:1.05rem;font-weight:700;letter-spacing:.02em}
+.k-wtime .dash{color:var(--steel);margin:0 4px}
+.k-wtime .none{color:var(--amber)}
+.k-wst{float:right;font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:5px;background:#f0f1f2;color:var(--ink2)}
+.k-wst.완료{background:var(--green-bg);color:var(--green)} .k-wst.진행{background:var(--amber-bg);color:#9a5300}
+.k-wst.중단{background:var(--red-bg);color:var(--red)} .k-wst.예정{background:#e7f0ff;color:#1864ab}
+.k-wtitle{font-size:.88rem;font-weight:800;margin-top:2px}
+.k-wmeta{font-size:.7rem;color:var(--steel);margin-top:2px}
+.k-wfeat{font-size:.76rem;color:var(--ink2);margin-top:3px;white-space:pre-wrap}
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:.82rem;font-weight:700;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none;white-space:nowrap;max-width:90%}
 .toast.show{opacity:1}
 </style>
@@ -373,6 +417,79 @@ textarea.f-input{resize:vertical;min-height:56px}
     <div class="card" id="infoCard" style="font-size:.82rem;color:var(--ink2)"></div>
   </section>
 </div>
+
+<!-- ============ 현장톡 (관리자 전용) ============ -->
+<div class="pg" id="pgKakao">
+  <div id="kLogin" class="card" style="display:none;margin-top:14px">
+    <div class="sec-t" style="margin-bottom:6px">현장톡 · 관리자 확인</div>
+    <div class="paste-hint">카카오톡 대화가 담겨 있어 관리자 암호가 있어야 볼 수 있습니다.</div>
+    <div class="btn-row">
+      <input class="f-input" id="kPass" type="password" placeholder="관리자 암호" style="flex:2">
+      <button class="btn primary" id="kLoginBtn" style="flex:1">열기</button>
+    </div>
+  </div>
+
+  <div id="kMain" style="display:none">
+    <div id="kDayChips" class="date-chips" style="margin-top:2px"></div>
+    <div class="k-stats" id="kStats"></div>
+
+    <section>
+      <div class="sec-h"><div class="sec-t">하루 요약 <small id="kAnalyzedAt"></small></div></div>
+      <div class="card">
+        <div class="k-summary" id="kSummary">—</div>
+        <div class="btn-row">
+          <button class="btn primary" id="kAnalyzeBtn">✨ 이 날짜 AI 분석</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><div class="sec-t">작업 기록 <small>시작·종료·특징 · 누르면 수정</small></div>
+        <button class="mini-btn" id="kWorksCsv">엑셀(CSV)</button></div>
+      <div id="kWorks"></div>
+    </section>
+
+    <section>
+      <div class="sec-h"><div class="sec-t">주요 이벤트 <small>체크하면 완료 처리</small></div></div>
+      <div id="kEvents"></div>
+    </section>
+
+    <section>
+      <div class="sec-h"><div class="sec-t">이전 미결 <small>최근 30일 · 완료 확인 안 된 것</small></div></div>
+      <div id="kPrev"></div>
+    </section>
+
+    <section>
+      <div class="sec-h"><div class="sec-t">대화 내보내기 붙여넣기 <small>텍스트 또는 파일</small></div></div>
+      <div class="card">
+        <div class="paste-hint">카카오톡 방 → 메뉴(≡) → 설정 → <b>대화 내용 내보내기</b>로 받은 내용을 <b>아래 칸에 그대로 붙여넣거나</b> 파일을 고르세요. 올리면 날짜별로 <b>작업 시작·종료 시각, 작업 특징, 주요 이벤트</b>를 AI가 정리합니다. 같은 대화를 여러 번 올려도 이미 있는 메시지는 건너뛰고, 기록은 날짜별로 다시 정리되어 <b>중복으로 쌓이지 않습니다</b>.</div>
+        <textarea class="paste-area" id="kPaste" placeholder="여기에 내보낸 대화 텍스트를 붙여넣기" style="min-height:110px;white-space:pre-wrap"></textarea>
+        <div class="paste-hint" style="margin:6px 0 4px">또는 파일 선택</div>
+        <input type="file" id="kFile" accept=".txt,.csv,text/plain,text/csv" class="f-input">
+        <label class="f-label">방 이름 <small style="font-weight:500;color:var(--steel)">(알림에 표시되는 이름과 같게)</small></label>
+        <input class="f-input" id="kImportRoom" placeholder="파일을 고르면 자동으로 채워집니다">
+        <div class="paste-hint" id="kImportInfo" style="margin-top:8px"></div>
+        <label class="chk-row" style="margin-top:6px"><input type="checkbox" id="kAutoAnalyze" checked>올린 뒤 해당 날짜들 바로 AI 정리</label>
+        <div class="btn-row"><button class="btn done" id="kImportBtn" disabled>올리기</button></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><div class="sec-t">수집 중인 방 <small>추적을 켠 방만 내용이 저장됩니다</small></div></div>
+      <div id="kRooms" class="k-list"></div>
+    </section>
+
+    <details class="k-more" id="kMsgsBox">
+      <summary>이 날짜 대화 원문 보기</summary>
+      <div class="card" id="kMsgs" style="max-height:420px;overflow-y:auto"></div>
+    </details>
+    <details class="k-more" id="kRawBox">
+      <summary>최근 수신 알림 (연결 확인용)</summary>
+      <div class="card" id="kRaw" style="max-height:360px;overflow-y:auto"></div>
+    </details>
+    <div class="stamp">폰 알림은 MacroDroid가 서버로 보냅니다. 설정법은 HANDOFF.md '현장톡' 장 참고.</div>
+  </div>
+</div>
 </main>
 
 <!-- bottom nav -->
@@ -381,6 +498,7 @@ textarea.f-input{resize:vertical;min-height:56px}
   <button class="tab-btn" data-pg="pgInput"><span class="ic">✎</span>작업입력</button>
   <button class="tab-btn" data-pg="pgRecords"><span class="ic">▤</span>기록</button>
   <button class="tab-btn" data-pg="pgInfo"><span class="ic">§</span>기준</button>
+  <button class="tab-btn" data-pg="pgKakao" id="tabKakao" style="display:none"><span class="ic">✉</span>현장톡</button>
 </nav>
 
 <!-- 설정 모달 -->
@@ -423,7 +541,7 @@ textarea.f-input{resize:vertical;min-height:56px}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.1.0',
+  version : '5.3.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1442,6 +1560,238 @@ function loadDemo(){
   renderToday(); $('errBox').style.display='none'; toast('데모 데이터를 표시합니다');
 }
 
+/* ================= 현장톡 (카톡 알림 수집·내보내기 업로드·AI 이벤트) =================
+ * 서버: Worker /kakao/* (D1 저장, ADMIN_PASS 필요). 폰 알림은 MacroDroid가 /kakao/ingest로 보냄.
+ * 관리자 암호가 이 기기에 저장돼 있거나 주소 끝에 #kakao 를 붙여 열 때만 탭이 보인다. */
+let kDay = null;
+let kParsed = null; // 내보내기 파일 파싱 결과 {room, messages}
+
+async function kApi(path, body){
+  const base=APP.proxyBase.replace(/\/$/,'');
+  const r=await fetch(base+'/kakao/'+path,{
+    method: body ? 'POST' : 'GET',
+    headers:{'Content-Type':'application/json','X-Admin-Pass':adminPass||''},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const d=await r.json().catch(()=>({error:'bad_response'}));
+  if(!r.ok || d.error){ const e=new Error(d.error||('http_'+r.status)); e.data=d; e.status=r.status; throw e; }
+  return d;
+}
+function kErr(e){
+  const map={admin_auth_failed:'관리자 암호가 맞지 않습니다', kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
+    ai_not_configured:'서버에 ANTHROPIC_API_KEY가 없습니다', no_messages:'이 날짜에 추적 중인 방의 메시지가 없습니다',
+    refused:'AI가 이 내용의 분석을 거절했습니다', anthropic_error:'AI 호출 오류'};
+  return map[e.message] || ('오류: '+e.message);
+}
+function kShowTab(){ $('tabKakao').style.display = (adminPass || location.hash==='#kakao') ? '' : 'none'; }
+
+async function renderKakao(){
+  if(!adminPass){ $('kLogin').style.display='block'; $('kMain').style.display='none'; return; }
+  $('kLogin').style.display='none'; $('kMain').style.display='block';
+  try{
+    const d=await kApi('days');
+    if(!kDay) kDay=d.today;
+    const days=d.days.map(x=>x.day);
+    if(!days.includes(d.today)) days.unshift(d.today);
+    if(!days.includes(kDay)) days.push(kDay);
+    days.sort().reverse();
+    const cnt=Object.fromEntries(d.days.map(x=>[x.day,x.n]));
+    $('kDayChips').innerHTML=days.slice(0,30).map(dy=>`<button class="dchip ${dy===kDay?'on':''}" data-day="${dy}">${dy===d.today?'오늘':dy.slice(5).replace('-','/')}<span class="dc-cnt">${cnt[dy]||0}</span></button>`).join('');
+    $('kDayChips').querySelectorAll('.dchip').forEach(b=>b.onclick=()=>{kDay=b.dataset.day; renderKakao();});
+    await Promise.all([kLoadSummary(), kLoadRooms()]);
+    if($('kMsgsBox').open) kLoadMsgs();
+    if($('kRawBox').open) kLoadRaw();
+  }catch(e){
+    if(e.status===401){ adminPass=''; saveJSON(LS_ADMIN,''); $('kLogin').style.display='block'; $('kMain').style.display='none'; }
+    toast(kErr(e));
+  }
+}
+
+function kEvRow(e, showDay){
+  const meta=[showDay?e.day.slice(5).replace('-','/'):'', e.at, e.room, e.who].filter(Boolean).map(esc).join(' · ');
+  return `<div class="k-ev ${e.status==='done'?'done':''}">
+    <input type="checkbox" data-ev="${e.id}" ${e.status==='done'?'checked':''}>
+    <div style="flex:1;min-width:0">
+      <div class="k-ev-t"><span class="k-kind ${esc(e.kind)}">${esc(e.kind)}</span>${esc(e.title)}</div>
+      ${e.detail?`<div class="k-ev-d">${esc(e.detail)}</div>`:''}
+      <div class="k-ev-m">${meta}${e.note?` · <span style="color:var(--green)">${esc(e.note)}</span>`:''}</div>
+    </div></div>`;
+}
+function kBindChecks(root){
+  root.querySelectorAll('input[data-ev]').forEach(cb=>cb.onchange=async()=>{
+    try{ await kApi('event',{id:+cb.dataset.ev,status:cb.checked?'done':'open'}); cb.closest('.k-ev').classList.toggle('done',cb.checked); kLoadSummary(); }
+    catch(e){ cb.checked=!cb.checked; toast(kErr(e)); }
+  });
+}
+async function kLoadSummary(){
+  const s=await kApi('summary?day='+encodeURIComponent(kDay));
+  const ev=s.events, total=s.msgCounts.reduce((a,x)=>a+x.n,0);
+  const done=ev.filter(e=>e.status==='done').length;
+  const open=ev.filter(e=>e.status!=='done').length;
+  const issue=ev.filter(e=>e.status!=='done'&&(e.kind==='이슈'||e.kind==='안전')).length;
+  $('kStats').innerHTML=`<div class="k-stat"><div class="v">${total}</div><div class="k">메시지</div></div>
+    <div class="k-stat done"><div class="v">${done}</div><div class="k">완료</div></div>
+    <div class="k-stat open"><div class="v">${open}</div><div class="k">미결</div></div>
+    <div class="k-stat issue"><div class="v">${issue}</div><div class="k">이슈·안전</div></div>`;
+  const a=s.analysis;
+  $('kSummary').textContent = a ? a.summary : (total ? '아직 분석하지 않았습니다. 아래 버튼을 누르세요.' : '이 날짜에 저장된 메시지가 없습니다.');
+  $('kAnalyzedAt').textContent = a ? `${a.analyzed_at} 분석 · 메시지 ${a.msg_count}건${a.truncated?' · ⚠ 너무 길어 앞부분 일부 제외':''}` : '';
+  const order=['이슈','안전','지시','일정','자재·장비','완료','기타'];
+  const sorted=[...ev].sort((x,y)=>(x.status==='done')-(y.status==='done')||order.indexOf(x.kind)-order.indexOf(y.kind)||String(x.at).localeCompare(String(y.at)));
+  $('kEvents').innerHTML = sorted.length ? `<div class="k-list">${sorted.map(e=>kEvRow(e,false)).join('')}</div>` : '<div class="k-empty">이벤트 없음</div>';
+  const W=s.works||[];
+  $('kWorks').innerHTML = W.length ? `<div class="k-list">${W.map(w=>{
+    const meta=[w.place,w.company,w.people,w.equipment,w.room].filter(Boolean).map(esc).join(' · ');
+    return `<div class="k-work" data-work="${w.id}">
+      <div class="k-wtime">${w.start_at?esc(w.start_at):'<span class="none">시작?</span>'}<span class="dash">~</span>${w.end_at?esc(w.end_at):'<span class="none">'+(w.status==='완료'?'종료?':'진행중')+'</span>'}
+        <span class="k-wst ${esc(w.status)}">${esc(w.status)}${w.manual?' ✎':''}</span></div>
+      <div class="k-wtitle">${esc(w.title)}</div>
+      ${meta?`<div class="k-wmeta">${meta}</div>`:''}
+      ${w.features?`<div class="k-wfeat">${esc(w.features)}</div>`:''}
+      ${w.note?`<div class="k-wmeta" style="color:var(--green)">${esc(w.note)}</div>`:''}
+    </div>`;}).join('')}</div>` : '<div class="k-empty">작업 기록 없음 — 대화를 올리고 AI 정리를 하면 채워집니다</div>';
+  $('kWorks').querySelectorAll('[data-work]').forEach(el=>el.onclick=()=>kEditWork(W.find(w=>w.id===+el.dataset.work)));
+  $('kPrev').innerHTML = s.openPrev.length ? `<div class="k-list">${s.openPrev.map(e=>kEvRow(e,true)).join('')}</div>` : '<div class="k-empty">남은 미결 없음</div>';
+  kBindChecks($('kEvents')); kBindChecks($('kPrev'));
+}
+async function kLoadRooms(){
+  const r=await kApi('rooms');
+  $('kRooms').innerHTML = r.rooms.length ? r.rooms.map(x=>`<div class="k-room">
+      <div class="nm">${esc(x.room)}<div class="ct">알림 ${x.seen_count}건 · 저장 ${x.stored}건${x.last_seen?' · 최근 '+esc(x.last_seen.slice(5)):''}</div></div>
+      <button class="mini-btn" data-room="${esc(x.room)}" data-tr="${x.tracked?0:1}" style="${x.tracked?'background:var(--green);color:#fff':''}">${x.tracked?'추적 중':'추적 끔'}</button>
+    </div>`).join('') : '<div class="k-empty">아직 들어온 알림이 없습니다. 폰 MacroDroid 설정 후 카톡이 오면 여기 방이 나타납니다.</div>';
+  $('kRooms').querySelectorAll('button[data-room]').forEach(b=>b.onclick=async()=>{
+    try{ await kApi('rooms',{room:b.dataset.room,tracked:b.dataset.tr==='1'}); kLoadRooms(); toast(b.dataset.tr==='1'?'추적을 켰습니다 — 이제부터 내용이 저장됩니다':'추적을 껐습니다'); }
+    catch(e){ toast(kErr(e)); }
+  });
+}
+async function kLoadMsgs(){
+  const r=await kApi('messages?day='+encodeURIComponent(kDay));
+  let lastRoom='';
+  $('kMsgs').innerHTML = r.messages.length ? r.messages.map(m=>{
+    const head = m.room!==lastRoom ? `<div class="sec-t" style="margin:10px 0 4px">${esc(m.room)}</div>` : '';
+    lastRoom=m.room;
+    return head+`<div class="k-msg"><span class="t">${esc(m.ts.slice(11))}</span><b>${esc(m.sender)}</b> ${esc(m.text)}</div>`;
+  }).join('') : '<div class="k-empty">메시지 없음</div>';
+}
+async function kLoadRaw(){
+  const r=await kApi('raw');
+  $('kRaw').innerHTML = r.raw.length ? r.raw.map(x=>`<div class="k-msg"><span class="t">${esc(x.at.slice(5))}</span>
+    제목 <b>${esc(x.title)}</b>${x.subtext?` · 보조 <b>${esc(x.subtext)}</b>`:''} · 내용 "${esc(x.text40)}"<br>
+    → 방 <b>${esc(x.room)}</b> / 보낸사람 <b>${esc(x.sender)}</b> ${x.stored?'<span style="color:var(--green)">저장됨</span>':'<span style="color:var(--steel)">추적 안 함</span>'}</div>`).join('')
+    : '<div class="k-empty">아직 수신된 알림이 없습니다</div>';
+}
+async function kAnalyze(){
+  const btn=$('kAnalyzeBtn'), old=btn.textContent; btn.disabled=true; btn.textContent='분석 중… (최대 1~2분)';
+  try{
+    const r=await kApi('analyze',{day:kDay});
+    if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
+    toast(`분석 완료: 작업 ${r.works}건 · 이벤트 ${r.events}건${r.worksClosed?`, 이전 작업 ${r.worksClosed}건 종료`:''}${r.resolvedPrev?`, 이전 미결 ${r.resolvedPrev}건 완료`:''}`);
+    await kLoadSummary();
+  }catch(e){ toast(kErr(e)); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
+
+/* 카카오톡 '대화 내보내기' 파일 파서 — PC(Windows)·안드로이드·iOS 텍스트, CSV 지원 */
+function parseKakaoExport(raw){
+  const lines=raw.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').split('\n');
+  const pad=n=>String(n).padStart(2,'0');
+  const hm=(ap,h,mi)=>{h=+h; if(ap==='오후'&&h<12)h+=12; if(ap==='오전'&&h===12)h=0; return pad(h)+':'+pad(mi);};
+  const ymd=(y,mo,d)=>`${y}-${pad(mo)}-${pad(d)}`;
+  let room=''; const m0=(lines[0]||'').match(/^(.+?)\s*(?:님과\s*)?카카오톡\s*대화/); if(m0) room=m0[1].trim();
+  const reSep=/^-{3,}\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/;
+  const rePC=/^\[(.+?)\]\s*\[(오전|오후)\s*(\d{1,2}):(\d{2})\]\s?(.*)$/;
+  const reMob=/^(\d{4})(?:년\s*|\.\s*)(\d{1,2})(?:월\s*|\.\s*)(\d{1,2})(?:일|\.)?\s*(오전|오후)?\s*(\d{1,2}):(\d{2}),\s*(.+?)\s:\s(.*)$/;
+  const reCsv=/^(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2})(?::\d{2})?,"?((?:[^"]|"")*?)"?,"?(.*?)"?$/;
+  const reSys=/님이 (들어왔습니다|나갔습니다|.*초대했습니다)|님을 내보냈습니다|채팅방 관리자가|삭제된 메시지입니다/;
+  const out=[]; let cur=null, day=null;
+  for(const line of lines){
+    let m;
+    if((m=line.match(reSep))){ day=ymd(m[1],m[2],m[3]); cur=null; continue; }
+    if(day && (m=line.match(rePC))){ cur={ts:`${day} ${hm(m[2],m[3],m[4])}`,sender:m[1].trim(),text:m[5]}; out.push(cur); continue; }
+    if((m=line.match(reMob))){ cur={ts:`${ymd(m[1],m[2],m[3])} ${hm(m[4],m[5],m[6])}`,sender:m[7].trim(),text:m[8]}; out.push(cur); continue; }
+    if((m=line.match(reCsv))){ cur={ts:`${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}`,sender:m[6].replace(/""/g,'"'),text:m[7].replace(/""/g,'"')}; out.push(cur); continue; }
+    if(/^\d{4}(년|\.\s|-\d\d-)/.test(line) || reSys.test(line)){ cur=null; continue; } // 날짜줄·입퇴장 등 시스템 줄
+    if(cur && line.trim()) cur.text+='\n'+line;
+  }
+  return {room, messages: out.filter(x=>x.sender && x.text.trim() && !reSys.test(x.text))};
+}
+async function kEditWork(w){
+  if(!w) return;
+  const end=prompt(`[${w.title}]\n종료 시각(HH:MM, 비우면 진행중)`, w.end_at||'');
+  if(end===null) return;
+  const st=prompt('상태: 예정 / 진행 / 완료 / 중단', end.trim()?'완료':(w.status||'진행'));
+  if(st===null) return;
+  try{ await kApi('work',{id:w.id,end_at:end.trim(),status:st.trim()}); toast('작업 기록을 수정했습니다 (재분석해도 유지)'); kLoadSummary(); }
+  catch(e){ toast(kErr(e)); }
+}
+async function kWorksCsv(){
+  const from=kDay.slice(0,8)+'01', to=kDay.slice(0,8)+'31';
+  try{
+    const r=await kApi(`works?from=${from}&to=${to}`);
+    if(!r.works.length){ toast('이번 달 작업 기록이 없습니다'); return; }
+    const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const rows=[['날짜','시작','종료','상태','작업','위치','업체','인원','장비','특징','방','메모']]
+      .concat(r.works.map(w=>[w.day,w.start_at,w.end_at,w.status,w.title,w.place,w.company,w.people,w.equipment,w.features,w.room,w.note]));
+    const blob=new Blob(['﻿'+rows.map(x=>x.map(q).join(',')).join('\r\n')],{type:'text/csv'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`작업기록_${kDay.slice(0,7)}.csv`; a.click();
+  }catch(e){ toast(kErr(e)); }
+}
+function kPrepare(text){
+  kParsed=null; $('kImportBtn').disabled=true;
+  if(!text.trim()){ $('kImportInfo').textContent=''; return; }
+  const p=parseKakaoExport(text);
+  kParsed=p;
+  if(p.room && !$('kImportRoom').value) $('kImportRoom').value=p.room;
+  if(!p.messages.length){ $('kImportInfo').innerHTML='<span style="color:var(--red)">메시지를 찾지 못했습니다. 카카오톡 내보내기 원본 파일인지 확인하세요.</span>'; return; }
+  const days=[...new Set(p.messages.map(m=>m.ts.slice(0,10)))].sort();
+  $('kImportInfo').innerHTML=`메시지 <b>${p.messages.length.toLocaleString()}</b>건 · ${days[0]} ~ ${days[days.length-1]} (${days.length}일)`;
+  $('kImportBtn').disabled=false;
+}
+async function kImport(){
+  const room=$('kImportRoom').value.trim();
+  if(!kParsed||!kParsed.messages.length) return;
+  if(!room){ toast('방 이름을 입력하세요'); return; }
+  const btn=$('kImportBtn'); btn.disabled=true;
+  const msgs=kParsed.messages, N=400; let ins=0, dup=0;
+  try{
+    for(let i=0;i<msgs.length;i+=N){
+      btn.textContent=`업로드 중… ${Math.min(i+N,msgs.length)}/${msgs.length}`;
+      const r=await kApi('import',{room,messages:msgs.slice(i,i+N)});
+      ins+=r.inserted; dup+=r.duplicates;
+    }
+    $('kImportInfo').innerHTML+=` → <b style="color:var(--green)">새로 ${ins}건 저장</b>, 중복 ${dup}건`;
+    const days=[...new Set(msgs.map(m=>m.ts.slice(0,10)))].sort(); // 오래된 날부터 — 전날 미종료 작업이 다음 날 종료로 이어지게
+    let done=0, nWorks=0, nEv=0, fails=[];
+    if($('kAutoAnalyze').checked){
+      if(days.length>7 && !confirm(`${days.length}일치를 하루씩 AI로 정리합니다(날짜당 1회 호출, 시간이 걸리고 비용이 듭니다). 계속할까요?`)) days.length=0;
+      for(const d of days){
+        btn.textContent=`AI 정리 중… ${d} (${++done}/${days.length})`;
+        try{ const r=await kApi('analyze',{day:d}); if(r.ok){ nWorks+=r.works; nEv+=r.events; } else fails.push(d); }
+        catch(e){ fails.push(d); if(e.message==='ai_not_configured'){ toast(kErr(e)); break; } }
+      }
+    }
+    toast(done ? `완료: 새 메시지 ${ins}건 · 작업 ${nWorks}건 · 이벤트 ${nEv}건${fails.length?` (실패 ${fails.length}일)`:''}` : `업로드 완료: 새 메시지 ${ins}건 (중복 ${dup}건 건너뜀)`);
+    $('kFile').value=''; $('kPaste').value=''; kParsed=null;
+    if(days.length) kDay=days[days.length-1];
+    renderKakao();
+  }catch(e){ toast(kErr(e)); btn.disabled=false; }
+  finally{ btn.textContent='올리기'; }
+}
+$('kLoginBtn').onclick=async()=>{
+  const p=$('kPass').value.trim(); if(!p) return;
+  adminPass=p;
+  try{ await kApi('days'); saveJSON(LS_ADMIN,p); if($('adminPassInput')) $('adminPassInput').value=p; kShowTab(); renderKakao(); }
+  catch(e){ adminPass=''; toast(kErr(e)); }
+};
+$('kAnalyzeBtn').onclick=kAnalyze;
+$('kFile').onchange=async()=>{ const f=$('kFile').files[0]; if(f){ $('kPaste').value=''; kPrepare(await f.text()); } else kPrepare(''); };
+$('kPaste').addEventListener('input',()=>{ $('kFile').value=''; kPrepare($('kPaste').value); });
+$('kWorksCsv').onclick=kWorksCsv;
+$('kImportBtn').onclick=kImport;
+$('kMsgsBox').addEventListener('toggle',()=>{ if($('kMsgsBox').open) kLoadMsgs().catch(e=>toast(kErr(e))); });
+$('kRawBox').addEventListener('toggle',()=>{ if($('kRawBox').open) kLoadRaw().catch(e=>toast(kErr(e))); });
+
 /* ================= 네비/이벤트 ================= */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('on',x===b));
@@ -1449,6 +1799,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   if(b.dataset.pg==='pgInput') renderInputTab();
   if(b.dataset.pg==='pgRecords') renderRecords();
   if(b.dataset.pg==='pgInfo') renderInfo();
+  if(b.dataset.pg==='pgKakao') renderKakao();
 });
 $('btnSettings').onclick=openSettings;
 $('btnRefresh').onclick=loadAll;
@@ -1466,6 +1817,8 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.onclick=e=>{if(e.target===m)
 
 $('hSub').textContent=`광양 2고로 개수 현장 · v${APP.version} ${APP.channel}`;
 if(adminPass){ $('adminPassInput').value=adminPass; }
+kShowTab();
+if(location.hash==='#kakao') document.querySelector('.tab-btn[data-pg="pgKakao"]').click();
 loadAll();
 </script>
 

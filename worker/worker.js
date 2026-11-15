@@ -81,16 +81,25 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.2.0',
+        version: '2.4.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
           ALLOWED_ORIGINS: env.ALLOWED_ORIGINS || '(open: all origins)',
           ADMIN_PASS: env.ADMIN_PASS ? 'set' : 'MISSING',
           TBM_KV: env.TBM_KV ? 'bound' : 'MISSING',
-          ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ? 'set' : 'MISSING (optional — /parse-ai만 영향)',
+          ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ? 'set' : 'MISSING (optional — /parse-ai, /kakao/analyze만 영향)',
+          KAKAO_DB: env.KAKAO_DB ? 'bound' : 'MISSING (optional — 현장톡 기능만 영향)',
         },
       }, 200, cors);
+    }
+
+    // ===== 현장톡 (카카오톡 알림 수집·분석) — 관리자 전용, 아래 handleKakao 참고 =====
+    // 폰 자동화앱(MacroDroid)은 Origin/앱토큰 없이 호출하므로 일반 검사 전에 분기하고,
+    // 대신 ADMIN_PASS로 모든 경로를 보호한다(개인 대화 내용이므로 공유 토큰으로는 부족).
+    if (url.pathname.replace(/^\/+/, '').split('/')[0] === 'kakao') {
+      if (origin && allowed.length && !allowed.includes(origin)) return json({ error: 'origin_not_allowed' }, 403, cors);
+      return await handleKakao(request, env, url, cors);
     }
 
     // Origin 차단 (허용목록이 설정된 경우)
@@ -254,4 +263,460 @@ function json(obj, status, headers) {
     status,
     headers: { ...headers, 'Content-Type': 'application/json' },
   });
+}
+
+/* =====================================================================
+ * 현장톡 — 카카오톡 알림 자동수집 + 대화 내보내기 업로드 + AI 이벤트 추출
+ * =====================================================================
+ * 저장소: Cloudflare D1 (바인딩명 KAKAO_DB). KV는 무료 쓰기 한도(1,000회/일)가
+ *   단톡방 메시지량에 부족해서 D1(100,000행/일)을 쓴다. 테이블은 첫 호출 때 자동 생성.
+ * 인증: 모든 /kakao/* 는 ADMIN_PASS (헤더 X-Admin-Pass 또는 폼/JSON 필드 k).
+ *
+ *   POST /kakao/ingest     폰 알림 1건. 필드: title, text, subtext(선택), app(선택)
+ *                          (form-urlencoded / JSON / 쿼리 모두 허용 — MacroDroid용)
+ *   POST /kakao/import     내보내기 파일에서 파싱한 메시지 묶음 {room, messages:[{ts,sender,text}]}
+ *   GET  /kakao/days       메시지가 있는 날짜 목록(최근 60일)
+ *   GET  /kakao/summary?day=YYYY-MM-DD   그날 분석결과 + 이벤트 + 이전 미결
+ *   GET  /kakao/messages?day=&room=      원문 보기
+ *   GET  /kakao/rooms      방 목록(추적 여부·건수) / POST {room, tracked}
+ *   POST /kakao/analyze    {day}  추적 중인 방의 그날 대화를 Claude로 분석해 이벤트 저장
+ *   POST /kakao/event      {id, status:'open'|'done'}  체크 토글
+ *   GET  /kakao/works?from=&to=   작업 기록(작업명·시작·종료·상태·특징·인원·장비) 기간 조회
+ *   POST /kakao/work       {id, status?, end_at?}  작업 기록 수동 수정(재분석해도 보존)
+ *   GET  /kakao/raw        최근 수신 원본 30건(파싱 확인용, 본문은 앞 40자만 보관)
+ *
+ * 개인정보: 추적(tracked)으로 켠 방의 메시지만 본문을 저장한다. 처음 보는 방은
+ *   방 이름·건수만 기록되고, 앱에서 '추적'을 켠 이후부터 저장된다.
+ */
+let KAKAO_SCHEMA_READY = false;
+async function kakaoSchema(db) {
+  if (KAKAO_SCHEMA_READY) return;
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS kakao_rooms (room TEXT PRIMARY KEY, tracked INTEGER NOT NULL DEFAULT 0, seen_count INTEGER NOT NULL DEFAULT 0, first_seen TEXT, last_seen TEXT)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS kakao_msgs (id INTEGER PRIMARY KEY AUTOINCREMENT, room TEXT NOT NULL, sender TEXT NOT NULL, text TEXT NOT NULL, ts TEXT NOT NULL, day TEXT NOT NULL, src TEXT NOT NULL, UNIQUE(room, sender, ts, text))`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_kakao_msgs_day ON kakao_msgs(day, room)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS kakao_events (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, room TEXT, kind TEXT, title TEXT, detail TEXT, who TEXT, at TEXT, status TEXT NOT NULL DEFAULT 'open', manual INTEGER NOT NULL DEFAULT 0, note TEXT, updated_at TEXT)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_kakao_events_day ON kakao_events(day)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS kakao_analysis (day TEXT PRIMARY KEY, summary TEXT, msg_count INTEGER, truncated INTEGER, model TEXT, analyzed_at TEXT)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS kakao_works (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, room TEXT, wkey TEXT, title TEXT, place TEXT, company TEXT, start_at TEXT, end_at TEXT, status TEXT, features TEXT, people TEXT, equipment TEXT, manual INTEGER NOT NULL DEFAULT 0, note TEXT, updated_at TEXT)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_kakao_works_day ON kakao_works(day)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS kakao_raw (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, title TEXT, subtext TEXT, text40 TEXT, room TEXT, sender TEXT, stored INTEGER)`),
+  ]);
+  KAKAO_SCHEMA_READY = true;
+}
+
+// 한국시간(KST, UTC+9) 기준 'YYYY-MM-DD HH:MM'
+function kstNow() {
+  const s = new Date(Date.now() + 9 * 3600 * 1000).toISOString();
+  return { ts: s.slice(0, 10) + ' ' + s.slice(11, 16), day: s.slice(0, 10) };
+}
+function addMinutes(ts, m) {
+  const d = new Date(ts.replace(' ', 'T') + ':00Z');
+  return new Date(d.getTime() + m * 60000).toISOString().slice(0, 16).replace('T', ' ');
+}
+
+// 카카오톡 알림 → {room, sender, text}. 기종/버전마다 필드 구성이 달라 방어적으로 해석한다.
+//   1:1     title=보낸사람, text=메시지
+//   단톡    title=보낸사람, subtext=방이름   또는  title=방이름, text="보낸사람 : 메시지"
+function parseKakaoNotification(title, text, subtext) {
+  title = String(title || '').trim();
+  text = String(text || '').trim();
+  subtext = String(subtext || '').trim();
+  if (!title || !text) return null;
+  // 요약/시스템성 알림은 버린다 (예: "새 메시지 3개", "3개의 안 읽은 메시지")
+  if (/^(새\s*메시지\s*\d+개|\d+개의\s*(새로운\s*|안\s*읽은\s*)?메시지)/.test(text)) return null;
+  if (subtext && !/^\d+$/.test(subtext)) return { room: subtext, sender: title, text };
+  const m = text.match(/^([^:\n]{1,20}?)\s?:\s([\s\S]+)$/);
+  if (m && !/^\d/.test(m[1])) return { room: title, sender: m[1].trim(), text: m[2].trim() };
+  return { room: title, sender: title, text };
+}
+
+async function readKakaoBody(request, url) {
+  const out = Object.fromEntries(url.searchParams.entries());
+  if (request.method !== 'POST') return out;
+  const ct = request.headers.get('Content-Type') || '';
+  try {
+    if (ct.includes('application/json')) Object.assign(out, await request.json());
+    else if (ct.includes('form')) {
+      const fd = await request.formData();
+      for (const [k, v] of fd.entries()) out[k] = String(v);
+    } else {
+      const t = await request.text();
+      if (t.trim().startsWith('{')) Object.assign(out, JSON.parse(t));
+      else Object.assign(out, Object.fromEntries(new URLSearchParams(t).entries()));
+    }
+  } catch (e) { out.__bad = String(e); }
+  return out;
+}
+
+async function handleKakao(request, env, url, cors) {
+  const sub = url.pathname.replace(/^\/+/, '').split('/')[1] || '';
+  const body = await readKakaoBody(request, url);
+  if (body.__bad) return json({ error: 'bad_body', message: body.__bad }, 400, cors);
+  const pass = request.headers.get('X-Admin-Pass') || body.k || '';
+  if (!env.ADMIN_PASS || pass !== env.ADMIN_PASS) return json({ error: 'admin_auth_failed' }, 401, cors);
+  if (!env.KAKAO_DB) return json({ error: 'kakao_db_not_bound' }, 500, cors);
+  const db = env.KAKAO_DB;
+  await kakaoSchema(db);
+  const now = kstNow();
+
+  // ---- 폰 알림 수신 ----
+  if (sub === 'ingest') {
+    const p = parseKakaoNotification(body.title, body.text, body.subtext);
+    if (!p) return json({ ok: true, skipped: 'empty_or_summary' }, 200, cors);
+    const roomRow = await db.prepare(`SELECT tracked FROM kakao_rooms WHERE room=?`).bind(p.room).first();
+    const tracked = roomRow ? roomRow.tracked === 1 : false;
+    const stmts = [
+      db.prepare(`INSERT INTO kakao_rooms(room, tracked, seen_count, first_seen, last_seen) VALUES(?,0,1,?,?)
+                  ON CONFLICT(room) DO UPDATE SET seen_count=seen_count+1, last_seen=excluded.last_seen`).bind(p.room, now.ts, now.ts),
+      db.prepare(`INSERT INTO kakao_raw(at,title,subtext,text40,room,sender,stored) VALUES(?,?,?,?,?,?,?)`)
+        .bind(now.ts, String(body.title || '').slice(0, 60), String(body.subtext || '').slice(0, 60), String(body.text || '').slice(0, 40), p.room, p.sender, tracked ? 1 : 0),
+      db.prepare(`DELETE FROM kakao_raw WHERE id <= (SELECT MAX(id) - 30 FROM kakao_raw)`),
+    ];
+    if (tracked) {
+      stmts.push(db.prepare(`INSERT OR IGNORE INTO kakao_msgs(room,sender,text,ts,day,src) VALUES(?,?,?,?,?,'noti')`)
+        .bind(p.room, p.sender, p.text.slice(0, 4000), now.ts, now.day));
+    }
+    await db.batch(stmts);
+    return json({ ok: true, room: p.room, sender: p.sender, stored: tracked }, 200, cors);
+  }
+
+  // ---- 내보내기 파일 업로드 (앱에서 파싱해 400건씩 보냄) ----
+  if (sub === 'import') {
+    const room = String(body.room || '').trim();
+    const msgs = Array.isArray(body.messages) ? body.messages : [];
+    if (!room || !msgs.length) return json({ error: 'bad_payload' }, 400, cors);
+    if (msgs.length > 500) return json({ error: 'too_many', max: 500 }, 400, cors);
+    const stmts = [
+      db.prepare(`INSERT INTO kakao_rooms(room, tracked, seen_count, first_seen, last_seen) VALUES(?,1,0,?,?)
+                  ON CONFLICT(room) DO UPDATE SET tracked=1`).bind(room, now.ts, now.ts),
+    ];
+    let valid = 0;
+    for (const m of msgs) {
+      const ts = String(m.ts || '');
+      if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(ts) || !m.sender || !m.text) continue;
+      valid++;
+      // 알림으로 이미 들어온 같은 메시지(수신 시각이 1~2분 다를 수 있음)는 건너뛴다
+      stmts.push(db.prepare(`INSERT OR IGNORE INTO kakao_msgs(room,sender,text,ts,day,src)
+        SELECT ?,?,?,?,?,'export' WHERE NOT EXISTS (
+          SELECT 1 FROM kakao_msgs WHERE room=? AND sender=? AND text=? AND ts BETWEEN ? AND ?)`)
+        .bind(room, String(m.sender).slice(0, 60), String(m.text).slice(0, 4000), ts, ts.slice(0, 10),
+              room, String(m.sender).slice(0, 60), String(m.text).slice(0, 4000), addMinutes(ts, -3), addMinutes(ts, 3)));
+    }
+    const res = await db.batch(stmts);
+    const inserted = res.slice(1).reduce((a, r) => a + ((r.meta && r.meta.changes) || 0), 0);
+    return json({ ok: true, room, received: msgs.length, valid, inserted, duplicates: valid - inserted }, 200, cors);
+  }
+
+  if (sub === 'days') {
+    const r = await db.prepare(`SELECT day, COUNT(*) AS n FROM kakao_msgs GROUP BY day ORDER BY day DESC LIMIT 60`).all();
+    const a = await db.prepare(`SELECT day, analyzed_at FROM kakao_analysis ORDER BY day DESC LIMIT 60`).all();
+    return json({ today: now.day, days: r.results, analyzed: a.results }, 200, cors);
+  }
+
+  if (sub === 'rooms') {
+    if (request.method === 'POST') {
+      const room = String(body.room || '').trim();
+      if (!room) return json({ error: 'bad_payload' }, 400, cors);
+      const tracked = body.tracked === true || body.tracked === 'true' || body.tracked === 1 || body.tracked === '1' ? 1 : 0;
+      await db.prepare(`INSERT INTO kakao_rooms(room, tracked, seen_count, first_seen, last_seen) VALUES(?,?,0,?,?)
+                        ON CONFLICT(room) DO UPDATE SET tracked=excluded.tracked`).bind(room, tracked, now.ts, now.ts).run();
+    }
+    const r = await db.prepare(`SELECT r.room, r.tracked, r.seen_count, r.last_seen,
+        (SELECT COUNT(*) FROM kakao_msgs m WHERE m.room=r.room) AS stored
+      FROM kakao_rooms r ORDER BY r.tracked DESC, r.last_seen DESC`).all();
+    return json({ rooms: r.results }, 200, cors);
+  }
+
+  if (sub === 'messages') {
+    const day = String(body.day || now.day);
+    const room = body.room ? String(body.room) : null;
+    const q = room
+      ? db.prepare(`SELECT id, room, sender, text, ts, src FROM kakao_msgs WHERE day=? AND room=? ORDER BY ts, id LIMIT 2000`).bind(day, room)
+      : db.prepare(`SELECT id, room, sender, text, ts, src FROM kakao_msgs WHERE day=? ORDER BY ts, id LIMIT 2000`).bind(day);
+    return json({ day, messages: (await q.all()).results }, 200, cors);
+  }
+
+  if (sub === 'raw') {
+    const r = await db.prepare(`SELECT * FROM kakao_raw ORDER BY id DESC LIMIT 30`).all();
+    return json({ raw: r.results }, 200, cors);
+  }
+
+  if (sub === 'summary') {
+    const day = String(body.day || now.day);
+    const [an, ev, prev, cnt, wk] = await db.batch([
+      db.prepare(`SELECT * FROM kakao_analysis WHERE day=?`).bind(day),
+      db.prepare(`SELECT * FROM kakao_events WHERE day=? ORDER BY at, id`).bind(day),
+      db.prepare(`SELECT * FROM kakao_events WHERE day<? AND day>=date(?, '-30 day') AND status='open' AND kind IN ('지시','이슈','일정','안전','자재·장비') ORDER BY day DESC, at LIMIT 100`).bind(day, day),
+      db.prepare(`SELECT room, COUNT(*) AS n FROM kakao_msgs WHERE day=? GROUP BY room ORDER BY n DESC`).bind(day),
+      db.prepare(`SELECT * FROM kakao_works WHERE day=? ORDER BY CASE WHEN start_at='' THEN '99' ELSE start_at END, id`).bind(day),
+    ]);
+    return json({ day, analysis: an.results[0] || null, events: ev.results, openPrev: prev.results, msgCounts: cnt.results, works: wk.results }, 200, cors);
+  }
+
+  // 작업 기록 기간 조회 (CSV 내보내기용) GET /kakao/works?from=YYYY-MM-DD&to=YYYY-MM-DD
+  if (sub === 'works') {
+    const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+    const r = await db.prepare(`SELECT * FROM kakao_works WHERE day BETWEEN ? AND ? ORDER BY day, start_at, id`).bind(from, to).all();
+    return json({ works: r.results }, 200, cors);
+  }
+
+  if (sub === 'event') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const id = parseInt(body.id, 10);
+    const status = body.status === 'done' ? 'done' : 'open';
+    if (!id) return json({ error: 'bad_payload' }, 400, cors);
+    await db.prepare(`UPDATE kakao_events SET status=?, manual=1, updated_at=? WHERE id=?`).bind(status, now.ts, id).run();
+    return json({ ok: true, id, status }, 200, cors);
+  }
+
+  // 작업 기록 수동 수정 (종료시각·상태). 수정한 항목은 재분석해도 보존
+  if (sub === 'work') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const id = parseInt(body.id, 10);
+    if (!id) return json({ error: 'bad_payload' }, 400, cors);
+    const cur = await db.prepare(`SELECT * FROM kakao_works WHERE id=?`).bind(id).first();
+    if (!cur) return json({ error: 'not_found' }, 404, cors);
+    const status = KAKAO_WORK_STATUS.includes(body.status) ? body.status : cur.status;
+    const endAt = body.end_at !== undefined ? String(body.end_at).slice(0, 5) : cur.end_at;
+    await db.prepare(`UPDATE kakao_works SET status=?, end_at=?, manual=1, updated_at=? WHERE id=?`).bind(status, endAt, now.ts, id).run();
+    return json({ ok: true, id, status, end_at: endAt }, 200, cors);
+  }
+
+  if (sub === 'analyze') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    if (!env.ANTHROPIC_API_KEY) return json({ error: 'ai_not_configured' }, 500, cors);
+    const day = String(body.day || now.day);
+    return json(await analyzeKakaoDay(db, env, day, now), 200, cors);
+  }
+
+  return json({ error: 'unknown_kakao_route', sub }, 404, cors);
+}
+
+const KAKAO_EVENT_KINDS = ['완료', '지시', '이슈', '일정', '안전', '자재·장비', '기타'];
+const KAKAO_WORK_STATUS = ['예정', '진행', '완료', '중단'];
+// 중복 판정용 키: 방 + 작업명(공백·기호 제거)
+const workKey = (room, title) => `${room}|${String(title || '').replace(/[\s·.,\-_/()\[\]]/g, '').toLowerCase()}`;
+const KAKAO_MAX_CHARS = 150000; // 한 번 분석에 넣는 대화 길이 상한(비용 보호). 넘으면 최근 대화 위주로 넣고 truncated 표시
+
+async function analyzeKakaoDay(db, env, day, now) {
+  const [msgsR, prevR, prevWorkR] = await db.batch([
+    db.prepare(`SELECT m.room, m.sender, m.text, m.ts FROM kakao_msgs m JOIN kakao_rooms r ON r.room=m.room
+                WHERE m.day=? AND r.tracked=1 ORDER BY m.room, m.ts, m.id`).bind(day),
+    db.prepare(`SELECT id, day, room, kind, title FROM kakao_events WHERE day<? AND day>=date(?, '-14 day') AND status='open'
+                AND kind IN ('지시','이슈','일정','안전','자재·장비') ORDER BY day DESC LIMIT 80`).bind(day, day),
+    // 전날까지 끝나지 않은 작업(야간작업·여러 날 작업) — 오늘 종료되면 새로 만들지 않고 이어서 닫는다
+    db.prepare(`SELECT id, day, room, title, place, company, start_at FROM kakao_works WHERE day<? AND day>=date(?, '-3 day')
+                AND status IN ('예정','진행') ORDER BY day DESC, start_at LIMIT 60`).bind(day, day),
+  ]);
+  const msgs = msgsR.results;
+  if (!msgs.length) return { ok: false, error: 'no_messages', day };
+
+  // 방별로 묶어 "[HH:MM] 보낸사람: 내용" 형태로. 길면 각 방의 앞부분부터 잘라낸다(최근 대화 보존).
+  const byRoom = {};
+  for (const m of msgs) (byRoom[m.room] = byRoom[m.room] || []).push(`[${m.ts.slice(11)}] ${m.sender}: ${m.text.replace(/\n/g, ' / ')}`);
+  let blocks = Object.entries(byRoom).map(([room, lines]) => ({ room, lines }));
+  let total = blocks.reduce((a, b) => a + b.lines.join('\n').length, 0);
+  let truncated = false;
+  while (total > KAKAO_MAX_CHARS) {
+    const big = blocks.reduce((a, b) => (b.lines.length > a.lines.length ? b : a));
+    const drop = Math.max(1, Math.floor(big.lines.length * 0.1));
+    total -= big.lines.slice(0, drop).join('\n').length;
+    big.lines = big.lines.slice(drop);
+    truncated = true;
+  }
+  const convo = blocks.map(b => `### 방: ${b.room}\n${b.lines.join('\n')}`).join('\n\n');
+  const prevList = prevR.results.map(e => `- id ${e.id} (${e.day}, ${e.room || ''}, ${e.kind}) ${e.title}`).join('\n') || '(없음)';
+  const prevWorkList = prevWorkR.results.map(w => `- id ${w.id} (${w.day} ${w.start_at || '?'} 시작, ${w.room || ''}) ${w.title}${w.place ? ' / ' + w.place : ''}${w.company ? ' / ' + w.company : ''}`).join('\n') || '(없음)';
+
+  const prompt = `당신은 건설현장(포스코 광양 2고로 개수공사) 관리자의 보좌관입니다. 아래는 관리자가 속한 현장 카카오톡 방들의 ${day} 대화입니다.
+관리자가 놓치면 안 되는 사항을 이벤트로 뽑아 주세요.
+
+이벤트 종류(kind):
+- 완료: 작업·공정·조치가 끝났다는 보고 (예: "OO 배관 용접 완료", 사진과 함께 "끝났습니다")
+- 지시: 누군가에게 요청·지시된 일 (아직 끝났다는 말이 없음)
+- 이슈: 문제·하자·지연·민원·사고 직전 상황·변경 요청
+- 일정: 검사·입회·회의·반입·작업 예정 시각 등 날짜/시간이 있는 약속
+- 안전: 안전 관련 지적·위험 보고·작업중지·허가 관련
+- 자재·장비: 자재 반입·부족, 장비 고장·투입
+- 기타: 위에 안 맞지만 관리자가 알아야 할 결정사항
+
+규칙:
+- 대화에 근거가 있는 것만. 추측해서 만들지 말 것. 인사·잡담·단순 확인("네", "알겠습니다")은 제외.
+- 같은 일에 대한 여러 메시지는 하나로 합칠 것. 지시 후 같은 날 완료 보고가 있으면 kind=완료, status=done 하나로.
+- title은 25자 안팎의 짧은 한 줄(무엇을/어디서), detail은 근거가 되는 핵심 내용과 수치·위치·업체명.
+- who는 보고하거나 요청받은 사람/업체, at은 근거 메시지의 HH:MM, room은 방 이름 그대로.
+- status: 완료면 "done", 그 외는 "open".
+- summary: 그날 전체를 관리자 관점에서 3~6줄로 요약(완료된 것, 남은 것, 주의할 것).
+- 아래 '이전 미결 목록' 중 오늘 대화에서 처리·완료가 확인되는 항목이 있으면 resolved_prev에 그 id와 근거를 넣을 것(확실한 것만).
+
+작업 기록(works) — 이벤트와 별도로, 현장에서 실제 수행된 '작업' 단위로 정리:
+- 작업 하나 = 같은 장소·같은 업체의 같은 일. 시작 보고·중간 보고·완료 보고가 여러 메시지에 흩어져 있어도 반드시 한 건으로 합칠 것(중복 금지).
+- start: 작업 시작을 알린 메시지 시각(HH:MM). 시작 언급이 없으면 그 작업 관련 첫 메시지 시각을 쓰고 features에 "(시작 시각은 첫 언급 기준)"이라고 적을 것. 전혀 없으면 "".
+- end: 종료·완료·철수 보고 시각(HH:MM). 아직 안 끝났으면 "".
+- status: 예정(앞으로 할 일) / 진행(시작했으나 종료 보고 없음) / 완료 / 중단(중지·보류·취소).
+- features: 작업 특징을 짧게 — 작업 방식, 위험요소(고소·화기·밀폐·중량물 등), 허가·입회 여부, 특이사항·지연 사유.
+- people: 투입 인원(언급된 경우, 예 "5명"), equipment: 장비(크레인 50t 등). 없으면 "".
+- place: 위치(층·구역·설비명), company: 업체/팀. 없으면 "".
+- 아래 '전날까지 끝나지 않은 작업' 중 오늘 대화에서 종료·완료·중단이 확인되면 works에 새로 넣지 말고 works_update에 그 id와 end 시각·status를 넣을 것. 오늘도 계속 진행 중이면 아무것도 하지 말 것(중복 생성 금지).
+
+전날까지 끝나지 않은 작업:
+${prevWorkList}
+
+이전 미결 목록:
+${prevList}
+
+---
+${convo}
+---`;
+
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['summary', 'works', 'works_update', 'events', 'resolved_prev'],
+    properties: {
+      summary: { type: 'string' },
+      works: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['room', 'title', 'place', 'company', 'start', 'end', 'status', 'features', 'people', 'equipment'],
+          properties: {
+            room: { type: 'string' }, title: { type: 'string' }, place: { type: 'string' }, company: { type: 'string' },
+            start: { type: 'string' }, end: { type: 'string' },
+            status: { type: 'string', enum: KAKAO_WORK_STATUS },
+            features: { type: 'string' }, people: { type: 'string' }, equipment: { type: 'string' },
+          },
+        },
+      },
+      works_update: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id', 'end', 'status', 'evidence'],
+          properties: { id: { type: 'integer' }, end: { type: 'string' }, status: { type: 'string', enum: KAKAO_WORK_STATUS }, evidence: { type: 'string' } },
+        },
+      },
+      events: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['room', 'kind', 'title', 'detail', 'who', 'at', 'status'],
+          properties: {
+            room: { type: 'string' },
+            kind: { type: 'string', enum: KAKAO_EVENT_KINDS },
+            title: { type: 'string' },
+            detail: { type: 'string' },
+            who: { type: 'string' },
+            at: { type: 'string' },
+            status: { type: 'string', enum: ['open', 'done'] },
+          },
+        },
+      },
+      resolved_prev: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id', 'evidence'],
+          properties: { id: { type: 'integer' }, evidence: { type: 'string' } },
+        },
+      },
+    },
+  };
+
+  const model = 'claude-opus-5-5';
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'server-side-fallback-2026-07-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 16000,
+      fallbacks: 'default', // 안전분류기 거절 시 서버가 다른 모델로 자동 재시도
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  const data = await r.json();
+  if (!r.ok) return { ok: false, error: 'anthropic_error', detail: data };
+  if (data.stop_reason === 'refusal') return { ok: false, error: 'refused', detail: data.stop_details || null };
+  if (data.stop_reason === 'max_tokens') return { ok: false, error: 'output_too_long' };
+  const textBlock = (data.content || []).find(b => b.type === 'text');
+  let parsed;
+  try { parsed = JSON.parse(textBlock ? textBlock.text : ''); } catch (e) { return { ok: false, error: 'bad_ai_json' }; }
+
+  const prevIds = new Set(prevR.results.map(e => e.id));
+  // 사람이 이미 체크한 항목과 같은 이벤트는 다시 만들지 않는다(재분석 시 중복 방지)
+  const manualR = await db.prepare(`SELECT room, kind, title FROM kakao_events WHERE day=? AND manual=1`).bind(day).all();
+  const manualKeys = new Set(manualR.results.map(e => `${e.room}|${e.kind}|${e.title}`));
+  const manualWorkR = await db.prepare(`SELECT wkey FROM kakao_works WHERE day=? AND manual=1`).bind(day).all();
+  const seenWork = new Set(manualWorkR.results.map(w => w.wkey));
+  const prevWorkIds = new Set(prevWorkR.results.map(w => w.id));
+  const hhmm = (s) => (/^\d{1,2}:\d{2}$/.test(String(s || '').trim()) ? String(s).trim().padStart(5, '0') : '');
+  const stmts = [
+    db.prepare(`DELETE FROM kakao_works WHERE day=? AND manual=0`).bind(day),
+    // 다시 분석하면 그날 자동 생성분은 교체하되, 사람이 체크한(manual) 항목은 보존
+    db.prepare(`DELETE FROM kakao_events WHERE day=? AND manual=0`).bind(day),
+    db.prepare(`INSERT INTO kakao_analysis(day, summary, msg_count, truncated, model, analyzed_at) VALUES(?,?,?,?,?,?)
+                ON CONFLICT(day) DO UPDATE SET summary=excluded.summary, msg_count=excluded.msg_count, truncated=excluded.truncated, model=excluded.model, analyzed_at=excluded.analyzed_at`)
+      .bind(day, parsed.summary || '', msgs.length, truncated ? 1 : 0, data.model || model, now.ts),
+  ];
+  const seenEv = new Set();
+  for (const e of parsed.events || []) {
+    if (manualKeys.has(`${e.room}|${e.kind}|${e.title}`)) continue;
+    const ek = workKey(e.room, e.kind + e.title);
+    if (seenEv.has(ek)) continue; // 같은 이벤트 중복 방지
+    seenEv.add(ek);
+    stmts.push(db.prepare(`INSERT INTO kakao_events(day, room, kind, title, detail, who, at, status, manual, updated_at) VALUES(?,?,?,?,?,?,?,?,0,?)`)
+      .bind(day, e.room, e.kind, e.title, e.detail, e.who, e.at, e.status === 'done' ? 'done' : 'open', now.ts));
+  }
+  // 작업 기록: 같은 방·같은 작업명은 한 건만 (AI가 합치지 못한 경우의 안전장치 — 시각·특징은 병합)
+  const works = [];
+  const byKey = {};
+  for (const w of parsed.works || []) {
+    const key = workKey(w.room, w.title);
+    if (seenWork.has(key)) continue; // 사람이 수정한 기록이 이미 있음
+    const s = hhmm(w.start), e = hhmm(w.end);
+    if (byKey[key]) {
+      const a = byKey[key];
+      if (s && (!a.start || s < a.start)) a.start = s;
+      if (e && (!a.end || e > a.end)) a.end = e;
+      if (w.status === '완료' || w.status === '중단') a.status = w.status;
+      if (w.features && !a.features.includes(w.features)) a.features += (a.features ? ' / ' : '') + w.features;
+      for (const f of ['place', 'company', 'people', 'equipment']) if (!a[f] && w[f]) a[f] = w[f];
+      continue;
+    }
+    byKey[key] = { ...w, key, start: s, end: e, features: w.features || '' };
+    works.push(byKey[key]);
+  }
+  for (const w of works) {
+    stmts.push(db.prepare(`INSERT INTO kakao_works(day, room, wkey, title, place, company, start_at, end_at, status, features, people, equipment, manual, updated_at)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,0,?)`)
+      .bind(day, w.room, w.key, w.title, w.place || '', w.company || '', w.start, w.end, KAKAO_WORK_STATUS.includes(w.status) ? w.status : '진행', w.features, w.people || '', w.equipment || '', now.ts));
+  }
+  let worksClosed = 0;
+  for (const u of parsed.works_update || []) {
+    if (!prevWorkIds.has(u.id)) continue; // 목록에 없던 id는 무시(환각 방어)
+    worksClosed++;
+    stmts.push(db.prepare(`UPDATE kakao_works SET status=?, end_at=?, note=?, updated_at=? WHERE id=? AND manual=0`)
+      .bind(KAKAO_WORK_STATUS.includes(u.status) ? u.status : '완료', `${day.slice(5)} ${hhmm(u.end) || ''}`.trim(), `${day} 대화에서 종료 확인: ${String(u.evidence).slice(0, 200)}`, now.ts, u.id));
+  }
+
+  let resolved = 0;
+  for (const rp of parsed.resolved_prev || []) {
+    if (!prevIds.has(rp.id)) continue; // 목록에 없던 id는 무시(환각 방어)
+    resolved++;
+    stmts.push(db.prepare(`UPDATE kakao_events SET status='done', note=?, updated_at=? WHERE id=? AND manual=0`)
+      .bind(`${day} 대화에서 완료 확인: ${String(rp.evidence).slice(0, 200)}`, now.ts, rp.id));
+  }
+  await db.batch(stmts);
+  return { ok: true, day, msgCount: msgs.length, works: works.length, worksClosed, events: (parsed.events || []).length, resolvedPrev: resolved, truncated, model: data.model || model };
 }
