@@ -1581,7 +1581,8 @@ function kErr(e){
   const map={admin_auth_failed:'관리자 암호가 맞지 않습니다', kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
     ai_not_configured:'서버에 ANTHROPIC_API_KEY가 없습니다', no_messages:'이 날짜에 추적 중인 방의 메시지가 없습니다',
     refused:'AI가 이 내용의 분석을 거절했습니다', anthropic_error:'AI 호출 오류'};
-  return map[e.message] || ('오류: '+e.message);
+  const d=e.data&&e.data.detail, dm=d&&(d.error&&d.error.message||d.message);
+  return (map[e.message] || ('오류: '+e.message)) + (dm?' — '+String(dm).slice(0,120):'');
 }
 function kShowTab(){ $('tabKakao').style.display = (adminPass || location.hash==='#kakao') ? '' : 'none'; }
 
@@ -1767,7 +1768,7 @@ async function kImport(){
       if(days.length>7 && !confirm(`${days.length}일치를 하루씩 AI로 정리합니다(날짜당 1회 호출, 시간이 걸리고 비용이 듭니다). 계속할까요?`)) days.length=0;
       for(const d of days){
         btn.textContent=`AI 정리 중… ${d} (${++done}/${days.length})`;
-        try{ const r=await kApi('analyze',{day:d}); if(r.ok){ nWorks+=r.works; nEv+=r.events; } else fails.push(d); }
+        try{ const r=await kApi('analyze',{day:d}); if(r.ok){ nWorks+=r.works; nEv+=r.events; } else { fails.push(d); if(r.error!=='no_messages') toast(kErr(Object.assign(new Error(r.error),{data:r}))); } }
         catch(e){ fails.push(d); if(e.message==='ai_not_configured'){ toast(kErr(e)); break; } }
       }
     }
