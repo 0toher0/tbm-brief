@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.4.0',
+        version: '2.5.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -283,6 +283,8 @@ function json(obj, status, headers) {
  *   POST /kakao/event      {id, status:'open'|'done'}  체크 토글
  *   GET  /kakao/works?from=&to=   작업 기록(작업명·시작·종료·상태·특징·인원·장비) 기간 조회
  *   POST /kakao/work       {id, status?, end_at?}  작업 기록 수동 수정(재분석해도 보존)
+ *   POST /kakao/star       {type:'work'|'event', id, starred}  ★주요 표시(재분석해도 보존)
+ *   GET  /kakao/starred?from=&to=  ★표시한 작업·이벤트를 날짜순으로 (주요 이벤트 시트)
  *   GET  /kakao/raw        최근 수신 원본 30건(파싱 확인용, 본문은 앞 40자만 보관)
  *
  * 개인정보: 추적(tracked)으로 켠 방의 메시지만 본문을 저장한다. 처음 보는 방은
@@ -302,6 +304,10 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_kakao_works_day ON kakao_works(day)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS kakao_raw (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, title TEXT, subtext TEXT, text40 TEXT, room TEXT, sender TEXT, stored INTEGER)`),
   ]);
+  // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
+  for (const t of ['kakao_works', 'kakao_events']) {
+    try { await db.prepare(`ALTER TABLE ${t} ADD COLUMN starred INTEGER NOT NULL DEFAULT 0`).run(); } catch (e) { /* 이미 있음 */ }
+  }
   KAKAO_SCHEMA_READY = true;
 }
 
@@ -468,6 +474,28 @@ async function handleKakao(request, env, url, cors) {
     if (!id) return json({ error: 'bad_payload' }, 400, cors);
     await db.prepare(`UPDATE kakao_events SET status=?, manual=1, updated_at=? WHERE id=?`).bind(status, now.ts, id).run();
     return json({ ok: true, id, status }, 200, cors);
+  }
+
+  // ★주요 표시 토글 {type:'work'|'event', id, starred}. 표시한 항목은 manual=1이 되어 재분석해도 보존
+  if (sub === 'star') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const id = parseInt(body.id, 10);
+    const table = body.type === 'event' ? 'kakao_events' : body.type === 'work' ? 'kakao_works' : null;
+    if (!id || !table) return json({ error: 'bad_payload' }, 400, cors);
+    const on = body.starred === true || body.starred === 1 || body.starred === '1' || body.starred === 'true' ? 1 : 0;
+    await db.prepare(`UPDATE ${table} SET starred=?, manual=1, updated_at=? WHERE id=?`).bind(on, now.ts, id).run();
+    return json({ ok: true, id, starred: on }, 200, cors);
+  }
+
+  // ★주요 이벤트 시트: 기간 내 표시한 작업·이벤트를 날짜순으로 GET /kakao/starred?from=&to=
+  if (sub === 'starred') {
+    const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+    const [w, e] = await db.batch([
+      db.prepare(`SELECT 'work' AS type, id, day, room, title, place, company, start_at, end_at, status, features, people, equipment, note FROM kakao_works WHERE starred=1 AND day BETWEEN ? AND ?`).bind(from, to),
+      db.prepare(`SELECT 'event' AS type, id, day, room, kind, title, detail, who, at, status, note FROM kakao_events WHERE starred=1 AND day BETWEEN ? AND ?`).bind(from, to),
+    ]);
+    const items = [...w.results, ...e.results].sort((a, b) => (a.day + (a.start_at || a.at || '99')).localeCompare(b.day + (b.start_at || b.at || '99')));
+    return json({ from, to, items }, 200, cors);
   }
 
   // 작업 기록 수동 수정 (종료시각·상태). 수정한 항목은 재분석해도 보존

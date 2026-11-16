@@ -249,18 +249,50 @@ textarea.f-input{resize:vertical;min-height:56px}
 details.k-more{margin-top:10px}
 details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6px 2px}
 .k-empty{font-size:.8rem;color:var(--steel);text-align:center;padding:16px}
-.k-work{padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
-.k-work:last-child{border-bottom:none}
-.k-work:active{background:#f6f7f7}
-.k-wtime{font-family:var(--num);font-size:1.05rem;font-weight:700;letter-spacing:.02em}
-.k-wtime .dash{color:var(--steel);margin:0 4px}
-.k-wtime .none{color:var(--amber)}
-.k-wst{float:right;font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:5px;background:#f0f1f2;color:var(--ink2)}
-.k-wst.완료{background:var(--green-bg);color:var(--green)} .k-wst.진행{background:var(--amber-bg);color:#9a5300}
-.k-wst.중단{background:var(--red-bg);color:var(--red)} .k-wst.예정{background:#e7f0ff;color:#1864ab}
-.k-wtitle{font-size:.88rem;font-weight:800;margin-top:2px}
-.k-wmeta{font-size:.7rem;color:var(--steel);margin-top:2px}
-.k-wfeat{font-size:.76rem;color:var(--ink2);margin-top:3px;white-space:pre-wrap}
+/* 현장톡 하위 탭 */
+.k-seg{display:flex;background:#e4e6e8;border-radius:11px;padding:3px;margin:2px 0 12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:20;box-shadow:0 0 0 6px var(--paper)}
+#kStarList .kc.done .kc-title{text-decoration:none;color:var(--ink)}
+.k-seg button{flex:1;border:none;background:none;padding:9px 6px;font-weight:800;font-size:.82rem;border-radius:9px;color:var(--steel)}
+.k-seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+/* 시간축 카드 (작업·이벤트 공통) */
+.kc{display:grid;grid-template-columns:58px 1fr 40px;gap:0 10px;padding:11px 8px 11px 0;border-bottom:1px solid var(--line);background:var(--card);border-left:4px solid #c9ced3}
+.kc:last-child{border-bottom:none}
+.kc.st-완료,.kc.ev-완료{border-left-color:var(--green)} .kc.st-진행{border-left-color:var(--amber)}
+.kc.st-중단,.kc.ev-이슈,.kc.ev-안전{border-left-color:var(--red)} .kc.st-예정,.kc.ev-일정{border-left-color:#1864ab}
+.kc.ev-지시{border-left-color:var(--amber)} .kc.ev-자재·장비{border-left-color:#4c6ef5}
+.kc.starred{background:#fffbea}
+.kc-time{text-align:center;padding-left:6px}
+.kc-time .t{font-family:var(--num);font-size:1.12rem;font-weight:700;line-height:1.1}
+.kc-time .to{font-size:.6rem;color:var(--steel);line-height:1}
+.kc-time .t.none{color:#b8bec4;font-size:.86rem}
+.kc-badge{display:inline-block;font-size:.6rem;font-weight:800;padding:2px 6px;border-radius:5px;margin-top:5px;background:#f0f1f2;color:var(--ink2);white-space:nowrap}
+.kc-badge.완료{background:var(--green-bg);color:var(--green)} .kc-badge.진행,.kc-badge.지시{background:var(--amber-bg);color:#9a5300}
+.kc-badge.중단,.kc-badge.이슈,.kc-badge.안전{background:var(--red-bg);color:var(--red)} .kc-badge.예정,.kc-badge.일정{background:#e7f0ff;color:#1864ab}
+.kc-badge.자재·장비{background:#edf2ff;color:#3b5bdb}
+.kc-body{min-width:0;cursor:pointer}
+.kc-title{font-size:.9rem;font-weight:800;line-height:1.35}
+.kc.done .kc-title{color:var(--steel);text-decoration:line-through}
+.kc-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.kc-chip{font-size:.66rem;font-weight:600;color:var(--ink2);background:#f3f4f5;border-radius:5px;padding:1px 6px}
+.kc-desc{font-size:.76rem;color:var(--ink2);margin-top:5px;line-height:1.5;white-space:pre-wrap}
+.kc-note{font-size:.68rem;color:var(--green);margin-top:4px}
+.kc-side{display:flex;flex-direction:column;align-items:center;gap:8px}
+.kc-star{border:none;background:none;font-size:1.35rem;line-height:1;color:#c3c8cd;padding:2px}
+.kc-star.on{color:#f59f00}
+.kc-side input{width:18px;height:18px;accent-color:var(--green)}
+/* 주요 이벤트 시트 */
+.ks-day{margin-top:14px}
+.ks-dh{display:flex;align-items:baseline;gap:8px;padding:0 2px 6px;border-bottom:2px solid var(--ink);margin-bottom:0}
+.ks-dh .d{font-family:var(--num);font-size:1.25rem;font-weight:700}
+.ks-dh .w{font-size:.76rem;font-weight:700;color:var(--steel)}
+.ks-dh .n{margin-left:auto;font-size:.68rem;color:var(--steel)}
+.ks-day .k-list{border-radius:0 0 12px 12px;border-top:none}
+@media print{
+  header,.bottombar,.k-seg,.ks-tools,.kc-star,#kDaily,.toast{display:none!important}
+  body{background:#fff;padding:0} main{max-width:none;padding:0}
+  .pg{display:none!important} #pgKakao{display:block!important}
+  .kc{break-inside:avoid} .ks-day{break-inside:auto}
+}
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:.82rem;font-weight:700;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none;white-space:nowrap;max-width:90%}
 .toast.show{opacity:1}
 </style>
@@ -430,6 +462,22 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
   </div>
 
   <div id="kMain" style="display:none">
+    <div class="k-seg"><button class="on" data-kv="daily">일별 보기</button><button data-kv="star">★ 주요 이벤트</button></div>
+
+    <!-- ★ 주요 이벤트 시트: 별표한 작업·이벤트를 날짜별로 한 페이지에 -->
+    <div id="kStarView" style="display:none">
+      <div class="ks-tools">
+        <div id="kStarRange" class="date-chips"></div>
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn ghost" id="kStarCsv">엑셀(CSV)</button>
+          <button class="btn ghost" id="kStarPrint">인쇄 / PDF</button>
+        </div>
+      </div>
+      <div class="sec-t" style="margin-top:14px" id="kStarTitle">주요 이벤트</div>
+      <div id="kStarList"></div>
+    </div>
+
+    <div id="kDaily">
     <div id="kDayChips" class="date-chips" style="margin-top:2px"></div>
     <div class="k-stats" id="kStats"></div>
 
@@ -444,13 +492,13 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
     </section>
 
     <section>
-      <div class="sec-h"><div class="sec-t">작업 기록 <small>시작·종료·특징 · 누르면 수정</small></div>
+      <div class="sec-h"><div class="sec-t">작업 기록 <small>☆ 누르면 주요 이벤트에 추가 · 내용 누르면 수정</small></div>
         <button class="mini-btn" id="kWorksCsv">엑셀(CSV)</button></div>
       <div id="kWorks"></div>
     </section>
 
     <section>
-      <div class="sec-h"><div class="sec-t">주요 이벤트 <small>체크하면 완료 처리</small></div></div>
+      <div class="sec-h"><div class="sec-t">이벤트 <small>☆ 주요 표시 · 체크하면 완료</small></div></div>
       <div id="kEvents"></div>
     </section>
 
@@ -488,6 +536,7 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
       <div class="card" id="kRaw" style="max-height:360px;overflow-y:auto"></div>
     </details>
     <div class="stamp">폰 알림은 MacroDroid가 서버로 보냅니다. 설정법은 HANDOFF.md '현장톡' 장 참고.</div>
+    </div><!-- /kDaily -->
   </div>
 </div>
 </main>
@@ -541,7 +590,7 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.3.0',
+  version : '5.4.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1599,7 +1648,7 @@ async function renderKakao(){
     const cnt=Object.fromEntries(d.days.map(x=>[x.day,x.n]));
     $('kDayChips').innerHTML=days.slice(0,30).map(dy=>`<button class="dchip ${dy===kDay?'on':''}" data-day="${dy}">${dy===d.today?'오늘':dy.slice(5).replace('-','/')}<span class="dc-cnt">${cnt[dy]||0}</span></button>`).join('');
     $('kDayChips').querySelectorAll('.dchip').forEach(b=>b.onclick=()=>{kDay=b.dataset.day; renderKakao();});
-    await Promise.all([kLoadSummary(), kLoadRooms()]);
+    await Promise.all([kLoadSummary(), kLoadRooms(), kView==='star'?kLoadStarred():null]);
     if($('kMsgsBox').open) kLoadMsgs();
     if($('kRawBox').open) kLoadRaw();
   }catch(e){
@@ -1608,52 +1657,141 @@ async function renderKakao(){
   }
 }
 
-function kEvRow(e, showDay){
-  const meta=[showDay?e.day.slice(5).replace('-','/'):'', e.at, e.room, e.who].filter(Boolean).map(esc).join(' · ');
-  return `<div class="k-ev ${e.status==='done'?'done':''}">
-    <input type="checkbox" data-ev="${e.id}" ${e.status==='done'?'checked':''}>
-    <div style="flex:1;min-width:0">
-      <div class="k-ev-t"><span class="k-kind ${esc(e.kind)}">${esc(e.kind)}</span>${esc(e.title)}</div>
-      ${e.detail?`<div class="k-ev-d">${esc(e.detail)}</div>`:''}
-      <div class="k-ev-m">${meta}${e.note?` · <span style="color:var(--green)">${esc(e.note)}</span>`:''}</div>
-    </div></div>`;
+/* 작업·이벤트 카드 (시간축). opts.day=true면 날짜도 표시, opts.check=false면 완료 체크 숨김 */
+const kTime=t=>t?esc(String(t).replace(/^\d\d-\d\d /,'')):'';
+function kWorkCard(w, opts={}){
+  const chips=[opts.day?w.day.slice(5).replace('-','/'):'', w.place, w.company, w.people, w.equipment, w.room].filter(Boolean)
+    .map(x=>`<span class="kc-chip">${esc(x)}</span>`).join('');
+  const endTxt=w.end_at?kTime(w.end_at):(w.status==='완료'?'?':'진행중');
+  return `<div class="kc st-${esc(w.status)} ${w.starred?'starred':''}">
+    <div class="kc-time">
+      <div class="t ${w.start_at?'':'none'}">${w.start_at?kTime(w.start_at):'—'}</div>
+      <div class="to">~</div>
+      <div class="t ${w.end_at?'':'none'}">${endTxt}</div>
+      <span class="kc-badge ${esc(w.status)}">${esc(w.status)}</span>
+    </div>
+    <div class="kc-body" data-edit-work="${w.id}">
+      <div class="kc-title">${esc(w.title)}${w.manual&&!w.starred?' <span style="font-size:.7rem;color:var(--steel)">✎</span>':''}</div>
+      ${chips?`<div class="kc-chips">${chips}</div>`:''}
+      ${w.features?`<div class="kc-desc">${esc(w.features)}</div>`:''}
+      ${w.note?`<div class="kc-note">${esc(w.note)}</div>`:''}
+    </div>
+    <div class="kc-side"><button class="kc-star ${w.starred?'on':''}" data-star="work:${w.id}" title="주요 이벤트에 표시">${w.starred?'★':'☆'}</button></div>
+  </div>`;
 }
-function kBindChecks(root){
+function kEvCard(e, opts={}){
+  const chips=[opts.day?e.day.slice(5).replace('-','/'):'', e.room, e.who].filter(Boolean).map(x=>`<span class="kc-chip">${esc(x)}</span>`).join('');
+  const done=e.status==='done';
+  return `<div class="kc ev-${esc(e.kind)} ${done?'done':''} ${e.starred?'starred':''}">
+    <div class="kc-time">
+      <div class="t ${e.at?'':'none'}">${e.at?kTime(e.at):'—'}</div>
+      <span class="kc-badge ${esc(e.kind)}">${esc(e.kind)}</span>
+    </div>
+    <div class="kc-body">
+      <div class="kc-title">${esc(e.title)}</div>
+      ${chips?`<div class="kc-chips">${chips}</div>`:''}
+      ${e.detail?`<div class="kc-desc">${esc(e.detail)}</div>`:''}
+      ${e.note?`<div class="kc-note">${esc(e.note)}</div>`:''}
+    </div>
+    <div class="kc-side">
+      <button class="kc-star ${e.starred?'on':''}" data-star="event:${e.id}" title="주요 이벤트에 표시">${e.starred?'★':'☆'}</button>
+      ${opts.check===false?'':`<input type="checkbox" data-ev="${e.id}" ${done?'checked':''} title="완료">`}
+    </div>
+  </div>`;
+}
+function kBindCards(root, works, after){
   root.querySelectorAll('input[data-ev]').forEach(cb=>cb.onchange=async()=>{
-    try{ await kApi('event',{id:+cb.dataset.ev,status:cb.checked?'done':'open'}); cb.closest('.k-ev').classList.toggle('done',cb.checked); kLoadSummary(); }
+    try{ await kApi('event',{id:+cb.dataset.ev,status:cb.checked?'done':'open'}); cb.closest('.kc').classList.toggle('done',cb.checked); (after||kLoadSummary)(); }
     catch(e){ cb.checked=!cb.checked; toast(kErr(e)); }
   });
+  root.querySelectorAll('[data-star]').forEach(b=>b.onclick=async(ev)=>{
+    ev.stopPropagation();
+    const [type,id]=b.dataset.star.split(':'); const on=!b.classList.contains('on');
+    try{
+      await kApi('star',{type,id:+id,starred:on});
+      b.classList.toggle('on',on); b.textContent=on?'★':'☆'; b.closest('.kc').classList.toggle('starred',on);
+      toast(on?'★ 주요 이벤트에 추가했습니다':'주요 이벤트에서 뺐습니다');
+    }catch(e){ toast(kErr(e)); }
+  });
+  if(works) root.querySelectorAll('[data-edit-work]').forEach(el=>el.onclick=()=>kEditWork(works.find(w=>w.id===+el.dataset.editWork)));
 }
 async function kLoadSummary(){
   const s=await kApi('summary?day='+encodeURIComponent(kDay));
-  const ev=s.events, total=s.msgCounts.reduce((a,x)=>a+x.n,0);
-  const done=ev.filter(e=>e.status==='done').length;
-  const open=ev.filter(e=>e.status!=='done').length;
+  const ev=s.events, W=s.works||[], total=s.msgCounts.reduce((a,x)=>a+x.n,0);
+  const wDone=W.filter(w=>w.status==='완료').length;
+  const wOpen=W.filter(w=>w.status==='진행'||w.status==='예정').length + ev.filter(e=>e.status!=='done'&&e.kind==='지시').length;
   const issue=ev.filter(e=>e.status!=='done'&&(e.kind==='이슈'||e.kind==='안전')).length;
-  $('kStats').innerHTML=`<div class="k-stat"><div class="v">${total}</div><div class="k">메시지</div></div>
-    <div class="k-stat done"><div class="v">${done}</div><div class="k">완료</div></div>
-    <div class="k-stat open"><div class="v">${open}</div><div class="k">미결</div></div>
+  $('kStats').innerHTML=`<div class="k-stat"><div class="v">${W.length}</div><div class="k">작업</div></div>
+    <div class="k-stat done"><div class="v">${wDone}</div><div class="k">완료</div></div>
+    <div class="k-stat open"><div class="v">${wOpen}</div><div class="k">진행·미결</div></div>
     <div class="k-stat issue"><div class="v">${issue}</div><div class="k">이슈·안전</div></div>`;
   const a=s.analysis;
   $('kSummary').textContent = a ? a.summary : (total ? '아직 분석하지 않았습니다. 아래 버튼을 누르세요.' : '이 날짜에 저장된 메시지가 없습니다.');
-  $('kAnalyzedAt').textContent = a ? `${a.analyzed_at} 분석 · 메시지 ${a.msg_count}건${a.truncated?' · ⚠ 너무 길어 앞부분 일부 제외':''}` : '';
-  const order=['이슈','안전','지시','일정','자재·장비','완료','기타'];
-  const sorted=[...ev].sort((x,y)=>(x.status==='done')-(y.status==='done')||order.indexOf(x.kind)-order.indexOf(y.kind)||String(x.at).localeCompare(String(y.at)));
-  $('kEvents').innerHTML = sorted.length ? `<div class="k-list">${sorted.map(e=>kEvRow(e,false)).join('')}</div>` : '<div class="k-empty">이벤트 없음</div>';
-  const W=s.works||[];
-  $('kWorks').innerHTML = W.length ? `<div class="k-list">${W.map(w=>{
-    const meta=[w.place,w.company,w.people,w.equipment,w.room].filter(Boolean).map(esc).join(' · ');
-    return `<div class="k-work" data-work="${w.id}">
-      <div class="k-wtime">${w.start_at?esc(w.start_at):'<span class="none">시작?</span>'}<span class="dash">~</span>${w.end_at?esc(w.end_at):'<span class="none">'+(w.status==='완료'?'종료?':'진행중')+'</span>'}
-        <span class="k-wst ${esc(w.status)}">${esc(w.status)}${w.manual?' ✎':''}</span></div>
-      <div class="k-wtitle">${esc(w.title)}</div>
-      ${meta?`<div class="k-wmeta">${meta}</div>`:''}
-      ${w.features?`<div class="k-wfeat">${esc(w.features)}</div>`:''}
-      ${w.note?`<div class="k-wmeta" style="color:var(--green)">${esc(w.note)}</div>`:''}
-    </div>`;}).join('')}</div>` : '<div class="k-empty">작업 기록 없음 — 대화를 올리고 AI 정리를 하면 채워집니다</div>';
-  $('kWorks').querySelectorAll('[data-work]').forEach(el=>el.onclick=()=>kEditWork(W.find(w=>w.id===+el.dataset.work)));
-  $('kPrev').innerHTML = s.openPrev.length ? `<div class="k-list">${s.openPrev.map(e=>kEvRow(e,true)).join('')}</div>` : '<div class="k-empty">남은 미결 없음</div>';
-  kBindChecks($('kEvents')); kBindChecks($('kPrev'));
+  $('kAnalyzedAt').textContent = a ? `${a.analyzed_at.slice(5)} 분석 · 메시지 ${a.msg_count}건${a.truncated?' · ⚠ 너무 길어 앞부분 일부 제외':''}` : (total?`메시지 ${total}건`:'');
+  // 작업: 시작시각 순 (시작 미상은 뒤로)
+  const ws=[...W].sort((x,y)=>(x.start_at||'99').localeCompare(y.start_at||'99'));
+  $('kWorks').innerHTML = ws.length ? `<div class="k-list">${ws.map(w=>kWorkCard(w)).join('')}</div>` : '<div class="k-empty">작업 기록 없음 — 대화를 올리고 AI 정리를 하면 채워집니다</div>';
+  // 이벤트: 미완료 먼저, 그 안에서 시간순
+  const sorted=[...ev].sort((x,y)=>(x.status==='done')-(y.status==='done')||String(x.at||'99').localeCompare(String(y.at||'99')));
+  $('kEvents').innerHTML = sorted.length ? `<div class="k-list">${sorted.map(e=>kEvCard(e)).join('')}</div>` : '<div class="k-empty">이벤트 없음</div>';
+  $('kPrev').innerHTML = s.openPrev.length ? `<div class="k-list">${s.openPrev.map(e=>kEvCard(e,{day:true})).join('')}</div>` : '<div class="k-empty">남은 미결 없음</div>';
+  kBindCards($('kWorks'), ws); kBindCards($('kEvents')); kBindCards($('kPrev'));
+}
+
+/* ★ 주요 이벤트 시트 */
+let kView='daily', kStarRangeSel='month';
+const K_WD=['일','월','화','수','목','금','토'];
+function kStarRangeDates(sel){
+  const base=kDay||new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+  const y=+base.slice(0,4), m=+base.slice(5,7);
+  const ym=(yy,mm)=>{ while(mm<1){mm+=12;yy--;} return `${yy}-${String(mm).padStart(2,'0')}`; };
+  if(sel==='month') return {from:ym(y,m)+'-01', to:ym(y,m)+'-31', label:`${y}년 ${m}월`};
+  if(sel==='prev')  { const p=ym(y,m-1); return {from:p+'-01', to:p+'-31', label:`${+p.slice(0,4)}년 ${+p.slice(5)}월`}; }
+  if(sel==='3m')    return {from:ym(y,m-2)+'-01', to:ym(y,m)+'-31', label:'최근 3개월'};
+  return {from:'2000-01-01', to:'2999-12-31', label:'전체 기간'};
+}
+async function kLoadStarred(){
+  const opts=[['month','이번 달'],['prev','지난 달'],['3m','최근 3개월'],['all','전체']];
+  $('kStarRange').innerHTML=opts.map(([k,t])=>`<button class="dchip ${k===kStarRangeSel?'on':''}" data-r="${k}">${t}</button>`).join('');
+  $('kStarRange').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{kStarRangeSel=b.dataset.r; kLoadStarred();});
+  const R=kStarRangeDates(kStarRangeSel);
+  const r=await kApi(`starred?from=${R.from}&to=${R.to}`);
+  $('kStarTitle').innerHTML=`★ 주요 이벤트 <small style="font-weight:600;color:var(--steel);font-size:.72rem;margin-left:6px">${esc(R.label)} · ${r.items.length}건</small>`;
+  if(!r.items.length){ $('kStarList').innerHTML='<div class="k-empty" style="margin-top:10px">아직 주요 표시한 항목이 없습니다.<br>일별 보기에서 작업·이벤트 오른쪽 ☆를 누르면 여기에 모입니다.</div>'; return; }
+  const byDay={}; r.items.forEach(x=>(byDay[x.day]=byDay[x.day]||[]).push(x));
+  $('kStarList').innerHTML=Object.keys(byDay).sort().map(d=>{
+    const dt=new Date(d+'T00:00:00'), items=byDay[d];
+    return `<div class="ks-day">
+      <div class="ks-dh"><span class="d">${+d.slice(5,7)}.${+d.slice(8)}</span><span class="w">${K_WD[dt.getDay()]}요일</span><span class="n">${items.length}건</span></div>
+      <div class="k-list">${items.map(x=>x.type==='work'?kWorkCard({...x,starred:1}):kEvCard({...x,starred:1},{check:false})).join('')}</div>
+    </div>`;
+  }).join('');
+  kBindCards($('kStarList'), null, kLoadStarred);
+  $('kStarList').querySelectorAll('[data-star]').forEach(b=>{ const f=b.onclick; b.onclick=async(ev)=>{ await f(ev); kLoadStarred(); }; });
+}
+async function kStarCsv(){
+  const R=kStarRangeDates(kStarRangeSel);
+  try{
+    const r=await kApi(`starred?from=${R.from}&to=${R.to}`);
+    if(!r.items.length){ toast('주요 표시한 항목이 없습니다'); return; }
+    const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const rows=[['날짜','요일','구분','시작/시각','종료','상태','제목','내용·특징','위치','업체·담당','방','메모']].concat(r.items.map(x=>{
+      const wd=K_WD[new Date(x.day+'T00:00:00').getDay()];
+      return x.type==='work'
+        ? [x.day,wd,'작업',x.start_at,x.end_at,x.status,x.title,[x.features,x.people,x.equipment].filter(Boolean).join(' / '),x.place,x.company,x.room,x.note]
+        : [x.day,wd,x.kind,x.at,'',x.status==='done'?'완료':'미결',x.title,x.detail,'',x.who,x.room,x.note];
+    }));
+    const blob=new Blob(['﻿'+rows.map(x=>x.map(q).join(',')).join('\r\n')],{type:'text/csv'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`주요이벤트_${R.label.replace(/\s/g,'')}.csv`; a.click();
+  }catch(e){ toast(kErr(e)); }
+}
+function kSetView(v){
+  kView=v;
+  document.querySelectorAll('.k-seg [data-kv]').forEach(b=>b.classList.toggle('on',b.dataset.kv===v));
+  $('kDaily').style.display = v==='daily'?'':'none';
+  $('kStarView').style.display = v==='star'?'':'none';
+  if(v==='star') kLoadStarred().catch(e=>toast(kErr(e)));
+  else kLoadSummary().catch(e=>toast(kErr(e)));
 }
 async function kLoadRooms(){
   const r=await kApi('rooms');
@@ -1789,6 +1927,9 @@ $('kAnalyzeBtn').onclick=kAnalyze;
 $('kFile').onchange=async()=>{ const f=$('kFile').files[0]; if(f){ $('kPaste').value=''; kPrepare(await f.text()); } else kPrepare(''); };
 $('kPaste').addEventListener('input',()=>{ $('kFile').value=''; kPrepare($('kPaste').value); });
 $('kWorksCsv').onclick=kWorksCsv;
+document.querySelectorAll('.k-seg [data-kv]').forEach(b=>b.onclick=()=>kSetView(b.dataset.kv));
+$('kStarCsv').onclick=kStarCsv;
+$('kStarPrint').onclick=()=>window.print();
 $('kImportBtn').onclick=kImport;
 $('kMsgsBox').addEventListener('toggle',()=>{ if($('kMsgsBox').open) kLoadMsgs().catch(e=>toast(kErr(e))); });
 $('kRawBox').addEventListener('toggle',()=>{ if($('kRawBox').open) kLoadRaw().catch(e=>toast(kErr(e))); });
