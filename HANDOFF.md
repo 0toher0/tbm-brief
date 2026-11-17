@@ -310,6 +310,12 @@ const APP = {
 - 관리자 모드: ⚙ 설정에 '관리자 모드' 켜기/끄기(암호 확인 후 이 기기에 저장). 켜야 현장톡·순시메모 탭이 보임 — 폰에서 탭이 안 보이면 이것부터.
 - 관리자 자료 갱신: 엑셀 수정 후 생성 스크립트 실행 → `wrangler d1 execute tbm-kakao --remote --file=<insert sql>`로 `admin_docs` 갱신.
 
+### 암호 없이 사용 (v5.9.0 / Worker v2.9.0, 2026-11-18 사용자 결정)
+- 사용자 요청으로 현장톡·순시메모·사내 검토 자료(기존 🔒 관리자)를 **관리자 암호 없이** 모두 사용. 하단 탭 항상 표시, 설정의 관리자 모드 제거.
+- 서버는 `/kakao/*`, `/memo/*`에 **앱 공유 토큰(X-App-Token) 또는 ADMIN_PASS** 중 하나만 요구(`kakaoMemoAuthOk`). 공유 토큰은 index.html에 공개돼 있어 **실질 보호 아님** — 주소만 아는 자동 수집 정도만 막음. 즉 앱 주소를 아는 사람은 카톡 대화·메모·사내 검토 자료를 볼 수 있음(사용자에게 고지 후 결정).
+- MacroDroid는 기존 설정(X-Admin-Pass) 그대로 동작. 작업입력의 '전체 공유 업로드'는 여전히 관리자 암호 필요.
+- 다시 잠그려면: `kakaoMemoAuthOk`에서 공유 토큰 허용 줄 제거 + index.html `kShowTab`/`renderKakao`/`renderMemo` 로그인 분기 복구(커밋 `4ba1bbe` 참고).
+
 ### 배포 방법 (2026-11-16부터 명령줄)
 `worker/` 폴더에서 `npx wrangler@4.162.0 deploy` — 설정은 `worker/wrangler.toml`(KV·D1 바인딩, 로그 끔, 기존 변수 유지). 비밀값은 Cloudflare에 저장된 것이 그대로 유지됨. 최초 1회 `npx wrangler@4.162.0 login` 필요(브라우저 승인).
 

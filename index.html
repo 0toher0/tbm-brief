@@ -684,15 +684,6 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
       <button class="btn ghost" onclick="closeModal('modalBg')">닫기</button>
       <button class="btn primary" onclick="saveSettings()">저장하고 불러오기</button>
     </div>
-    <!-- 관리자 모드: 이 기기에 관리자 암호를 저장하면 현장톡·순시메모 탭과 기준 탭 🔒 자료가 보임 -->
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
-      <label class="f-label" style="margin-top:0">관리자 모드 <small id="adminModeState" style="font-weight:600;color:var(--steel)"></small></label>
-      <div class="btn-row" style="margin-top:4px">
-        <input class="f-input" id="adminModePass" type="password" placeholder="관리자 암호" style="flex:2">
-        <button class="btn ghost" id="adminModeBtn" style="flex:1">켜기</button>
-      </div>
-      <div class="f-hint">켜면 이 기기에서 현장톡·순시메모 탭이 보입니다. 공용 폰이면 끄기를 눌러 주세요.</div>
-    </div>
     <div class="f-hint" id="buildInfo" style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"></div>
   </div>
 </div>
@@ -715,7 +706,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.8.0',
+  version : '5.9.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1683,14 +1674,14 @@ function infoViewHtml(v){
 async function adminLegalHtml(){
   if(!legalAdmin){
     const base=APP.proxyBase.replace(/\/$/,'');
-    const r=await fetch(base+'/memo/admin-doc?key=legal',{headers:{'X-Admin-Pass':adminPass||''}});
+    const r=await fetch(base+'/memo/admin-doc?key=legal',{headers:{'X-App-Token':APP.appToken}});
     const d=await r.json().catch(()=>({}));
     if(!r.ok) return `<div class="tr-meta">관리자 자료를 불러오지 못했습니다 (${esc(d.error||r.status)})</div>`;
     legalAdmin=d.doc;
   }
   const A=legalAdmin, sec=(t,h)=>`<div class="lg-group">${t}</div>${h}`;
   const byRole={}; A.roles.forEach(x=>(byRole[x.role]=byRole[x.role]||[]).push(x));
-  return `<div class="lg-intro">🔒 관리자에게만 보이는 자료입니다(공개 저장소·일반 화면에 없음). ${esc(A.source||'')}</div>
+  return `<div class="lg-intro">사내 검토용 자료입니다(법률 자문 아님 — 발주자 지위·불법파견 판단은 사내 법무/노무 검토). ${esc(A.source||'')}</div>
     ${sec('현장 전제', `<div class="lg-card">${A.overview.map(o=>`<div class="lg-kv"><b>${esc(o.k)}</b> ${esc(o.v)}</div>`).join('')}</div>`)}
     ${sec('Role별 법적 지위·의무', Object.entries(byRole).map(([role,list])=>`<div class="lg-card"><div class="lg-h">${esc(role)}</div>
       ${list.map(x=>`<div class="lg-row"><span class="lg-when">${esc(x.status)}</span> ${esc(x.duty)}<div class="lg-refs">${lgRefs(x.refs)}</div></div>`).join('')}</div>`).join(''))}
@@ -1706,7 +1697,7 @@ async function renderInfo(){
   if(!INFO_CATS.includes(infoCat)) infoCat=INFO_CATS[0];
   // 상단 보기 전환: 위험유형별(기존) / 핵심 기준 / 배치인원 / 최신 개정 / 법령 바로가기 / 관리자 전용
   const views=[['risk','위험유형별'],['key','⭐ 핵심 기준'],['staff','👷 배치인원'],['updates','🆕 최신 개정'],['laws','📚 법령 바로가기']];
-  if(adminPass) views.push(['admin','🔒 관리자']);
+  views.push(['admin','📋 사내 검토']); // 2026-11-18 사용자 결정: 암호 없이 누구나
   if(!views.some(x=>x[0]===infoView)) infoView='risk';
   const viewTabs=`<div class="date-chips lg-views" id="infoViews">${views.map(([k,t])=>`<button class="dchip${k===infoView?' on':''}" data-v="${k}">${t}</button>`).join('')}</div>`;
   const bindViews=()=>document.querySelectorAll('#infoViews .dchip').forEach(b=>b.onclick=()=>{ infoView=b.dataset.v; renderInfo(); });
@@ -1770,7 +1761,6 @@ function closeModal(id){ $(id).classList.remove('show'); }
 function openSettings(){
   $('inNx').value=S.nx;$('inNy').value=S.ny;$('inSido').value=S.sido;$('inStations').value=S.stations;
   $('buildInfo').innerHTML=`버전 v${APP.version} · 채널 ${APP.channel} · 데이터소스 <b>${APP.dataSource}</b><br>프록시: ${APP.proxyBase}`;
-  mAdminModeUI();
   openModal('modalBg');
 }
 function saveSettings(){
@@ -1816,7 +1806,7 @@ async function kApi(path, body){
   const base=APP.proxyBase.replace(/\/$/,'');
   const r=await fetch(base+'/kakao/'+path,{
     method: body ? 'POST' : 'GET',
-    headers:{'Content-Type':'application/json','X-Admin-Pass':adminPass||''},
+    headers:{'Content-Type':'application/json','X-App-Token':APP.appToken},
     body: body ? JSON.stringify(body) : undefined,
   });
   const d=await r.json().catch(()=>({error:'bad_response'}));
@@ -1824,20 +1814,19 @@ async function kApi(path, body){
   return d;
 }
 function kErr(e){
-  const map={admin_auth_failed:'관리자 암호가 맞지 않습니다', kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
+  const map={admin_auth_failed:'관리자 암호가 맞지 않습니다', auth_failed:'서버 접속 인증 실패 — 앱을 새로고침해 주세요',kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
     ai_not_configured:'서버에 ANTHROPIC_API_KEY가 없습니다', no_messages:'이 날짜에 추적 중인 방의 메시지가 없습니다',
     refused:'AI가 이 내용의 분석을 거절했습니다', anthropic_error:'AI 호출 오류'};
   const d=e.data&&e.data.detail, dm=d&&(d.error&&d.error.message||d.message);
   return (map[e.message] || ('오류: '+e.message)) + (dm?' — '+String(dm).slice(0,120):'');
 }
 function kShowTab(){
-  const on = !!adminPass || location.hash==='#kakao' || location.hash==='#memo';
+  const on = true; // 2026-11-18 사용자 결정: 관리자 모드 없이 항상 표시
   $('tabKakao').style.display = on ? '' : 'none';
   $('tabMemo').style.display = on ? '' : 'none';
 }
 
 async function renderKakao(){
-  if(!adminPass){ $('kLogin').style.display='block'; $('kMain').style.display='none'; return; }
   $('kLogin').style.display='none'; $('kMain').style.display='block';
   try{
     const d=await kApi('days');
@@ -1853,7 +1842,6 @@ async function renderKakao(){
     if($('kMsgsBox').open) kLoadMsgs();
     if($('kRawBox').open) kLoadRaw();
   }catch(e){
-    if(e.status===401){ adminPass=''; saveJSON(LS_ADMIN,''); $('kLogin').style.display='block'; $('kMain').style.display='none'; }
     toast(kErr(e));
   }
 }
@@ -2147,7 +2135,7 @@ const M_MAX_ROWS=400, M_MAX_COLS=80;
 async function mApi(path, body){
   const base=APP.proxyBase.replace(/\/$/,'');
   const r=await fetch(base+'/memo/'+path,{method:body?'POST':'GET',
-    headers:{'Content-Type':'application/json','X-Admin-Pass':adminPass||''},body:body?JSON.stringify(body):undefined});
+    headers:{'Content-Type':'application/json','X-App-Token':APP.appToken},body:body?JSON.stringify(body):undefined});
   const d=await r.json().catch(()=>({error:'bad_response'}));
   if(!r.ok||d.error){ const e=new Error(d.error||('http_'+r.status)); e.data=d; e.status=r.status; throw e; }
   return d;
@@ -2346,7 +2334,6 @@ const mHint=()=>mMode==='image'
 
 /* ---------- 목록 / 편집 ---------- */
 async function renderMemo(){
-  if(!adminPass){ $('mLogin').style.display='block'; $('mMain').style.display='none'; return; }
   $('mLogin').style.display='none'; $('mMain').style.display='block';
   if(mNoteId) return mLoadNote().catch(e=>toast(mErr(e)));
   try{
@@ -2365,7 +2352,6 @@ async function renderMemo(){
     }).join('');
     $('mList').querySelectorAll('[data-note]').forEach(el=>el.onclick=()=>mOpen(+el.dataset.note));
   }catch(e){
-    if(e.status===401){ adminPass=''; saveJSON(LS_ADMIN,''); kShowTab(); renderMemo(); }
     toast(mErr(e));
   }
 }
@@ -2501,20 +2487,6 @@ $('mImgFile').onchange=async()=>{ for(const f of [...$('mImgFile').files]) await
 document.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{ mMode=b.dataset.mm; document.querySelectorAll('[data-mm]').forEach(x=>x.classList.toggle('on',x===b)); $('mZone').innerHTML=mHint(); mStatus(''); });
 $('mLoginBtn').onclick=async()=>{ const p=$('mPass').value.trim(); if(!p) return; adminPass=p;
   try{ await mApi('list'); saveJSON(LS_ADMIN,p); kShowTab(); renderMemo(); }catch(e){ adminPass=''; toast(mErr(e)); } };
-
-/* 설정 → 관리자 모드 켜기/끄기 */
-function mAdminModeUI(){
-  $('adminModeState').textContent = adminPass ? '— 켜짐' : '— 꺼짐';
-  $('adminModeBtn').textContent = adminPass ? '끄기' : '켜기';
-  $('adminModePass').style.display = adminPass ? 'none' : '';
-}
-$('adminModeBtn').onclick=async()=>{
-  if(adminPass){ adminPass=''; saveJSON(LS_ADMIN,''); legalAdmin=null; kShowTab(); mAdminModeUI(); toast('관리자 모드를 껐습니다'); return; }
-  const p=$('adminModePass').value.trim(); if(!p) return;
-  adminPass=p;
-  try{ await mApi('list'); saveJSON(LS_ADMIN,p); if($('adminPassInput')) $('adminPassInput').value=p; $('adminModePass').value=''; kShowTab(); mAdminModeUI(); toast('관리자 모드 — 하단에 현장톡·순시메모 탭이 생겼습니다'); }
-  catch(e){ adminPass=''; toast(e.status===401?'관리자 암호가 맞지 않습니다':mErr(e)); }
-};
 
 /* ================= 네비/이벤트 ================= */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{

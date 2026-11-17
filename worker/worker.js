@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.8.0',
+        version: '2.9.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -275,7 +275,8 @@ function json(obj, status, headers) {
  * =====================================================================
  * 저장소: Cloudflare D1 (바인딩명 KAKAO_DB). KV는 무료 쓰기 한도(1,000회/일)가
  *   단톡방 메시지량에 부족해서 D1(100,000행/일)을 쓴다. 테이블은 첫 호출 때 자동 생성.
- * 인증: 모든 /kakao/* 는 ADMIN_PASS (헤더 X-Admin-Pass 또는 폼/JSON 필드 k).
+ * 인증(v2.9.0~): 앱 공유 토큰(X-App-Token / 필드 t) 또는 ADMIN_PASS(X-Admin-Pass / 필드 k) 중 하나.
+ *   사용자 결정(2026-11-18)으로 앱에서는 암호 없이 사용 — 공유 토큰은 앱 코드에 공개돼 있어 실질 보호는 약함.
  *
  *   POST /kakao/ingest     폰 알림 1건. 필드: title, text, subtext(선택), app(선택)
  *                          (form-urlencoded / JSON / 쿼리 모두 허용 — MacroDroid용)
@@ -295,6 +296,14 @@ function json(obj, status, headers) {
  * 개인정보: 추적(tracked)으로 켠 방의 메시지만 본문을 저장한다. 처음 보는 방은
  *   방 이름·건수만 기록되고, 앱에서 '추적'을 켠 이후부터 저장된다.
  */
+// 현장톡·순시메모 접근: 앱 공유 토큰 또는 관리자 암호 중 하나면 통과
+function kakaoMemoAuthOk(request, env, body) {
+  const pass = request.headers.get('X-Admin-Pass') || body.k || '';
+  const tok = request.headers.get('X-App-Token') || body.t || '';
+  if (env.ADMIN_PASS && pass === env.ADMIN_PASS) return true;
+  return !env.SHARED_TOKEN || tok === env.SHARED_TOKEN;
+}
+
 let KAKAO_SCHEMA_READY = false;
 async function kakaoSchema(db) {
   if (KAKAO_SCHEMA_READY) return;
@@ -364,8 +373,9 @@ async function handleKakao(request, env, url, cors) {
   const sub = url.pathname.replace(/^\/+/, '').split('/')[1] || '';
   const body = await readKakaoBody(request, url);
   if (body.__bad) return json({ error: 'bad_body', message: body.__bad }, 400, cors);
-  const pass = request.headers.get('X-Admin-Pass') || body.k || '';
-  if (!env.ADMIN_PASS || pass !== env.ADMIN_PASS) return json({ error: 'admin_auth_failed' }, 401, cors);
+  // 2026-11-18 사용자 결정: 앱에서는 관리자 암호 없이 사용. 앱에 내장된 공유 토큰(X-App-Token)만 확인해
+  // 주소만 아는 자동 수집기 접근을 막는다(진짜 비밀은 아님 — HANDOFF 12장 참고). 폰 MacroDroid는 기존처럼 관리자 암호도 허용.
+  if (!kakaoMemoAuthOk(request, env, body)) return json({ error: 'auth_failed' }, 401, cors);
   if (!env.KAKAO_DB) return json({ error: 'kakao_db_not_bound' }, 500, cors);
   const db = env.KAKAO_DB;
   await kakaoSchema(db);
@@ -759,7 +769,7 @@ ${convo}
  * =====================================================================
  * 원본: GitHub 0toher0/memo (Streamlit memo_attach)의 붙여넣기·렌더 방식을 앱용으로 옮김.
  * 저장소: 같은 D1(KAKAO_DB). 블록 하나 = 한 행(D1 행 크기 상한 2MB 때문에 블록별로 분리).
- * 인증: ADMIN_PASS (헤더 X-Admin-Pass).
+ * 인증(v2.9.0~): 앱 공유 토큰 또는 ADMIN_PASS — 현장톡과 동일(kakaoMemoAuthOk).
  *   GET  /memo/list?from=&to=        날짜 범위 메모 목록(블록 개수 포함)
  *   GET  /memo/note?id=              메모 + 블록 전체
  *   POST /memo/note {id?, day, title, body}   생성/수정
@@ -795,8 +805,7 @@ async function handleMemo(request, env, url, cors) {
   if (request.method === 'POST') {
     try { Object.assign(body, await request.json()); } catch (e) { return json({ error: 'bad_json' }, 400, cors); }
   }
-  const pass = request.headers.get('X-Admin-Pass') || '';
-  if (!env.ADMIN_PASS || pass !== env.ADMIN_PASS) return json({ error: 'admin_auth_failed' }, 401, cors);
+  if (!kakaoMemoAuthOk(request, env, body)) return json({ error: 'auth_failed' }, 401, cors); // 관리자 암호 불필요(앱 토큰)
   if (!env.KAKAO_DB) return json({ error: 'kakao_db_not_bound' }, 500, cors);
   const db = env.KAKAO_DB;
   await memoSchema(db);
