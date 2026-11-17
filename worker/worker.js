@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.5.0',
+        version: '2.6.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -100,6 +100,11 @@ async function handleRequest(request, env) {
     if (url.pathname.replace(/^\/+/, '').split('/')[0] === 'kakao') {
       if (origin && allowed.length && !allowed.includes(origin)) return json({ error: 'origin_not_allowed' }, 403, cors);
       return await handleKakao(request, env, url, cors);
+    }
+    // ===== 현장메모 (순시 메모: 엑셀 표 서식 그대로 / 이미지) — 관리자 전용, 아래 handleMemo 참고 =====
+    if (url.pathname.replace(/^\/+/, '').split('/')[0] === 'memo') {
+      if (origin && allowed.length && !allowed.includes(origin)) return json({ error: 'origin_not_allowed' }, 403, cors);
+      return await handleMemo(request, env, url, cors);
     }
 
     // Origin 차단 (허용목록이 설정된 경우)
@@ -747,4 +752,142 @@ ${convo}
   }
   await db.batch(stmts);
   return { ok: true, day, msgCount: msgs.length, works: works.length, worksClosed, events: (parsed.events || []).length, resolvedPrev: resolved, truncated, model: data.model || model };
+}
+
+/* =====================================================================
+ * 현장메모 — 순시용 메모 (본문 + 엑셀 표(서식 그대로) / 이미지 블록)
+ * =====================================================================
+ * 원본: GitHub 0toher0/memo (Streamlit memo_attach)의 붙여넣기·렌더 방식을 앱용으로 옮김.
+ * 저장소: 같은 D1(KAKAO_DB). 블록 하나 = 한 행(D1 행 크기 상한 2MB 때문에 블록별로 분리).
+ * 인증: ADMIN_PASS (헤더 X-Admin-Pass).
+ *   GET  /memo/list?from=&to=        날짜 범위 메모 목록(블록 개수 포함)
+ *   GET  /memo/note?id=              메모 + 블록 전체
+ *   POST /memo/note {id?, day, title, body}   생성/수정
+ *   POST /memo/note-delete {id}       메모와 블록 삭제
+ *   POST /memo/block {note_id, kind:'table'|'image'|'text', caption, payload}
+ *   POST /memo/block-update {id, caption?, payload?}   (표 셀 체크·수정 등)
+ *   POST /memo/block-delete {id}
+ *   POST /memo/block-move {id, dir:-1|1}
+ */
+let MEMO_SCHEMA_READY = false;
+const MEMO_MAX_PAYLOAD = 1900000; // D1 행 크기 상한(2,000,000 bytes) 아래로
+
+async function memoSchema(db) {
+  if (MEMO_SCHEMA_READY) return;
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS memo_notes (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, title TEXT, body TEXT, created_at TEXT, updated_at TEXT)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_memo_notes_day ON memo_notes(day)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS memo_blocks (id INTEGER PRIMARY KEY AUTOINCREMENT, note_id INTEGER NOT NULL, ord INTEGER NOT NULL, kind TEXT NOT NULL, caption TEXT, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_memo_blocks_note ON memo_blocks(note_id, ord)`),
+  ]);
+  MEMO_SCHEMA_READY = true;
+}
+
+async function handleMemo(request, env, url, cors) {
+  const sub = url.pathname.replace(/^\/+/, '').split('/')[1] || '';
+  let body = Object.fromEntries(url.searchParams.entries());
+  if (request.method === 'POST') {
+    try { Object.assign(body, await request.json()); } catch (e) { return json({ error: 'bad_json' }, 400, cors); }
+  }
+  const pass = request.headers.get('X-Admin-Pass') || '';
+  if (!env.ADMIN_PASS || pass !== env.ADMIN_PASS) return json({ error: 'admin_auth_failed' }, 401, cors);
+  if (!env.KAKAO_DB) return json({ error: 'kakao_db_not_bound' }, 500, cors);
+  const db = env.KAKAO_DB;
+  await memoSchema(db);
+  const now = kstNow();
+  const needPost = () => request.method !== 'POST' ? json({ error: 'method_not_allowed' }, 405, cors) : null;
+
+  if (sub === 'list') {
+    const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+    const r = await db.prepare(`SELECT n.id, n.day, n.title, substr(n.body,1,80) AS preview, n.updated_at,
+        (SELECT COUNT(*) FROM memo_blocks b WHERE b.note_id=n.id AND b.kind='table') AS tables,
+        (SELECT COUNT(*) FROM memo_blocks b WHERE b.note_id=n.id AND b.kind='image') AS images
+      FROM memo_notes n WHERE n.day BETWEEN ? AND ? ORDER BY n.day DESC, n.id DESC LIMIT 300`).bind(from, to).all();
+    return json({ today: now.day, notes: r.results }, 200, cors);
+  }
+
+  if (sub === 'note' && request.method === 'GET') {
+    const id = parseInt(body.id, 10);
+    const [n, b] = await db.batch([
+      db.prepare(`SELECT * FROM memo_notes WHERE id=?`).bind(id),
+      db.prepare(`SELECT id, ord, kind, caption, payload, updated_at FROM memo_blocks WHERE note_id=? ORDER BY ord, id`).bind(id),
+    ]);
+    if (!n.results[0]) return json({ error: 'not_found' }, 404, cors);
+    return json({ note: n.results[0], blocks: b.results.map(x => ({ ...x, payload: JSON.parse(x.payload) })) }, 200, cors);
+  }
+
+  if (sub === 'note') {
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(String(body.day || '')) ? body.day : now.day;
+    const title = String(body.title || '').slice(0, 200), text = String(body.body || '').slice(0, 200000);
+    const id = parseInt(body.id, 10);
+    if (id) {
+      await db.prepare(`UPDATE memo_notes SET day=?, title=?, body=?, updated_at=? WHERE id=?`).bind(day, title, text, now.ts, id).run();
+      return json({ ok: true, id }, 200, cors);
+    }
+    const r = await db.prepare(`INSERT INTO memo_notes(day, title, body, created_at, updated_at) VALUES(?,?,?,?,?)`).bind(day, title, text, now.ts, now.ts).run();
+    return json({ ok: true, id: r.meta.last_row_id }, 200, cors);
+  }
+
+  if (sub === 'note-delete') {
+    const e = needPost(); if (e) return e;
+    const id = parseInt(body.id, 10);
+    await db.batch([
+      db.prepare(`DELETE FROM memo_blocks WHERE note_id=?`).bind(id),
+      db.prepare(`DELETE FROM memo_notes WHERE id=?`).bind(id),
+    ]);
+    return json({ ok: true }, 200, cors);
+  }
+
+  if (sub === 'block') {
+    const e = needPost(); if (e) return e;
+    const noteId = parseInt(body.note_id, 10);
+    const kind = ['table', 'image', 'text'].includes(body.kind) ? body.kind : null;
+    if (!noteId || !kind || !body.payload) return json({ error: 'bad_payload' }, 400, cors);
+    const payload = JSON.stringify(body.payload);
+    if (payload.length > MEMO_MAX_PAYLOAD) return json({ error: 'too_large', bytes: payload.length, max: MEMO_MAX_PAYLOAD }, 413, cors);
+    const mx = await db.prepare(`SELECT COALESCE(MAX(ord),0) AS m FROM memo_blocks WHERE note_id=?`).bind(noteId).first();
+    const r = await db.prepare(`INSERT INTO memo_blocks(note_id, ord, kind, caption, payload, created_at, updated_at) VALUES(?,?,?,?,?,?,?)`)
+      .bind(noteId, (mx ? mx.m : 0) + 1, kind, String(body.caption || '').slice(0, 300), payload, now.ts, now.ts).run();
+    await db.prepare(`UPDATE memo_notes SET updated_at=? WHERE id=?`).bind(now.ts, noteId).run();
+    return json({ ok: true, id: r.meta.last_row_id }, 200, cors);
+  }
+
+  if (sub === 'block-update') {
+    const e = needPost(); if (e) return e;
+    const id = parseInt(body.id, 10);
+    const cur = await db.prepare(`SELECT * FROM memo_blocks WHERE id=?`).bind(id).first();
+    if (!cur) return json({ error: 'not_found' }, 404, cors);
+    const payload = body.payload !== undefined ? JSON.stringify(body.payload) : cur.payload;
+    if (payload.length > MEMO_MAX_PAYLOAD) return json({ error: 'too_large' }, 413, cors);
+    const caption = body.caption !== undefined ? String(body.caption).slice(0, 300) : cur.caption;
+    await db.batch([
+      db.prepare(`UPDATE memo_blocks SET caption=?, payload=?, updated_at=? WHERE id=?`).bind(caption, payload, now.ts, id),
+      db.prepare(`UPDATE memo_notes SET updated_at=? WHERE id=?`).bind(now.ts, cur.note_id),
+    ]);
+    return json({ ok: true, id }, 200, cors);
+  }
+
+  if (sub === 'block-delete') {
+    const e = needPost(); if (e) return e;
+    await db.prepare(`DELETE FROM memo_blocks WHERE id=?`).bind(parseInt(body.id, 10)).run();
+    return json({ ok: true }, 200, cors);
+  }
+
+  if (sub === 'block-move') {
+    const e = needPost(); if (e) return e;
+    const id = parseInt(body.id, 10), dir = body.dir === -1 || body.dir === '-1' ? -1 : 1;
+    const cur = await db.prepare(`SELECT id, note_id, ord FROM memo_blocks WHERE id=?`).bind(id).first();
+    if (!cur) return json({ error: 'not_found' }, 404, cors);
+    const nb = await db.prepare(dir < 0
+      ? `SELECT id, ord FROM memo_blocks WHERE note_id=? AND ord<? ORDER BY ord DESC LIMIT 1`
+      : `SELECT id, ord FROM memo_blocks WHERE note_id=? AND ord>? ORDER BY ord ASC LIMIT 1`).bind(cur.note_id, cur.ord).first();
+    if (!nb) return json({ ok: true, moved: false }, 200, cors);
+    await db.batch([
+      db.prepare(`UPDATE memo_blocks SET ord=? WHERE id=?`).bind(nb.ord, cur.id),
+      db.prepare(`UPDATE memo_blocks SET ord=? WHERE id=?`).bind(cur.ord, nb.id),
+    ]);
+    return json({ ok: true, moved: true }, 200, cors);
+  }
+
+  return json({ error: 'unknown_memo_route', sub }, 404, cors);
 }

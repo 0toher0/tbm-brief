@@ -287,6 +287,14 @@ const APP = {
 - 각 카드 오른쪽 **☆**를 누르면 ★주요 표시(`starred`, 재분석해도 보존). 상단 **'★ 주요 이벤트'** 탭에서 별표한 작업·이벤트를 **날짜별(요일 포함)로 한 페이지**에 모아 봄. 기간: 이번 달/지난 달/최근 3개월/전체. **엑셀(CSV)**, **인쇄/PDF**(인쇄 시 시트만 출력).
 - API: `POST /kakao/star {type:'work'|'event', id, starred}`, `GET /kakao/starred?from=&to=`. `starred` 컬럼은 기존 D1 테이블에 첫 호출 때 자동 추가(ALTER TABLE).
 
+## 13. 순시메모 (v5.5.0 / Worker v2.6.0, 관리자 전용 탭)
+- 출처: GitHub `0toher0/memo`(Streamlit `memo_attach`)의 붙여넣기(`_paste/index.html`)·렌더(`_render.py`)·복사(`_table/index.html`) 로직을 앱 JS로 이식.
+- 날짜별 메모(제목·본문 자동 저장) + 블록: **📊 엑셀로 붙이기**(셀 범위 → 배경·글자색·굵기·정렬·테두리·병합·열너비 그대로 표) / **🖼️ 이미지로 붙이기**(화면 캡쳐·엑셀 범위를 그림으로) / 📷 사진·이미지 파일. 엑셀 모드에서 HTML이 없으면 탭 구분 텍스트를 표로 복원.
+- 표 블록: **📋 엑셀로 복사**(text/html+text/plain을 같이 넣어 다른 엑셀에 서식 그대로 Ctrl+V), 텍스트 복사, CSV, **칸 눌러 값 수정**(순시 체크 O/X 등, 서식 유지). 이미지 블록: 이미지 복사·저장. 설명·순서 이동·삭제.
+- 저장: 같은 D1의 `memo_notes`, `memo_blocks`(블록 1개=1행). D1 행 상한 2MB 때문에 블록 1.9MB 초과는 413 거부, 이미지는 앱에서 1.3MB 이하로 자동 축소(작은 캡쳐는 원본 PNG 유지).
+- API: `/memo/list`, `/memo/note`(GET/POST), `/memo/note-delete`, `/memo/block`, `/memo/block-update`, `/memo/block-delete`, `/memo/block-move` — 모두 `X-Admin-Pass` 필요.
+- 로컬 모의 테스트(메모 8항목 포함 전체 통과) + Chrome에서 서식 표·이미지 붙여넣기, 셀 수정, 엑셀로 복사 버튼 동작 확인. **실제 엑셀→앱→엑셀 왕복과 폰 붙여넣기는 실사용 확인 필요.**
+
 ### 배포 방법 (2026-11-16부터 명령줄)
 `worker/` 폴더에서 `npx wrangler@4.162.0 deploy` — 설정은 `worker/wrangler.toml`(KV·D1 바인딩, 로그 끔, 기존 변수 유지). 비밀값은 Cloudflare에 저장된 것이 그대로 유지됨. 최초 1회 `npx wrangler@4.162.0 login` 필요(브라우저 승인).
 

@@ -252,6 +252,32 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
 /* 현장톡 하위 탭 */
 .k-seg{display:flex;background:#e4e6e8;border-radius:11px;padding:3px;margin:2px 0 12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:20;box-shadow:0 0 0 6px var(--paper)}
 #kStarList .kc.done .kc-title{text-decoration:none;color:var(--ink)}
+/* ===== 순시메모 ===== */
+.m-item{padding:11px 12px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
+.m-item:last-child{border-bottom:none}
+.m-item:active{background:#f6f7f7}
+.m-mode{position:static;box-shadow:none;margin:0 0 8px}
+.m-zone{border:2px dashed #c9ccd3;border-radius:12px;padding:16px;min-height:84px;outline:none;background:#fafafa;font-size:.84rem;color:var(--steel);line-height:1.6;cursor:text}
+.m-zone.focus{border-color:var(--accent);background:#fff6f0}
+.m-zone b{color:var(--accent)}
+#mZoneStatus{font-size:.74rem;min-height:18px;margin-top:6px}
+.m-file{display:block;text-align:center;margin-top:8px;padding:11px;font-size:.84rem;cursor:pointer}
+.m-block{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
+.m-cap{font-size:.84rem;font-weight:800;margin-bottom:6px}
+.m-tools{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.m-tools .mini-btn{padding:6px 9px}
+.m-tools .m-copy{background:var(--ink);color:#fff}
+.m-twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.m-tip{font-size:.64rem;color:var(--steel);margin-top:4px}
+table.ma-table{border-collapse:collapse;font-size:13px;background:#fff;color:#111;font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+table.ma-table td,table.ma-table th{border:1px solid #d0d3d8;padding:3px 7px;white-space:pre-wrap;overflow-wrap:break-word;vertical-align:middle}
+table.ma-table th{background:#f2f3f5;font-weight:600}
+.m-twrap td[data-r],.m-twrap th[data-r]{cursor:pointer}
+.m-twrap td[data-r]:active{outline:2px solid var(--accent)}
+.m-img{display:block;max-width:100%;border:1px solid var(--line);border-radius:8px}
+.m-text{white-space:pre-wrap;font-family:inherit;font-size:.84rem;margin:0}
+#mBody{min-height:120px;resize:vertical;margin-top:8px;line-height:1.6}
+#mSaveState{font-size:.66rem;color:var(--steel);text-align:right;margin-top:4px;min-height:14px}
 .k-seg button{flex:1;border:none;background:none;padding:9px 6px;font-weight:800;font-size:.82rem;border-radius:9px;color:var(--steel)}
 .k-seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 /* 시간축 카드 (작업·이벤트 공통) */
@@ -539,6 +565,53 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
     </div><!-- /kDaily -->
   </div>
 </div>
+
+<!-- ============ 순시메모 (관리자 전용) ============ -->
+<div class="pg" id="pgMemo">
+  <div id="mLogin" class="card" style="display:none;margin-top:14px">
+    <div class="sec-t" style="margin-bottom:6px">순시메모 · 관리자 확인</div>
+    <div class="paste-hint">관리자 암호가 있어야 볼 수 있습니다.</div>
+    <div class="btn-row">
+      <input class="f-input" id="mPass" type="password" placeholder="관리자 암호" style="flex:2">
+      <button class="btn primary" id="mLoginBtn" style="flex:1">열기</button>
+    </div>
+  </div>
+  <div id="mMain" style="display:none">
+    <div id="mListView">
+      <section style="margin-top:4px">
+        <div class="sec-h"><div class="sec-t">순시메모 <small>날짜별 · 엑셀 표·사진 첨부</small></div></div>
+        <div class="btn-row" style="margin-top:0">
+          <input class="f-input" type="date" id="mDay" style="flex:1">
+          <button class="btn primary" id="mNew" style="flex:1">+ 새 메모</button>
+        </div>
+      </section>
+      <div id="mList"></div>
+    </div>
+    <div id="mEditView" style="display:none">
+      <div class="btn-row" style="margin-top:4px">
+        <button class="btn ghost" id="mBack">← 목록</button>
+        <button class="btn ghost" id="mDel" style="flex:.55;color:var(--red)">메모 삭제</button>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="f-two">
+          <div><label class="f-label" style="margin-top:0">날짜</label><input class="f-input" type="date" id="mEdDay"></div>
+          <div><label class="f-label" style="margin-top:0">제목</label><input class="f-input" id="mTitle" placeholder="예: 3층 BFG 라인 순시"></div>
+        </div>
+        <textarea class="f-input" id="mBody" placeholder="순시 메모 (자동 저장)"></textarea>
+        <div id="mSaveState"></div>
+      </div>
+      <section>
+        <div class="sec-h"><div class="sec-t">붙여넣기 <small>엑셀 표 · 이미지</small></div></div>
+        <div class="k-seg m-mode"><button class="on" data-mm="table">📊 엑셀로 붙이기</button><button data-mm="image">🖼️ 이미지로 붙이기</button></div>
+        <div id="mZone" class="m-zone" contenteditable="true" spellcheck="false"></div>
+        <div id="mZoneStatus"></div>
+        <label class="btn ghost m-file">📷 사진 찍기 · 이미지 파일 추가<input type="file" id="mImgFile" accept="image/*" multiple hidden></label>
+      </section>
+      <div id="mBlocks"></div>
+    </div>
+  </div>
+  <div id="mStage" contenteditable="true" style="position:absolute;left:-100000px;top:0;width:1600px"></div>
+</div>
 </main>
 
 <!-- bottom nav -->
@@ -548,6 +621,7 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
   <button class="tab-btn" data-pg="pgRecords"><span class="ic">▤</span>기록</button>
   <button class="tab-btn" data-pg="pgInfo"><span class="ic">§</span>기준</button>
   <button class="tab-btn" data-pg="pgKakao" id="tabKakao" style="display:none"><span class="ic">✉</span>현장톡</button>
+  <button class="tab-btn" data-pg="pgMemo" id="tabMemo" style="display:none"><span class="ic">✓</span>순시메모</button>
 </nav>
 
 <!-- 설정 모달 -->
@@ -590,7 +664,7 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.4.0',
+  version : '5.5.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1633,7 +1707,11 @@ function kErr(e){
   const d=e.data&&e.data.detail, dm=d&&(d.error&&d.error.message||d.message);
   return (map[e.message] || ('오류: '+e.message)) + (dm?' — '+String(dm).slice(0,120):'');
 }
-function kShowTab(){ $('tabKakao').style.display = (adminPass || location.hash==='#kakao') ? '' : 'none'; }
+function kShowTab(){
+  const on = !!adminPass || location.hash==='#kakao' || location.hash==='#memo';
+  $('tabKakao').style.display = on ? '' : 'none';
+  $('tabMemo').style.display = on ? '' : 'none';
+}
 
 async function renderKakao(){
   if(!adminPass){ $('kLogin').style.display='block'; $('kMain').style.display='none'; return; }
@@ -1934,6 +2012,317 @@ $('kImportBtn').onclick=kImport;
 $('kMsgsBox').addEventListener('toggle',()=>{ if($('kMsgsBox').open) kLoadMsgs().catch(e=>toast(kErr(e))); });
 $('kRawBox').addEventListener('toggle',()=>{ if($('kRawBox').open) kLoadRaw().catch(e=>toast(kErr(e))); });
 
+/* ================= 순시메모 (관리자 전용) =================
+ * GitHub 0toher0/memo(Streamlit memo_attach)의 붙여넣기·렌더 로직을 이 앱용으로 옮김.
+ * - 엑셀 셀 범위 Ctrl+V → 배경색·글자색·굵기·정렬·테두리·병합·열너비 그대로 표로 저장/표시
+ * - 이미지로 붙이기(화면 캡쳐·엑셀 범위를 그림으로) + 사진 파일/카메라 추가
+ * - 화면의 표를 '엑셀로 복사'하면 다른 엑셀에 서식 그대로 Ctrl+V 됨
+ * 서버: Worker /memo/* (D1, ADMIN_PASS). */
+let mNoteId=null, mMode='table', mBlocksCache=[], mSaveTimer=null;
+const M_MAX_ROWS=400, M_MAX_COLS=80;
+
+async function mApi(path, body){
+  const base=APP.proxyBase.replace(/\/$/,'');
+  const r=await fetch(base+'/memo/'+path,{method:body?'POST':'GET',
+    headers:{'Content-Type':'application/json','X-Admin-Pass':adminPass||''},body:body?JSON.stringify(body):undefined});
+  const d=await r.json().catch(()=>({error:'bad_response'}));
+  if(!r.ok||d.error){ const e=new Error(d.error||('http_'+r.status)); e.data=d; e.status=r.status; throw e; }
+  return d;
+}
+function mErr(e){
+  if(e.message==='too_large') return '너무 큽니다 — 표를 나눠서 붙이거나 이미지를 줄여 주세요';
+  return kErr(e);
+}
+function mStatus(t,cls){ const s=$('mZoneStatus'); s.textContent=t||''; s.style.color=cls==='err'?'var(--red)':cls==='ok'?'var(--green)':'var(--steel)'; }
+
+/* ---------- 엑셀 표 읽기 (원본 _paste/index.html 이식) ---------- */
+function mToHex(c){
+  if(!c) return null; c=c.trim(); if(c==='transparent') return null;
+  const m=c.match(/^rgba?\(([^)]+)\)$/i);
+  if(!m) return c.charAt(0)==='#'?c:null;
+  const p=m[1].split(',').map(x=>parseFloat(x.trim()));
+  if(p.length>3&&p[3]===0) return null;
+  const h=n=>('0'+Math.max(0,Math.min(255,Math.round(n||0))).toString(16)).slice(-2);
+  return '#'+h(p[0])+h(p[1])+h(p[2]);
+}
+function mBorder(cs,side){
+  const w=parseFloat(cs.getPropertyValue('border-'+side+'-width'))||0;
+  let s=cs.getPropertyValue('border-'+side+'-style');
+  if(w<=0||s==='none'||s==='hidden') return null;
+  const col=mToHex(cs.getPropertyValue('border-'+side+'-color'))||'#9aa0a6';
+  if(s==='double'&&w<3) s='solid';
+  return Math.max(1,Math.round(w))+'px '+s+' '+col;
+}
+function mReadCell(cell){
+  const cs=getComputedStyle(cell);
+  const o={v:(cell.innerText||'').replace(/ /g,' ').replace(/\s+$/g,'')};
+  const fw=cs.fontWeight; if(fw==='bold'||fw==='bolder'||parseInt(fw,10)>=600) o.b=1;
+  if(cs.fontStyle==='italic') o.i=1;
+  if((cs.textDecorationLine||'').indexOf('underline')>=0) o.u=1;
+  const bg=mToHex(cs.backgroundColor); if(bg&&bg!=='#ffffff') o.bg=bg;
+  const fg=mToHex(cs.color); if(fg&&fg!=='#000000'&&fg!=='#000') o.fg=fg;
+  const al=cs.textAlign; if(al&&al!=='start'&&al!=='left'&&al!=='-webkit-auto') o.al=al;
+  const va=cs.verticalAlign; if(va==='top'||va==='bottom') o.va=va;
+  const fs=parseFloat(cs.fontSize); if(fs&&Math.abs(fs-14)>1.5) o.fs=Math.round(fs);
+  for(const [k,sd] of [['bt','top'],['br','right'],['bb','bottom'],['bl','left']]){ const b=mBorder(cs,sd); if(b) o[k]=b; }
+  if(cell.tagName==='TH') o.th=1;
+  return o;
+}
+function mExtractTable(table){
+  const rows=[...table.rows]; if(!rows.length) return null;
+  const grid=[], taken={}; let maxc=0, truncated=false;
+  const ensure=(r,c)=>{ while(grid.length<=r) grid.push([]); while(grid[r].length<=c) grid[r].push(null); };
+  for(let r=0;r<rows.length;r++){
+    if(r>=M_MAX_ROWS){truncated=true;break;}
+    let c=0; while(grid.length<=r) grid.push([]);
+    for(const cell of rows[r].cells){
+      while(taken[r+':'+c]) c++;
+      if(c>=M_MAX_COLS){truncated=true;break;}
+      const cs=Math.max(1,cell.colSpan||1), rs=Math.max(1,cell.rowSpan||1);
+      const info=mReadCell(cell); if(cs>1) info.cs=cs; if(rs>1) info.rs=rs;
+      ensure(r,c); grid[r][c]=info; info._dom=cell;
+      for(let i=0;i<rs;i++) for(let j=0;j<cs;j++){ taken[(r+i)+':'+(c+j)]=1; if(i||j) ensure(r+i,c+j); }
+      c+=cs; if(c>maxc) maxc=c;
+    }
+  }
+  grid.forEach(row=>{ while(row.length<maxc) row.push(null); row.length=maxc; });
+  if(!grid.some(row=>row.some(x=>x&&x.v))) return null;
+  const widths=[];
+  for(let col=0;col<maxc;col++){
+    let w=null;
+    for(const row of grid){ const ci=row[col]; if(ci&&!ci.cs&&ci._dom){ const bw=Math.round(ci._dom.getBoundingClientRect().width)+3; if(bw>0&&(w===null||bw>w)) w=bw; } }
+    widths.push(w===null?null:Math.min(420,Math.max(36,w)));
+  }
+  grid.forEach(row=>row.forEach(x=>{ if(x) delete x._dom; }));
+  return {grid,widths,rows:grid.length,cols:maxc,truncated};
+}
+function mTsvToGrid(plain){
+  const lines=plain.replace(/\r/g,'').split('\n'); while(lines.length&&lines[lines.length-1]==='') lines.pop();
+  let mx=0; const g=lines.slice(0,M_MAX_ROWS).map(l=>{ const cells=l.split('\t').slice(0,M_MAX_COLS); mx=Math.max(mx,cells.length); return cells.map(t=>({v:t})); });
+  g.forEach(r=>{ while(r.length<mx) r.push(null); });
+  return {grid:g,widths:[],rows:g.length,cols:mx};
+}
+
+/* ---------- 표 → HTML / TSV (원본 _render.py 이식) ---------- */
+const mSafeCss=v=>String(v).replace(/[^#a-zA-Z0-9 .,%()-]/g,'');
+function mCellStyle(c){
+  const s=[];
+  if(c.bg) s.push('background-color:'+mSafeCss(c.bg)); if(c.fg) s.push('color:'+mSafeCss(c.fg));
+  if(c.b) s.push('font-weight:700'); if(c.i) s.push('font-style:italic'); if(c.u) s.push('text-decoration:underline');
+  if(c.al) s.push('text-align:'+mSafeCss(c.al)); if(c.va) s.push('vertical-align:'+mSafeCss(c.va));
+  if(c.fs) s.push('font-size:'+(+c.fs)+'px');
+  for(const [k,css] of [['bt','border-top'],['br','border-right'],['bb','border-bottom'],['bl','border-left']]) if(c[k]) s.push(css+':'+mSafeCss(c[k]));
+  return s.join(';');
+}
+function mTableHtml(p, cellAttrs){
+  const widths=p.widths||[], done=new Set();
+  let h='<table class="ma-table">';
+  (p.grid||[]).forEach((row,r)=>{
+    h+='<tr>';
+    row.forEach((c,col)=>{
+      if(!c) return;
+      const tag=c.th?'th':'td'; let a='';
+      if(c.cs) a+=` colspan="${+c.cs}"`; if(c.rs) a+=` rowspan="${+c.rs}"`;
+      let st=mCellStyle(c);
+      if(!c.cs&&!done.has(col)&&widths[col]){ done.add(col); st+=(st?';':'')+'min-width:'+(+widths[col])+'px'; }
+      if(st) a+=` style="${st}"`;
+      if(cellAttrs) a+=` data-r="${r}" data-c="${col}"`;
+      h+=`<${tag}${a}>${esc(c.v||'')}</${tag}>`;
+    });
+    h+='</tr>';
+  });
+  return h+'</table>';
+}
+function mTsv(p){
+  const g=p.grid||[], n=Math.max(0,...g.map(r=>r.length));
+  return g.map(row=>{ const out=new Array(n).fill(''); row.forEach((c,i)=>{ if(c) out[i]=String(c.v||'').replace(/[\t\r]/g,' ').replace(/\n/g,' '); }); return out.join('\t'); }).join('\n');
+}
+
+/* ---------- 클립보드 쓰기 ---------- */
+async function mCopy(html, plain){
+  try{
+    if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+      const items={'text/plain':new Blob([plain||''],{type:'text/plain'})};
+      if(html) items['text/html']=new Blob([html],{type:'text/html'});
+      await navigator.clipboard.write([new ClipboardItem(items)]); return true;
+    }
+  }catch(e){}
+  const handler=ev=>{ if(html) ev.clipboardData.setData('text/html',html); ev.clipboardData.setData('text/plain',plain||''); ev.preventDefault(); };
+  document.addEventListener('copy',handler,true);
+  let ok=false;
+  try{ const st=$('mStage'); st.textContent=' '; const rg=document.createRange(); rg.selectNodeContents(st); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(rg); ok=document.execCommand('copy'); sel.removeAllRanges(); st.textContent=''; }catch(e){ ok=false; }
+  document.removeEventListener('copy',handler,true);
+  return ok;
+}
+async function mCopyImage(dataUrl){
+  try{
+    const img=await mLoadImg(dataUrl); const cv=document.createElement('canvas'); cv.width=img.naturalWidth; cv.height=img.naturalHeight;
+    cv.getContext('2d').drawImage(img,0,0);
+    const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); return true;
+  }catch(e){ return false; }
+}
+
+/* ---------- 이미지 줄이기 (D1 행 크기 2MB 제한 대응) ---------- */
+function mLoadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function mShrinkImage(dataUrl, mime){
+  const img=await mLoadImg(dataUrl);
+  let w=img.naturalWidth, h=img.naturalHeight;
+  if(dataUrl.length<=1300000 && Math.max(w,h)<=2400) return {data:dataUrl,mime,w,h}; // 작으면 원본(캡쳐 선명도 유지)
+  for(const [max,q] of [[2400,.88],[2000,.82],[1600,.75],[1200,.7]]){
+    const k=Math.min(1,max/Math.max(w,h)), cv=document.createElement('canvas');
+    cv.width=Math.round(w*k); cv.height=Math.round(h*k);
+    const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height); ctx.drawImage(img,0,0,cv.width,cv.height);
+    const out=cv.toDataURL('image/jpeg',q);
+    if(out.length<=1300000) return {data:out,mime:'image/jpeg',w:cv.width,h:cv.height};
+  }
+  throw new Error('too_large');
+}
+const mFileToDataUrl=f=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result)); fr.onerror=rej; fr.readAsDataURL(f); });
+
+/* ---------- 붙여넣기 ---------- */
+async function mAddBlock(kind,payload,caption){
+  if(!mNoteId) await mSaveNote(true);
+  await mApi('block',{note_id:mNoteId,kind,payload,caption:caption||''});
+  await mLoadNote();
+}
+async function mAddImageFile(file){
+  if(!file||!/^image\//.test(file.type)){ mStatus('이미지 파일만 넣을 수 있습니다','err'); return; }
+  mStatus('이미지 저장 중…');
+  try{ const im=await mShrinkImage(await mFileToDataUrl(file), file.type); await mAddBlock('image',im); mStatus(`🖼️ 이미지 추가 완료 (${im.w}×${im.h})`,'ok'); }
+  catch(e){ mStatus(mErr(e),'err'); }
+}
+async function mOnPaste(e){
+  e.preventDefault();
+  const cd=e.clipboardData; if(!cd){ mStatus('클립보드를 읽을 수 없습니다','err'); return; }
+  let file=null;
+  for(const it of [...(cd.items||[])]) if(it.kind==='file'&&/^image\//.test(it.type)){ file=it.getAsFile(); break; }
+  const html=cd.getData('text/html')||'', plain=cd.getData('text/plain')||'';
+  const zone=$('mZone'); setTimeout(()=>{ zone.innerHTML=mHint(); },0);
+  try{
+    if(mMode==='image'){
+      if(file) return await mAddImageFile(file);
+      mStatus('클립보드에 그림이 없습니다 — 엑셀에서 범위를 복사했다면 "엑셀로 붙이기"를 쓰거나, 캡쳐(Win+Shift+S) 후 붙여 주세요','err'); return;
+    }
+    // 엑셀 모드: 표를 먼저 본다 (엑셀은 셀 복사 시 그림도 같이 넣으므로)
+    if(html){
+      const st=$('mStage'); st.innerHTML=html; const t=st.querySelector('table');
+      const res=t?mExtractTable(t):null; st.innerHTML='';
+      if(res){ mStatus('저장 중…'); await mAddBlock('table',{grid:res.grid,widths:res.widths,rows:res.rows,cols:res.cols});
+        mStatus(`📊 표 붙여넣기 완료 (${res.rows}행 × ${res.cols}열)${res.truncated?' — 커서 일부만 가져옴':''}`,'ok'); return; }
+    }
+    if(plain&&plain.indexOf('\t')>=0){ const g=mTsvToGrid(plain); mStatus('저장 중…'); await mAddBlock('table',g); mStatus(`📊 표(서식 없음) 붙여넣기 완료 (${g.rows}행 × ${g.cols}열)`,'ok'); return; }
+    if(file) return await mAddImageFile(file);
+    if(plain.trim()){ await mAddBlock('text',{text:plain}); mStatus('📄 텍스트 붙여넣기 완료','ok'); return; }
+    mStatus('붙여넣을 내용을 찾지 못했습니다','err');
+  }catch(err){ mStatus(mErr(err),'err'); }
+}
+const mHint=()=>mMode==='image'
+  ? '<span class="m-hint">🖼️ 여기를 누르고 <b>붙여넣기(Ctrl+V)</b> — 화면 캡쳐나 엑셀 범위가 <b>그림</b>으로 들어갑니다</span>'
+  : '<span class="m-hint">📊 여기를 누르고 <b>붙여넣기(Ctrl+V)</b> — 엑셀 셀 범위가 <b>서식 그대로 표</b>로 들어갑니다</span>';
+
+/* ---------- 목록 / 편집 ---------- */
+async function renderMemo(){
+  if(!adminPass){ $('mLogin').style.display='block'; $('mMain').style.display='none'; return; }
+  $('mLogin').style.display='none'; $('mMain').style.display='block';
+  if(mNoteId) return mLoadNote().catch(e=>toast(mErr(e)));
+  try{
+    const r=await mApi('list');
+    if(!$('mDay').value) $('mDay').value=r.today;
+    if(!r.notes.length){ $('mList').innerHTML='<div class="k-empty">아직 메모가 없습니다. 날짜를 고르고 <b>+ 새 메모</b>를 누르세요.</div>'; return; }
+    const byDay={}; r.notes.forEach(n=>(byDay[n.day]=byDay[n.day]||[]).push(n));
+    $('mList').innerHTML=Object.keys(byDay).sort().reverse().map(d=>{
+      const dt=new Date(d+'T00:00:00');
+      return `<div class="ks-day"><div class="ks-dh"><span class="d">${+d.slice(5,7)}.${+d.slice(8)}</span><span class="w">${K_WD[dt.getDay()]}요일</span><span class="n">${d===r.today?'오늘':''}</span></div>
+        <div class="k-list">${byDay[d].map(n=>`<div class="m-item" data-note="${n.id}">
+          <div class="kc-title">${esc(n.title||'(제목 없음)')}</div>
+          ${n.preview?`<div class="kc-desc">${esc(n.preview)}</div>`:''}
+          <div class="kc-chips">${n.tables?`<span class="kc-chip">📊 표 ${n.tables}</span>`:''}${n.images?`<span class="kc-chip">🖼️ 이미지 ${n.images}</span>`:''}<span class="kc-chip">수정 ${esc((n.updated_at||'').slice(5))}</span></div>
+        </div>`).join('')}</div></div>`;
+    }).join('');
+    $('mList').querySelectorAll('[data-note]').forEach(el=>el.onclick=()=>mOpen(+el.dataset.note));
+  }catch(e){
+    if(e.status===401){ adminPass=''; saveJSON(LS_ADMIN,''); kShowTab(); renderMemo(); }
+    toast(mErr(e));
+  }
+}
+function mShowEditor(on){ $('mListView').style.display=on?'none':''; $('mEditView').style.display=on?'':'none'; window.scrollTo(0,0); }
+async function mOpen(id){ mNoteId=id; mShowEditor(true); await mLoadNote().catch(e=>toast(mErr(e))); }
+async function mNew(){
+  const day=$('mDay').value||new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+  try{ const r=await mApi('note',{day,title:`${+day.slice(5,7)}/${+day.slice(8)} 현장 순시`,body:''}); mNoteId=r.id; mShowEditor(true); await mLoadNote(); $('mBody').focus(); }
+  catch(e){ toast(mErr(e)); }
+}
+async function mLoadNote(){
+  const r=await mApi('note?id='+mNoteId);
+  if(document.activeElement!==$('mTitle')) $('mTitle').value=r.note.title||'';
+  if(document.activeElement!==$('mBody')) $('mBody').value=r.note.body||'';
+  $('mEdDay').value=r.note.day;
+  mBlocksCache=r.blocks;
+  $('mZone').innerHTML=mHint();
+  $('mBlocks').innerHTML = r.blocks.length ? r.blocks.map(mBlockHtml).join('') : '<div class="k-empty">위에 엑셀 표나 이미지를 붙여넣으면 여기에 쌓입니다</div>';
+  mBindBlocks();
+}
+function mBlockHtml(b,i){
+  const cap=b.caption?`<div class="m-cap">${esc(b.caption)}</div>`:'';
+  const tools=(extra)=>`<div class="m-tools">${extra}
+    <button class="mini-btn" data-act="cap" data-id="${b.id}">✎ 설명</button>
+    <button class="mini-btn" data-act="up" data-id="${b.id}">↑</button><button class="mini-btn" data-act="down" data-id="${b.id}">↓</button>
+    <button class="mini-btn" data-act="del" data-id="${b.id}" style="color:var(--red)">삭제</button></div>`;
+  if(b.kind==='table') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyx" data-id="${b.id}">📋 엑셀로 복사</button><button class="mini-btn" data-act="copyt" data-id="${b.id}">텍스트 복사</button><button class="mini-btn" data-act="csv" data-id="${b.id}">⬇ CSV</button>`)}
+    <div class="m-twrap" data-tbl="${b.id}">${mTableHtml(b.payload,true)}</div><div class="m-tip">칸을 누르면 값 수정(체크 표시 등) · 서식은 유지</div></div>`;
+  if(b.kind==='image') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyi" data-id="${b.id}">📋 이미지 복사</button><button class="mini-btn" data-act="save" data-id="${b.id}">⬇ 저장</button>`)}
+    <img class="m-img" src="${b.payload.data}" alt=""></div>`;
+  return `<div class="m-block">${cap}${tools(`<button class="mini-btn" data-act="copyt" data-id="${b.id}">복사</button>`)}<pre class="m-text">${esc(b.payload.text||'')}</pre></div>`;
+}
+function mBindBlocks(){
+  const find=id=>mBlocksCache.find(b=>b.id===+id);
+  $('mBlocks').querySelectorAll('[data-act]').forEach(btn=>btn.onclick=async()=>{
+    const b=find(btn.dataset.id), act=btn.dataset.act;
+    try{
+      if(act==='copyx'){ const ok=await mCopy('<html><body>'+mTableHtml(b.payload,false)+'</body></html>', mTsv(b.payload)); toast(ok?'복사됨 — 엑셀에서 Ctrl+V 하면 서식 그대로 들어갑니다':'복사 실패 — 표를 길게 눌러 직접 복사하세요'); }
+      else if(act==='copyt'){ const ok=await mCopy(null, b.kind==='table'?mTsv(b.payload):b.payload.text); toast(ok?'텍스트로 복사됨':'복사 실패'); }
+      else if(act==='csv'){ const q=v=>'"'+String(v).replace(/"/g,'""')+'"'; const csv=mTsv(b.payload).split('\n').map(l=>l.split('\t').map(q).join(',')).join('\r\n');
+        const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download=(b.caption||$('mTitle').value||'표')+'.csv'; a.click(); }
+      else if(act==='copyi'){ toast(await mCopyImage(b.payload.data)?'이미지 복사됨 — 붙일 곳에서 Ctrl+V':'이 브라우저는 이미지 복사를 지원하지 않습니다 — ⬇ 저장을 쓰세요'); }
+      else if(act==='save'){ const a=document.createElement('a'); a.href=b.payload.data; a.download=(b.caption||'현장사진')+(b.payload.mime==='image/png'?'.png':'.jpg'); a.click(); }
+      else if(act==='cap'){ const c=prompt('설명(캡션)',b.caption||''); if(c===null) return; await mApi('block-update',{id:b.id,caption:c}); await mLoadNote(); }
+      else if(act==='up'||act==='down'){ await mApi('block-move',{id:b.id,dir:act==='up'?-1:1}); await mLoadNote(); }
+      else if(act==='del'){ if(!confirm('이 항목을 삭제할까요? 되돌릴 수 없습니다.')) return; await mApi('block-delete',{id:b.id}); await mLoadNote(); }
+    }catch(e){ toast(mErr(e)); }
+  });
+  // 표 칸 눌러 값 수정 (순시 체크용) — 서식·병합은 그대로
+  $('mBlocks').querySelectorAll('[data-tbl] [data-r]').forEach(td=>td.onclick=async()=>{
+    const b=find(td.closest('[data-tbl]').dataset.tbl), r=+td.dataset.r, c=+td.dataset.c, cell=b.payload.grid[r][c];
+    const v=prompt(`${r+1}행 ${c+1}열 값 (예: O, X, ✓, 메모)`, cell.v||''); if(v===null) return;
+    cell.v=v; td.textContent=v;
+    try{ await mApi('block-update',{id:b.id,payload:b.payload}); toast('저장됨'); }catch(e){ toast(mErr(e)); mLoadNote(); }
+  });
+}
+async function mSaveNote(silent){
+  const payload={id:mNoteId||undefined, day:$('mEdDay').value, title:$('mTitle').value, body:$('mBody').value};
+  $('mSaveState').textContent='저장 중…';
+  try{ const r=await mApi('note',payload); mNoteId=r.id; $('mSaveState').textContent='저장됨 '+new Date().toTimeString().slice(0,5); }
+  catch(e){ $('mSaveState').textContent='저장 실패'; if(!silent) toast(mErr(e)); throw e; }
+}
+function mQueueSave(){ clearTimeout(mSaveTimer); $('mSaveState').textContent='입력 중…'; mSaveTimer=setTimeout(()=>mSaveNote(true).catch(()=>{}),800); }
+
+$('mNew').onclick=mNew;
+$('mBack').onclick=async()=>{ clearTimeout(mSaveTimer); if(mNoteId) await mSaveNote(true).catch(()=>{}); mNoteId=null; mShowEditor(false); renderMemo(); };
+$('mDel').onclick=async()=>{ if(!mNoteId||!confirm('이 메모와 붙인 표·이미지를 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+  try{ await mApi('note-delete',{id:mNoteId}); mNoteId=null; mShowEditor(false); renderMemo(); toast('삭제했습니다'); }catch(e){ toast(mErr(e)); } };
+['mTitle','mBody'].forEach(id=>$(id).addEventListener('input',mQueueSave));
+$('mEdDay').addEventListener('change',()=>mSaveNote().catch(()=>{}));
+$('mZone').addEventListener('paste',mOnPaste);
+$('mZone').addEventListener('focus',()=>$('mZone').classList.add('focus'));
+$('mZone').addEventListener('blur',()=>{ $('mZone').classList.remove('focus'); $('mZone').innerHTML=mHint(); });
+$('mZone').addEventListener('dragover',e=>e.preventDefault());
+$('mZone').addEventListener('drop',e=>{ e.preventDefault(); const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) mAddImageFile(f); });
+$('mImgFile').onchange=async()=>{ for(const f of [...$('mImgFile').files]) await mAddImageFile(f); $('mImgFile').value=''; };
+document.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{ mMode=b.dataset.mm; document.querySelectorAll('[data-mm]').forEach(x=>x.classList.toggle('on',x===b)); $('mZone').innerHTML=mHint(); mStatus(''); });
+$('mLoginBtn').onclick=async()=>{ const p=$('mPass').value.trim(); if(!p) return; adminPass=p;
+  try{ await mApi('list'); saveJSON(LS_ADMIN,p); kShowTab(); renderMemo(); }catch(e){ adminPass=''; toast(mErr(e)); } };
+
 /* ================= 네비/이벤트 ================= */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('on',x===b));
@@ -1942,6 +2331,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   if(b.dataset.pg==='pgRecords') renderRecords();
   if(b.dataset.pg==='pgInfo') renderInfo();
   if(b.dataset.pg==='pgKakao') renderKakao();
+  if(b.dataset.pg==='pgMemo') renderMemo();
 });
 $('btnSettings').onclick=openSettings;
 $('btnRefresh').onclick=loadAll;
@@ -1961,6 +2351,7 @@ $('hSub').textContent=`광양 2고로 개수 현장 · v${APP.version} ${APP.cha
 if(adminPass){ $('adminPassInput').value=adminPass; }
 kShowTab();
 if(location.hash==='#kakao') document.querySelector('.tab-btn[data-pg="pgKakao"]').click();
+if(location.hash==='#memo') document.querySelector('.tab-btn[data-pg="pgMemo"]').click();
 loadAll();
 </script>
 
