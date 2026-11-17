@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.7.0',
+        version: '2.8.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -782,6 +782,8 @@ async function memoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS memo_blocks (id INTEGER PRIMARY KEY AUTOINCREMENT, note_id INTEGER NOT NULL, ord INTEGER NOT NULL, kind TEXT NOT NULL, caption TEXT, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_memo_blocks_note ON memo_blocks(note_id, ord)`),
   ]);
+  // v2.8.0: 관리자 전용 참고문서(법령정리 중 Role별·판례·회의대응 등 — 공개 저장소에 두지 않는 내용)
+  await db.prepare(`CREATE TABLE IF NOT EXISTS admin_docs (key TEXT PRIMARY KEY, json TEXT NOT NULL, updated_at TEXT)`).run();
   // v2.7.0: 제목·본문 동시 수정 감지용 버전 번호 (이미 있으면 에러 → 무시)
   try { await db.prepare(`ALTER TABLE memo_notes ADD COLUMN rev INTEGER NOT NULL DEFAULT 0`).run(); } catch (e) { /* 이미 있음 */ }
   MEMO_SCHEMA_READY = true;
@@ -917,6 +919,13 @@ async function handleMemo(request, env, url, cors) {
       db.prepare(`UPDATE memo_blocks SET ord=? WHERE id=?`).bind(cur.ord, nb.id),
     ]);
     return json({ ok: true, moved: true }, 200, cors);
+  }
+
+  // 관리자 전용 참고문서 조회 GET /memo/admin-doc?key=legal (내용은 wrangler로 D1에 직접 넣음)
+  if (sub === 'admin-doc') {
+    const row = await db.prepare(`SELECT json, updated_at FROM admin_docs WHERE key=?`).bind(String(body.key || '')).first();
+    if (!row) return json({ error: 'not_found' }, 404, cors);
+    return json({ key: body.key, updated_at: row.updated_at, doc: JSON.parse(row.json) }, 200, cors);
   }
 
   return json({ error: 'unknown_memo_route', sub }, 404, cors);

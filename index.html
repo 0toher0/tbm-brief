@@ -252,6 +252,29 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
 /* 현장톡 하위 탭 */
 .k-seg{display:flex;background:#e4e6e8;border-radius:11px;padding:3px;margin:2px 0 12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:20;box-shadow:0 0 0 6px var(--paper)}
 #kStarList .kc.done .kc-title{text-decoration:none;color:var(--ink)}
+/* ===== 기준 탭: 법령정리 ===== */
+.lg-views{padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.lg-intro{font-size:.76rem;color:var(--steel);margin:4px 2px 10px;line-height:1.55}
+.lg-card{background:#fff;border:1px solid var(--line);border-left:4px solid var(--posco);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.lg-h{font-size:.88rem;font-weight:800;color:var(--ink);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.lg-when{font-size:.62rem;font-weight:700;color:var(--posco);background:#e8f0fb;border-radius:5px;padding:1px 6px}
+.lg-warn{font-size:.62rem;font-weight:800;color:#9a5300;background:var(--amber-bg);border-radius:5px;padding:1px 6px}
+.lg-date{font-family:var(--num);font-size:.9rem;color:var(--accent)}
+.lg-duty{font-size:.8rem;color:var(--ink2);margin-top:5px;line-height:1.6}
+.lg-note{font-size:.7rem;color:var(--steel);margin-top:5px;line-height:1.5}
+.lg-refs{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.lg-ref{font-size:.7rem;font-weight:700;text-decoration:none;color:var(--ink2);background:#f0f1f2;border-radius:6px;padding:4px 8px}
+.lg-ref.law{color:#fff;background:var(--posco)}
+.lg-ref.none{color:var(--steel);background:#f6f7f7}
+.lg-group{font-size:.78rem;font-weight:800;color:var(--ink);margin:14px 2px 6px}
+.lg-law{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:.82rem}
+.lg-law:last-child{border-bottom:none}
+.lg-law span{color:var(--posco);font-weight:800}
+.lg-why{font-size:.7rem;color:var(--steel);margin-top:2px}
+.lg-row{font-size:.78rem;color:var(--ink2);padding:6px 0;border-top:1px dashed var(--line);line-height:1.55}
+.lg-row:first-of-type{border-top:none}
+.lg-kv{font-size:.78rem;color:var(--ink2);padding:3px 0;line-height:1.55}
+.lg-foot{margin-top:12px;font-size:.7rem;color:var(--steel);line-height:1.5}
 /* ===== 순시메모 ===== */
 .m-item{padding:11px 12px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
 .m-item:last-child{border-bottom:none}
@@ -661,6 +684,15 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
       <button class="btn ghost" onclick="closeModal('modalBg')">닫기</button>
       <button class="btn primary" onclick="saveSettings()">저장하고 불러오기</button>
     </div>
+    <!-- 관리자 모드: 이 기기에 관리자 암호를 저장하면 현장톡·순시메모 탭과 기준 탭 🔒 자료가 보임 -->
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+      <label class="f-label" style="margin-top:0">관리자 모드 <small id="adminModeState" style="font-weight:600;color:var(--steel)"></small></label>
+      <div class="btn-row" style="margin-top:4px">
+        <input class="f-input" id="adminModePass" type="password" placeholder="관리자 암호" style="flex:2">
+        <button class="btn ghost" id="adminModeBtn" style="flex:1">켜기</button>
+      </div>
+      <div class="f-hint">켜면 이 기기에서 현장톡·순시메모 탭이 보입니다. 공용 폰이면 끄기를 눌러 주세요.</div>
+    </div>
     <div class="f-hint" id="buildInfo" style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"></div>
   </div>
 </div>
@@ -683,7 +715,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.6.0',
+  version : '5.8.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1616,11 +1648,75 @@ function ensureReferenceData(){
   }
   return referenceDataPromise;
 }
+/* ---- 법령정리(data/legal.json): 핵심 기준·법정 배치인원·최신 개정·전체 법령 링크 ---- */
+let LEGAL=null, legalPromise=null, infoView='risk', legalAdmin=null;
+function ensureLegal(){
+  if(!legalPromise) legalPromise=fetch('data/legal.json').then(r=>r.json()).then(j=>{LEGAL=j;}).catch(e=>{console.warn('legal.json 로드 실패:',e.message); LEGAL={key:[],staff:[],updates:[],laws:[]};});
+  return legalPromise;
+}
+// 근거 링크 칩: 법제처 조문이면 ⚖, 그 외(공지·기사)는 ↗
+const lgRefs=refs=>(refs||[]).map(r=>r.url
+  ? `<a class="lg-ref ${/law\.go\.kr/.test(r.url)?'law':''}" href="${esc(r.url)}" target="_blank" rel="noopener">${/law\.go\.kr/.test(r.url)?'⚖ ':''}${esc(r.label)} ↗</a>`
+  : `<span class="lg-ref none">${esc(r.label)}</span>`).join('');
+const lgKeyCard=k=>`<div class="lg-card">
+    <div class="lg-h">${esc(k.title)}${k.when?`<span class="lg-when">${esc(k.when)}</span>`:''}</div>
+    <div class="lg-duty">${esc(k.duty)}</div>
+    <div class="lg-refs">${lgRefs(k.refs)}</div>
+    ${k.note?`<div class="lg-note">${esc(k.note)}</div>`:''}
+  </div>`;
+function infoViewHtml(v){
+  const L=LEGAL||{key:[],staff:[],updates:[],laws:[]};
+  if(v==='key') return `<div class="lg-intro">현장에서 가장 자주 쓰는 안전기준과 법적 근거입니다. <b>⚖ 링크</b>를 누르면 법제처 현행 조문이 바로 열립니다.</div>${L.key.map(lgKeyCard).join('')}`;
+  if(v==='staff') return `<div class="lg-intro">작업별로 반드시 있어야 하는 사람과 근거입니다.</div>${L.staff.map(s=>`<div class="lg-card">
+      <div class="lg-h">${esc(s.title)}${s.check?'<span class="lg-warn">⚠ 원문 확인 필요</span>':''}</div>
+      <div class="lg-duty">${esc(s.req)}</div>${s.note?`<div class="lg-note">${esc(s.note)}</div>`:''}
+      <div class="lg-refs">${lgRefs(s.refs)}</div></div>`).join('')}`;
+  if(v==='updates') return `<div class="lg-intro">최근 시행·예정 개정사항과 이 현장 영향입니다.</div>${L.updates.map(u=>`<div class="lg-card">
+      <div class="lg-h"><span class="lg-date">${esc(u.date)}</span>${esc(u.kind||'')}</div>
+      <div class="lg-duty">${esc(u.content)}</div>${u.impact?`<div class="lg-note">현장 영향: ${esc(u.impact)}</div>`:''}
+      <div class="lg-refs">${lgRefs(u.refs)}</div></div>`).join('')}`;
+  if(v==='laws') return `<div class="lg-intro">고로 개수 현장에서 쓰일 수 있는 법령 전체입니다. 누르면 국가법령정보센터 현행 법령이 열립니다.</div>${L.laws.map(g=>`
+      <div class="lg-group">${esc(g.group)}</div>
+      <div class="k-list">${g.items.map(l=>`<a class="lg-law" href="${esc(l.url)}" target="_blank" rel="noopener"><div><b>${esc(l.name)}</b><div class="lg-why">${esc(l.why)}</div></div><span>↗</span></a>`).join('')}</div>`).join('')}`;
+  return '';
+}
+async function adminLegalHtml(){
+  if(!legalAdmin){
+    const base=APP.proxyBase.replace(/\/$/,'');
+    const r=await fetch(base+'/memo/admin-doc?key=legal',{headers:{'X-Admin-Pass':adminPass||''}});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) return `<div class="tr-meta">관리자 자료를 불러오지 못했습니다 (${esc(d.error||r.status)})</div>`;
+    legalAdmin=d.doc;
+  }
+  const A=legalAdmin, sec=(t,h)=>`<div class="lg-group">${t}</div>${h}`;
+  const byRole={}; A.roles.forEach(x=>(byRole[x.role]=byRole[x.role]||[]).push(x));
+  return `<div class="lg-intro">🔒 관리자에게만 보이는 자료입니다(공개 저장소·일반 화면에 없음). ${esc(A.source||'')}</div>
+    ${sec('현장 전제', `<div class="lg-card">${A.overview.map(o=>`<div class="lg-kv"><b>${esc(o.k)}</b> ${esc(o.v)}</div>`).join('')}</div>`)}
+    ${sec('Role별 법적 지위·의무', Object.entries(byRole).map(([role,list])=>`<div class="lg-card"><div class="lg-h">${esc(role)}</div>
+      ${list.map(x=>`<div class="lg-row"><span class="lg-when">${esc(x.status)}</span> ${esc(x.duty)}<div class="lg-refs">${lgRefs(x.refs)}</div></div>`).join('')}</div>`).join(''))}
+    ${sec('판례·노동법 동향', A.cases.map(u=>`<div class="lg-card"><div class="lg-h"><span class="lg-date">${esc(u.date)}</span>${esc(u.kind)}</div><div class="lg-duty">${esc(u.content)}</div>${u.impact?`<div class="lg-note">현장 영향: ${esc(u.impact)}</div>`:''}<div class="lg-refs">${lgRefs(u.refs)}</div></div>`).join(''))}
+    ${sec('타부서·회의 대응', A.meeting.map(m=>`<div class="lg-card"><div class="lg-h">${esc(m.item)}</div><div class="lg-duty">${esc(m.action)}</div>${m.note?`<div class="lg-note">${esc(m.note)}</div>`:''}<div class="lg-refs">${lgRefs(m.refs)}</div></div>`).join(''))}
+    ${sec('팩트체크 상태', `<div class="k-list">${A.facts.map(f=>`<div class="lg-law"><div><b>[${esc(f.state)}]</b> ${esc(f.item)}<div class="lg-why">${esc(f.note)}</div><div class="lg-refs">${lgRefs(f.refs)}</div></div></div>`).join('')}</div>`)}`;
+}
+
 async function renderInfo(){
   const box=$('infoCard');
   box.innerHTML='<div class="loading">참고자료 불러오는 중…</div>';
-  await ensureReferenceData();
+  await Promise.all([ensureReferenceData(), ensureLegal()]);
   if(!INFO_CATS.includes(infoCat)) infoCat=INFO_CATS[0];
+  // 상단 보기 전환: 위험유형별(기존) / 핵심 기준 / 배치인원 / 최신 개정 / 법령 바로가기 / 관리자 전용
+  const views=[['risk','위험유형별'],['key','⭐ 핵심 기준'],['staff','👷 배치인원'],['updates','🆕 최신 개정'],['laws','📚 법령 바로가기']];
+  if(adminPass) views.push(['admin','🔒 관리자']);
+  if(!views.some(x=>x[0]===infoView)) infoView='risk';
+  const viewTabs=`<div class="date-chips lg-views" id="infoViews">${views.map(([k,t])=>`<button class="dchip${k===infoView?' on':''}" data-v="${k}">${t}</button>`).join('')}</div>`;
+  const bindViews=()=>document.querySelectorAll('#infoViews .dchip').forEach(b=>b.onclick=()=>{ infoView=b.dataset.v; renderInfo(); });
+  if(infoView!=='risk'){
+    box.innerHTML=viewTabs+(infoView==='admin'?'<div class="loading">불러오는 중…</div>':infoViewHtml(infoView))+
+      `<p class="lg-foot">${esc((LEGAL&&LEGAL.basis)||'')}<br>${esc((LEGAL&&LEGAL.disclaimer)||'')}</p>`;
+    bindViews();
+    if(infoView==='admin'){ const h=await adminLegalHtml(); if(infoView==='admin') box.querySelector('.loading').outerHTML=h; }
+    return;
+  }
 
   const chipsHtml=INFO_CATS.map(c=>`<button class="dchip${c===infoCat?' on':''}" data-cat="${esc(c)}">${esc(INFO_LABELS[c]||c)}</button>`).join('');
 
@@ -1648,9 +1744,15 @@ async function renderInfo(){
       ${cs.출처링크?`<div class="rule-link"><a href="${esc(cs.출처링크)}" target="_blank" rel="noopener">출처 →</a></div>`:''}
     </div>`).join('') : `<div class="tr-meta">등록된 사고사례가 없습니다.</div>`;
 
+  // 이 위험유형과 연결된 '이 현장 핵심 기준'(법령정리 엑셀 반영) — 근거 조문 링크 포함
+  const siteKeys=((LEGAL&&LEGAL.key)||[]).filter(k=>(k.cats||[]).includes(infoCat));
+  const siteHtml = siteKeys.length ? `<div class="sec-h" style="margin-top:14px"><div class="sec-t">⭐ 이 현장 핵심 기준</div></div>${siteKeys.map(lgKeyCard).join('')}` : '';
+
   box.innerHTML=`
+    ${viewTabs}
     <div class="date-chips" id="infoChips">${chipsHtml}</div>
     ${summaryHtml}
+    ${siteHtml}
     <div class="sec-h" style="margin-top:14px"><div class="sec-t">📖 법령 원문·해설</div></div>
     ${lawsHtml}
     <div class="sec-h" style="margin-top:14px"><div class="sec-t">⚠ 사고사례</div></div>
@@ -1659,6 +1761,7 @@ async function renderInfo(){
   document.querySelectorAll('#infoChips .dchip').forEach(b=>{
     b.onclick=()=>{ infoCat=b.dataset.cat; renderInfo(); };
   });
+  bindViews();
 }
 
 /* ================= 설정 ================= */
@@ -1667,6 +1770,7 @@ function closeModal(id){ $(id).classList.remove('show'); }
 function openSettings(){
   $('inNx').value=S.nx;$('inNy').value=S.ny;$('inSido').value=S.sido;$('inStations').value=S.stations;
   $('buildInfo').innerHTML=`버전 v${APP.version} · 채널 ${APP.channel} · 데이터소스 <b>${APP.dataSource}</b><br>프록시: ${APP.proxyBase}`;
+  mAdminModeUI();
   openModal('modalBg');
 }
 function saveSettings(){
@@ -2397,6 +2501,20 @@ $('mImgFile').onchange=async()=>{ for(const f of [...$('mImgFile').files]) await
 document.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{ mMode=b.dataset.mm; document.querySelectorAll('[data-mm]').forEach(x=>x.classList.toggle('on',x===b)); $('mZone').innerHTML=mHint(); mStatus(''); });
 $('mLoginBtn').onclick=async()=>{ const p=$('mPass').value.trim(); if(!p) return; adminPass=p;
   try{ await mApi('list'); saveJSON(LS_ADMIN,p); kShowTab(); renderMemo(); }catch(e){ adminPass=''; toast(mErr(e)); } };
+
+/* 설정 → 관리자 모드 켜기/끄기 */
+function mAdminModeUI(){
+  $('adminModeState').textContent = adminPass ? '— 켜짐' : '— 꺼짐';
+  $('adminModeBtn').textContent = adminPass ? '끄기' : '켜기';
+  $('adminModePass').style.display = adminPass ? 'none' : '';
+}
+$('adminModeBtn').onclick=async()=>{
+  if(adminPass){ adminPass=''; saveJSON(LS_ADMIN,''); legalAdmin=null; kShowTab(); mAdminModeUI(); toast('관리자 모드를 껐습니다'); return; }
+  const p=$('adminModePass').value.trim(); if(!p) return;
+  adminPass=p;
+  try{ await mApi('list'); saveJSON(LS_ADMIN,p); if($('adminPassInput')) $('adminPassInput').value=p; $('adminModePass').value=''; kShowTab(); mAdminModeUI(); toast('관리자 모드 — 하단에 현장톡·순시메모 탭이 생겼습니다'); }
+  catch(e){ adminPass=''; toast(e.status===401?'관리자 암호가 맞지 않습니다':mErr(e)); }
+};
 
 /* ================= 네비/이벤트 ================= */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
