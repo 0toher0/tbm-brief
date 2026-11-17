@@ -278,7 +278,17 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 .m-text{white-space:pre-wrap;font-family:inherit;font-size:.84rem;margin:0}
 #mBody{min-height:120px;resize:vertical;margin-top:8px;line-height:1.6}
 #mSaveState{font-size:.66rem;color:var(--steel);text-align:right;margin-top:4px;min-height:14px}
-.k-seg button{flex:1;border:none;background:none;padding:9px 6px;font-weight:800;font-size:.82rem;border-radius:9px;color:var(--steel)}
+.m-bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px);z-index:20;background:var(--paper);padding:6px 0;margin-bottom:4px}
+/* 읽기 화면 — 문서처럼 */
+.m-doc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 18px 24px;margin-top:6px;box-shadow:0 1px 3px rgba(26,30,35,.05)}
+.m-doc-date{font-size:.74rem;font-weight:700;color:var(--steel);letter-spacing:.02em}
+.m-doc-title{font-size:1.25rem;font-weight:800;line-height:1.35;margin:4px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+.m-doc-body{white-space:pre-wrap;font-size:.92rem;line-height:1.75;color:var(--ink);margin-bottom:6px}
+.m-doc-body.empty{color:var(--steel);font-size:.8rem}
+.m-doc .m-block{border:none;padding:0;margin-top:20px;background:none}
+.m-doc .m-cap{font-size:.88rem;border-left:3px solid var(--accent);padding-left:8px}
+.m-doc .m-tools{margin:6px 0}
+.m-doc-foot{font-size:.66rem;color:var(--steel);margin-top:22px;padding-top:10px;border-top:1px solid var(--line);text-align:right}.k-seg button{flex:1;border:none;background:none;padding:9px 6px;font-weight:800;font-size:.82rem;border-radius:9px;color:var(--steel)}
 .k-seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 /* 시간축 카드 (작업·이벤트 공통) */
 .kc{display:grid;grid-template-columns:58px 1fr 40px;gap:0 10px;padding:11px 8px 11px 0;border-bottom:1px solid var(--line);background:var(--card);border-left:4px solid #c9ced3}
@@ -587,10 +597,19 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
       </section>
       <div id="mList"></div>
     </div>
+    <!-- 읽기 화면: 수정 버튼을 누르기 전에는 문서처럼 스크롤해서 보기만 -->
+    <div id="mReadView" style="display:none">
+      <div class="btn-row m-bar" style="margin-top:4px">
+        <button class="btn ghost" id="mReadBack">← 목록</button>
+        <button class="btn primary" id="mEditBtn">✎ 수정</button>
+      </div>
+      <article class="m-doc" id="mDoc"></article>
+    </div>
     <div id="mEditView" style="display:none">
-      <div class="btn-row" style="margin-top:4px">
-        <button class="btn ghost" id="mBack">← 목록</button>
-        <button class="btn ghost" id="mDel" style="flex:.55;color:var(--red)">메모 삭제</button>
+      <div class="btn-row m-bar" style="margin-top:4px">
+        <button class="btn ghost" id="mBack">← 보기</button>
+        <button class="btn done" id="mSaveBtn">💾 저장</button>
+        <button class="btn ghost" id="mDel" style="flex:.6;color:var(--red)">삭제</button>
       </div>
       <div class="card" style="margin-top:10px">
         <div class="f-two">
@@ -664,7 +683,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.5.0',
+  version : '5.6.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -2246,38 +2265,64 @@ async function renderMemo(){
     toast(mErr(e));
   }
 }
-function mShowEditor(on){ $('mListView').style.display=on?'none':''; $('mEditView').style.display=on?'':'none'; window.scrollTo(0,0); }
-async function mOpen(id){ mNoteId=id; mShowEditor(true); await mLoadNote().catch(e=>toast(mErr(e))); }
+/* 화면 3개: list(목록) / read(읽기 — 문서처럼 스크롤) / edit(수정) */
+let mView='list';
+function mShow(v){
+  mView=v;
+  $('mListView').style.display=v==='list'?'':'none';
+  $('mReadView').style.display=v==='read'?'':'none';
+  $('mEditView').style.display=v==='edit'?'':'none';
+  if(v==='edit') mStatus('');
+  window.scrollTo(0,0);
+}
+async function mOpen(id){ mNoteId=id; mShow('read'); $('mDoc').innerHTML='<div class="k-empty">불러오는 중…</div>'; await mLoadNote().catch(e=>toast(mErr(e))); }
 async function mNew(){
   const day=$('mDay').value||new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
-  try{ const r=await mApi('note',{day,title:`${+day.slice(5,7)}/${+day.slice(8)} 현장 순시`,body:''}); mNoteId=r.id; mShowEditor(true); await mLoadNote(); $('mBody').focus(); }
+  try{ const r=await mApi('note',{day,title:`${+day.slice(5,7)}/${+day.slice(8)} 현장 순시`,body:''}); mNoteId=r.id; mShow('edit'); await mLoadNote(); $('mBody').focus(); }
   catch(e){ toast(mErr(e)); }
 }
+let mNoteCache=null, mRev=0;
 async function mLoadNote(){
   const r=await mApi('note?id='+mNoteId);
-  if(document.activeElement!==$('mTitle')) $('mTitle').value=r.note.title||'';
-  if(document.activeElement!==$('mBody')) $('mBody').value=r.note.body||'';
-  $('mEdDay').value=r.note.day;
-  mBlocksCache=r.blocks;
-  $('mZone').innerHTML=mHint();
-  $('mBlocks').innerHTML = r.blocks.length ? r.blocks.map(mBlockHtml).join('') : '<div class="k-empty">위에 엑셀 표나 이미지를 붙여넣으면 여기에 쌓입니다</div>';
-  mBindBlocks();
+  mNoteCache=r.note; mBlocksCache=r.blocks;
+  if(mView==='edit'){
+    // 입력 중인 칸은 건드리지 않고, 그때는 rev도 옛 값을 유지 → 다른 기기가 그새 저장했다면 저장 시 충돌로 잡힘
+    const typing=document.activeElement===$('mTitle')||document.activeElement===$('mBody');
+    if(!typing){ $('mTitle').value=r.note.title||''; $('mBody').value=r.note.body||''; mRev=r.note.rev||0; }
+  } else mRev=r.note.rev||0;
+  if(mView==='edit'){
+    $('mEdDay').value=r.note.day;
+    $('mZone').innerHTML=mHint();
+    $('mBlocks').innerHTML = r.blocks.length ? r.blocks.map(b=>mBlockHtml(b,false)).join('') : '<div class="k-empty">위에 엑셀 표나 이미지를 붙여넣으면 여기에 쌓입니다</div>';
+    mBindBlocks($('mBlocks'));
+  } else mRenderDoc();
 }
-function mBlockHtml(b,i){
+function mRenderDoc(){
+  const n=mNoteCache; if(!n) return;
+  const dt=new Date(n.day+'T00:00:00');
+  $('mDoc').innerHTML=`<div class="m-doc-date">${n.day.slice(0,4)}. ${+n.day.slice(5,7)}. ${+n.day.slice(8)}. (${K_WD[dt.getDay()]})</div>
+    <h2 class="m-doc-title">${esc(n.title||'(제목 없음)')}</h2>
+    <div class="m-doc-body ${n.body?'':'empty'}">${n.body?esc(n.body):'본문 없음'}</div>
+    ${mBlocksCache.map(b=>mBlockHtml(b,true)).join('')}
+    <div class="m-doc-foot">마지막 수정 ${esc(n.updated_at||'')}</div>`;
+  mBindBlocks($('mDoc'));
+}
+/* readonly=true: 읽기 화면용 — 복사·저장 버튼만, 칸 수정·순서·삭제 없음 */
+function mBlockHtml(b,readonly){
   const cap=b.caption?`<div class="m-cap">${esc(b.caption)}</div>`:'';
-  const tools=(extra)=>`<div class="m-tools">${extra}
+  const tools=(extra)=>`<div class="m-tools">${extra}${readonly?'':`
     <button class="mini-btn" data-act="cap" data-id="${b.id}">✎ 설명</button>
     <button class="mini-btn" data-act="up" data-id="${b.id}">↑</button><button class="mini-btn" data-act="down" data-id="${b.id}">↓</button>
-    <button class="mini-btn" data-act="del" data-id="${b.id}" style="color:var(--red)">삭제</button></div>`;
-  if(b.kind==='table') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyx" data-id="${b.id}">📋 엑셀로 복사</button><button class="mini-btn" data-act="copyt" data-id="${b.id}">텍스트 복사</button><button class="mini-btn" data-act="csv" data-id="${b.id}">⬇ CSV</button>`)}
-    <div class="m-twrap" data-tbl="${b.id}">${mTableHtml(b.payload,true)}</div><div class="m-tip">칸을 누르면 값 수정(체크 표시 등) · 서식은 유지</div></div>`;
+    <button class="mini-btn" data-act="del" data-id="${b.id}" style="color:var(--red)">삭제</button>`}</div>`;
+  if(b.kind==='table') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyx" data-id="${b.id}">📋 엑셀로 복사</button><button class="mini-btn" data-act="copyt" data-id="${b.id}">텍스트 복사</button>${readonly?'':`<button class="mini-btn" data-act="csv" data-id="${b.id}">⬇ CSV</button>`}`)}
+    <div class="m-twrap" data-tbl="${b.id}">${mTableHtml(b.payload,!readonly)}</div>${readonly?'':'<div class="m-tip">칸을 누르면 값 수정(체크 표시 등) · 서식은 유지</div>'}</div>`;
   if(b.kind==='image') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyi" data-id="${b.id}">📋 이미지 복사</button><button class="mini-btn" data-act="save" data-id="${b.id}">⬇ 저장</button>`)}
     <img class="m-img" src="${b.payload.data}" alt=""></div>`;
   return `<div class="m-block">${cap}${tools(`<button class="mini-btn" data-act="copyt" data-id="${b.id}">복사</button>`)}<pre class="m-text">${esc(b.payload.text||'')}</pre></div>`;
 }
-function mBindBlocks(){
+function mBindBlocks(root){
   const find=id=>mBlocksCache.find(b=>b.id===+id);
-  $('mBlocks').querySelectorAll('[data-act]').forEach(btn=>btn.onclick=async()=>{
+  root.querySelectorAll('[data-act]').forEach(btn=>btn.onclick=async()=>{
     const b=find(btn.dataset.id), act=btn.dataset.act;
     try{
       if(act==='copyx'){ const ok=await mCopy('<html><body>'+mTableHtml(b.payload,false)+'</body></html>', mTsv(b.payload)); toast(ok?'복사됨 — 엑셀에서 Ctrl+V 하면 서식 그대로 들어갑니다':'복사 실패 — 표를 길게 눌러 직접 복사하세요'); }
@@ -2291,26 +2336,56 @@ function mBindBlocks(){
       else if(act==='del'){ if(!confirm('이 항목을 삭제할까요? 되돌릴 수 없습니다.')) return; await mApi('block-delete',{id:b.id}); await mLoadNote(); }
     }catch(e){ toast(mErr(e)); }
   });
-  // 표 칸 눌러 값 수정 (순시 체크용) — 서식·병합은 그대로
-  $('mBlocks').querySelectorAll('[data-tbl] [data-r]').forEach(td=>td.onclick=async()=>{
+  // 표 칸 눌러 값 수정 (순시 체크용, 수정 화면에서만) — 서식·병합은 그대로
+  root.querySelectorAll('[data-tbl] [data-r]').forEach(td=>td.onclick=async()=>{
     const b=find(td.closest('[data-tbl]').dataset.tbl), r=+td.dataset.r, c=+td.dataset.c, cell=b.payload.grid[r][c];
     const v=prompt(`${r+1}행 ${c+1}열 값 (예: O, X, ✓, 메모)`, cell.v||''); if(v===null) return;
     cell.v=v; td.textContent=v;
-    try{ await mApi('block-update',{id:b.id,payload:b.payload}); toast('저장됨'); }catch(e){ toast(mErr(e)); mLoadNote(); }
+    // 한 칸만 서버에 저장 → 다른 기기에서 다른 칸을 체크해도 서로 덮어쓰지 않음. 저장 후 최신 표로 갱신
+    try{ await mApi('block-cell',{id:b.id,r,c,v}); toast('저장됨'); mLoadNote().catch(()=>{}); }catch(e){ toast(mErr(e)); mLoadNote(); }
   });
 }
 async function mSaveNote(silent){
-  const payload={id:mNoteId||undefined, day:$('mEdDay').value, title:$('mTitle').value, body:$('mBody').value};
+  const payload={id:mNoteId||undefined, rev:mNoteId?mRev:undefined, day:$('mEdDay').value, title:$('mTitle').value, body:$('mBody').value};
   $('mSaveState').textContent='저장 중…';
-  try{ const r=await mApi('note',payload); mNoteId=r.id; $('mSaveState').textContent='저장됨 '+new Date().toTimeString().slice(0,5); }
-  catch(e){ $('mSaveState').textContent='저장 실패'; if(!silent) toast(mErr(e)); throw e; }
+  try{ const r=await mApi('note',payload); mNoteId=r.id; mRev=r.rev||0; $('mSaveState').textContent='저장됨 '+new Date().toTimeString().slice(0,5); }
+  catch(e){
+    if(e.message==='conflict' && e.data && e.data.note){ await mResolveConflict(e.data.note, payload); return 'conflict'; }
+    $('mSaveState').textContent='저장 실패'; if(!silent) toast(mErr(e)); throw e;
+  }
+}
+// 다른 기기가 먼저 저장한 경우: 서버 내용은 그대로 두고, 내가 쓴 내용은 '따로 보관' 항목으로 붙여 둔다 (어느 쪽도 사라지지 않음)
+async function mResolveConflict(server, mine){
+  const changed=(mine.title||'')!==(server.title||'') || (mine.body||'')!==(server.body||'');
+  if(changed){
+    const t=new Date().toTimeString().slice(0,5);
+    await mApi('block',{note_id:mNoteId,kind:'text',caption:`⚠ ${t} 다른 기기와 동시에 수정되어 따로 보관한 내 내용`,
+      payload:{text:(mine.title&&mine.title!==server.title?`[제목] ${mine.title}\n\n`:'')+(mine.body||'')}});
+  }
+  $('mTitle').value=server.title||''; $('mBody').value=server.body||''; $('mEdDay').value=server.day; mRev=server.rev||0;
+  $('mSaveState').textContent='다른 기기 수정본으로 갱신됨';
+  toast(changed?'다른 기기에서 먼저 저장해 내 내용은 아래에 따로 보관했습니다':'다른 기기 수정본으로 갱신했습니다');
+  if(mView==='edit') await mLoadNote();
 }
 function mQueueSave(){ clearTimeout(mSaveTimer); $('mSaveState').textContent='입력 중…'; mSaveTimer=setTimeout(()=>mSaveNote(true).catch(()=>{}),800); }
 
 $('mNew').onclick=mNew;
-$('mBack').onclick=async()=>{ clearTimeout(mSaveTimer); if(mNoteId) await mSaveNote(true).catch(()=>{}); mNoteId=null; mShowEditor(false); renderMemo(); };
+// 수정 화면 → 저장하고 읽기 화면으로
+async function mSaveAndRead(){
+  clearTimeout(mSaveTimer);
+  try{
+    const res = mNoteId ? await mSaveNote() : null;
+    mShow('read'); await mLoadNote();
+    toast(res==='conflict' ? '다른 기기에서 먼저 저장했습니다 — 내 내용은 아래 ⚠ 항목에 따로 보관됨' : '저장했습니다');
+  }
+  catch(e){ /* mSaveNote가 토스트로 알림 — 수정 화면에 그대로 머묾 */ }
+}
+$('mSaveBtn').onclick=mSaveAndRead;
+$('mBack').onclick=mSaveAndRead;
+$('mEditBtn').onclick=async()=>{ mShow('edit'); await mLoadNote().catch(e=>toast(mErr(e))); };
+$('mReadBack').onclick=()=>{ mNoteId=null; mNoteCache=null; mShow('list'); renderMemo(); };
 $('mDel').onclick=async()=>{ if(!mNoteId||!confirm('이 메모와 붙인 표·이미지를 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
-  try{ await mApi('note-delete',{id:mNoteId}); mNoteId=null; mShowEditor(false); renderMemo(); toast('삭제했습니다'); }catch(e){ toast(mErr(e)); } };
+  try{ clearTimeout(mSaveTimer); await mApi('note-delete',{id:mNoteId}); mNoteId=null; mNoteCache=null; mShow('list'); renderMemo(); toast('삭제했습니다'); }catch(e){ toast(mErr(e)); } };
 ['mTitle','mBody'].forEach(id=>$(id).addEventListener('input',mQueueSave));
 $('mEdDay').addEventListener('change',()=>mSaveNote().catch(()=>{}));
 $('mZone').addEventListener('paste',mOnPaste);

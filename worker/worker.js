@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.6.0',
+        version: '2.7.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -765,7 +765,9 @@ ${convo}
  *   POST /memo/note {id?, day, title, body}   생성/수정
  *   POST /memo/note-delete {id}       메모와 블록 삭제
  *   POST /memo/block {note_id, kind:'table'|'image'|'text', caption, payload}
- *   POST /memo/block-update {id, caption?, payload?}   (표 셀 체크·수정 등)
+ *   POST /memo/note 에 rev를 같이 보내면, 다른 기기가 먼저 저장했을 때 덮어쓰지 않고 409 conflict
+ *   POST /memo/block-update {id, caption?, payload?}
+ *   POST /memo/block-cell {id, r, c, v}   표 한 칸만 저장(동시 체크해도 안 덮어씀)
  *   POST /memo/block-delete {id}
  *   POST /memo/block-move {id, dir:-1|1}
  */
@@ -780,6 +782,8 @@ async function memoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS memo_blocks (id INTEGER PRIMARY KEY AUTOINCREMENT, note_id INTEGER NOT NULL, ord INTEGER NOT NULL, kind TEXT NOT NULL, caption TEXT, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_memo_blocks_note ON memo_blocks(note_id, ord)`),
   ]);
+  // v2.7.0: 제목·본문 동시 수정 감지용 버전 번호 (이미 있으면 에러 → 무시)
+  try { await db.prepare(`ALTER TABLE memo_notes ADD COLUMN rev INTEGER NOT NULL DEFAULT 0`).run(); } catch (e) { /* 이미 있음 */ }
   MEMO_SCHEMA_READY = true;
 }
 
@@ -802,7 +806,7 @@ async function handleMemo(request, env, url, cors) {
     const r = await db.prepare(`SELECT n.id, n.day, n.title, substr(n.body,1,80) AS preview, n.updated_at,
         (SELECT COUNT(*) FROM memo_blocks b WHERE b.note_id=n.id AND b.kind='table') AS tables,
         (SELECT COUNT(*) FROM memo_blocks b WHERE b.note_id=n.id AND b.kind='image') AS images
-      FROM memo_notes n WHERE n.day BETWEEN ? AND ? ORDER BY n.day DESC, n.id DESC LIMIT 300`).bind(from, to).all();
+      FROM memo_notes n WHERE n.day BETWEEN ? AND ? ORDER BY n.day DESC, n.id DESC`).bind(from, to).all(); // 개수 제한 없음 — 오래된 메모도 항상 목록에
     return json({ today: now.day, notes: r.results }, 200, cors);
   }
 
@@ -821,11 +825,19 @@ async function handleMemo(request, env, url, cors) {
     const title = String(body.title || '').slice(0, 200), text = String(body.body || '').slice(0, 200000);
     const id = parseInt(body.id, 10);
     if (id) {
-      await db.prepare(`UPDATE memo_notes SET day=?, title=?, body=?, updated_at=? WHERE id=?`).bind(day, title, text, now.ts, id).run();
-      return json({ ok: true, id }, 200, cors);
+      // 동시 수정 방지: 앱이 마지막으로 받은 rev와 같을 때만 덮어쓴다.
+      // 다른 기기가 먼저 저장해 rev가 올라갔으면 덮어쓰지 않고 conflict + 서버 최신본을 돌려준다.
+      const baseRev = body.rev === undefined || body.rev === null ? null : parseInt(body.rev, 10);
+      const r = baseRev === null
+        ? await db.prepare(`UPDATE memo_notes SET day=?, title=?, body=?, rev=rev+1, updated_at=? WHERE id=?`).bind(day, title, text, now.ts, id).run()
+        : await db.prepare(`UPDATE memo_notes SET day=?, title=?, body=?, rev=rev+1, updated_at=? WHERE id=? AND rev=?`).bind(day, title, text, now.ts, id, baseRev).run();
+      const cur = await db.prepare(`SELECT * FROM memo_notes WHERE id=?`).bind(id).first();
+      if (!cur) return json({ error: 'not_found' }, 404, cors);
+      if (!r.meta.changes) return json({ error: 'conflict', note: cur }, 409, cors);
+      return json({ ok: true, id, rev: cur.rev }, 200, cors);
     }
     const r = await db.prepare(`INSERT INTO memo_notes(day, title, body, created_at, updated_at) VALUES(?,?,?,?,?)`).bind(day, title, text, now.ts, now.ts).run();
-    return json({ ok: true, id: r.meta.last_row_id }, 200, cors);
+    return json({ ok: true, id: r.meta.last_row_id, rev: 0 }, 200, cors);
   }
 
   if (sub === 'note-delete') {
@@ -865,6 +877,24 @@ async function handleMemo(request, env, url, cors) {
       db.prepare(`UPDATE memo_notes SET updated_at=? WHERE id=?`).bind(now.ts, cur.note_id),
     ]);
     return json({ ok: true, id }, 200, cors);
+  }
+
+  // 표 한 칸만 저장 (순시 체크). 서버에서 최신 표를 읽어 그 칸만 바꾸므로
+  // 두 기기에서 서로 다른 칸을 동시에 체크해도 서로 덮어쓰지 않는다.
+  if (sub === 'block-cell') {
+    const e = needPost(); if (e) return e;
+    const id = parseInt(body.id, 10), r = parseInt(body.r, 10), c = parseInt(body.c, 10);
+    const cur = await db.prepare(`SELECT * FROM memo_blocks WHERE id=? AND kind='table'`).bind(id).first();
+    if (!cur) return json({ error: 'not_found' }, 404, cors);
+    const p = JSON.parse(cur.payload);
+    const cell = p.grid && p.grid[r] && p.grid[r][c];
+    if (!cell) return json({ error: 'bad_cell' }, 400, cors);
+    cell.v = String(body.v == null ? '' : body.v).slice(0, 2000);
+    await db.batch([
+      db.prepare(`UPDATE memo_blocks SET payload=?, updated_at=? WHERE id=?`).bind(JSON.stringify(p), now.ts, id),
+      db.prepare(`UPDATE memo_notes SET updated_at=? WHERE id=?`).bind(now.ts, cur.note_id),
+    ]);
+    return json({ ok: true, id, r, c, v: cell.v }, 200, cors);
   }
 
   if (sub === 'block-delete') {
