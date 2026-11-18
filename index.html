@@ -117,6 +117,8 @@ section{margin-top:16px}
 .tr-main{flex:1;min-width:0}
 .tr-task{font-size:.86rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tr-meta{font-size:.68rem;color:var(--steel);margin-top:1px}
+.shift-badge{display:inline-block;font-size:.6rem;font-weight:800;padding:0 5px;border-radius:4px;margin-right:4px;background:#fff1c2;color:#8a6100;vertical-align:1px}
+.shift-badge.s-야간{background:#dfe7ff;color:#2f4bb0} .shift-badge.s-철야{background:#2f3a4a;color:#fff}
 .tr-risks{display:flex;gap:3px;flex-wrap:wrap;flex:none}
 .rtag{font-size:.6rem;font-weight:700;background:var(--red-bg);color:#8c1f1f;border-radius:4px;padding:2px 5px}
 .tr-caret{color:var(--steel);font-size:.8rem;flex:none;transition:transform .15s}
@@ -481,10 +483,14 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
     <div class="sec-h"><div class="sec-t">작업 붙여넣기 <small>엑셀 표를 그대로 복사 → 붙여넣기</small></div></div>
     <div class="paste-panel">
       <div class="paste-hint" id="pasteHint">
-        시공사 <b>원본 보고서</b>를 그대로 복사해 붙여넣거나, <b>표준 입력 양식</b>을 채워 붙여넣으세요. 둘 다 자동 인식됩니다. 셀 안에 여러 줄로 적힌 작업내용·안전조치도 처리되며, 위험유형은 해당 칸에 <b>아무 글자(○·ㅅ·v 등)</b>나 있으면 인식됩니다.
+        시공사 <b>원본 보고서</b>를 그대로 복사해 붙여넣거나, <b>표준 입력 양식</b>을 채워 붙여넣으세요. 카톡 <b>작업 보고 글</b>(■업체별 작업내용 / [주간·야간·철야작업 보고])도 그대로 붙이면 인식하며, 같은 날짜·시공사·근무조를 다시 올리면 <b>그 근무조만 새 내용으로 교체</b>됩니다. 모두 자동 인식됩니다. 셀 안에 여러 줄로 적힌 작업내용·안전조치도 처리되며, 위험유형은 해당 칸에 <b>아무 글자(○·ㅅ·v 등)</b>나 있으면 인식됩니다.
       </div>
       <textarea class="paste-area" id="pasteArea" placeholder="여기에 엑셀 표를 붙여넣기 (Ctrl+V)"></textarea>
       <div class="parsed-count" id="parsedCount"></div>
+      <div id="kwConBox" style="display:none;margin:6px 0">
+        <label class="f-label">시공사 <small style="font-weight:500;color:var(--steel)">(보고에 시공사명이 없어 직접 지정)</small></label>
+        <input class="f-input" id="kwCon" list="kwConList" placeholder="예: 포스코이앤씨"><datalist id="kwConList"></datalist>
+      </div>
       <div id="aiParseBox" style="display:none;margin:8px 0">
         <button class="btn ghost" id="btnAiParse" style="width:100%">✨ AI로 다시 인식해보기 (양식이 달라서 자동인식이 안 될 때)</button>
       </div>
@@ -753,7 +759,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.10.0',
+  version : '5.11.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -761,7 +767,7 @@ const APP = {
 };
 
 /* ================= 저장 키 ================= */
-const LS_SET='tbm3_settings', LS_REC='tbm3_records', LS_INPUT='tbm3_input', LS_CONS='tbm3_contractors';
+const LS_SET='tbm3_settings', LS_REC='tbm3_records', LS_INPUT='tbm3_input', LS_CONS='tbm3_contractors', LS_KWCON='tbm3_kwcon';
 const LS_OVERLAY='tbm3_overlay', LS_ADMIN='tbm3_admin_pass', LS_SHARED_CACHE='tbm3_shared_cache';
 
 /* ================= 상태 ================= */
@@ -859,6 +865,8 @@ function looksVuln(v){ return /^\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*$/.tes
 
 // 표준 양식(헤더 기반) 우선 시도, 실패 시 원본(앵커 기반)
 function parsePaste(text){
+  // (0) 카톡 작업 보고 텍스트(■업체 상세 / [주간·야간·철야 작업 보고]) — 엑셀 표(탭)가 아닐 때
+  if(!/\t/.test(text)){ const kw=parseKakaoWork(text); if(kw) return kw; }
   const logRows=parseTSV(text);
   // (A) 표준 양식: 헤더행에 '시공사'+'작업내용'+'밀폐' 있으면 헤더 기반 파싱
   let hi=-1, cols=null;
@@ -941,10 +949,130 @@ function parseVuln(s){
   return o;
 }
 
+/* 카톡 작업 보고(텍스트) → 작업입력 행. 두 양식 지원:
+ *  (1) 업체별 상세: <2026. 11. 19.(목)> · ■프로젝트_시공사 · ■하도사 n명 · [취약작업자…] · ○ 작업시간 · ○ 작업내용 - … · 장비:
+ *  (2) 근무 보고: [철야작업 보고] · □ 일시: '26.11.18(수) 19:00~익일 07:00 · □ 작업내용 • … · □ 시공사: 6명/72명 · □ 감리원:
+ * 각 행에 shift(주간/야간/철야)를 붙여, 같은 날짜·시공사·근무조를 다시 올리면 그 묶음만 교체한다. */
+function kwShift(text, time){
+  const h=String(text||'').slice(0,200);
+  if(/철야/.test(h)) return '철야';
+  if(/야간/.test(h)) return '야간';
+  if(/주간/.test(h)) return '주간';
+  const m=String(time||'').match(/(\d{1,2})\s*:\s*\d{2}\s*~\s*(익일)?\s*(\d{1,2})\s*:\s*\d{2}/);
+  if(!m) return '주간';
+  const s=+m[1], e=+m[3];
+  if(m[2] || e<s) return s<15 ? '주간' : '철야';
+  if(s>=15) return '야간';
+  return '주간';
+}
+function kwRisks(task, equip){
+  const s=String(task||'')+' '+String(equip||'');
+  const out=[];
+  const add=k=>{ if(!out.includes(k)) out.push(k); };
+  if(/밀폐|탱크\s*내부|Bin\s*내부|노내|내부\s*진입|맨홀/i.test(s)) add('밀폐공간');
+  if(/활\s*가스|BFG|COG|LDG|가스\s*배관|맹판/i.test(s)) add('15m이내 활가스 배관');
+  if(/용접|절단|용단|화기|Jet\s*Lance|산소|가우징|그라인더|발파/i.test(s)) add('화재/폭발');
+  if(/철거|해체|해선|열반|압쇄/.test(s)) add('철거/낙하');
+  if(/비계|고소|스카이|Deck|상부|개구|난간|Top/i.test(s)) add('고소작업');
+  if(/크레인|크롤러|인양|양중|중량물|하역|기자재|Crawler/i.test(s)) add('중량물협착');
+  return RISK_ORDER.filter(k=>out.includes(k));
+}
+function parseKakaoWork(raw){
+  const t=String(raw||'').replace(/\r\n?/g,'\n').replace(/️/g,'');
+  // 근무 보고 양식이거나, 업체 상세 양식(■하도사 n명 + 작업내용)일 때만
+  const isShiftRep=/작업\s*보고|□\s*일시/.test(t) && /작업\s*내용/.test(t);
+  const isDetail=/■/.test(t) && /작업\s*내용/.test(t) && /\d+\s*명/.test(t);
+  if(!isShiftRep && !isDetail) return null;
+  const pad=n=>String(n).padStart(2,'0');
+  const dateOf=s=>{
+    const m=String(s).match(/['’‘<(\s]?(\d{4}|\d{2})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})/);
+    if(!m) return '';
+    let y=+m[1]; if(y<100) y+=2000;
+    if(+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31) return '';
+    return `${y}.${pad(m[2])}.${pad(m[3])}`;
+  };
+  const lines=t.split('\n');
+  const head=lines.slice(0,4).join(' ');
+  let date='', project='', contractor='', top='';
+  const rows=[]; let cur=null, mode='';
+  const timeRe=/(\d{1,2}\s*:\s*\d{2}\s*~\s*(?:익일\s*)?\d{1,2}\s*:\s*\d{2})/;
+  const newRow=(subcon,n)=>{ cur={date,project,contractor,subcon,headcount:n!=null?String(n):'',headcountN:n||0,vulnerable:'0/0/0/0',
+      task:[],time:'',crew:'',trades:'',equip:'',manager:'',safety:'',direct:null,subN:null}; rows.push(cur); mode=''; };
+  for(let raw0 of lines){
+    const l=raw0.trim(); if(!l) { continue; }
+    let m;
+    if(!date && (m=dateOf(l)) && !/^[-•·]/.test(l)) { date=m; if(cur) cur.date=date; if(/^<.*>$|^['’]?\d/.test(l)) continue; }
+    // ---- (2) 근무 보고 양식 ----
+    if(/^\[.*보고\]$/.test(l)){ top=l; continue; }
+    if((m=l.match(/^□\s*일시\s*:?\s*(.*)$/))){
+      if(!cur) newRow('',null);
+      const tm=m[1].match(timeRe); if(tm) cur.time=tm[1].replace(/\s+/g,' ').replace(/\s*~\s*/,'~');
+      if(!date){ date=dateOf(m[1]); cur.date=date; }
+      continue;
+    }
+    if((m=l.match(/^□\s*시공사\s*:?\s*(.*)$/))){
+      if(!cur) newRow('',null);
+      const v=m[1], nums=(v.match(/\d+(?=\s*명)/g)||[]).map(Number);
+      const nm=v.replace(/\d+\s*명[\s/,]*/g,'').replace(/[()\[\]:]/g,'').trim();
+      if(nm) cur.subcon=nm;
+      if(nums.length){ cur.headcountN=nums.reduce((a,b)=>a+b,0); cur.headcount=String(cur.headcountN);
+        cur.crew=v.trim(); }
+      mode=''; continue;
+    }
+    if((m=l.match(/^□\s*(감리원|감독|현장\s*책임자|책임자)\s*:?\s*(.*)$/))){ if(!cur) newRow('',null); cur.manager=(m[1]==='감리원'?'감리 ':'')+m[2].trim(); mode=''; continue; }
+    if(/^□\s*작업\s*내용/.test(l)){ if(!cur) newRow('',null); mode='task'; continue; }
+    if(/^□/.test(l)){ mode=''; continue; }
+    if(/^상기\s*작업|보고\s*드립니다|보고드립니다$/.test(l)) { mode=''; continue; }
+    // ---- (1) 업체 상세 양식 ----
+    if((m=l.match(/^■\s*(.+)$/))){
+      const v=m[1].trim();
+      if(/^[^_]+_[^_]+$/.test(v) && !/\d+\s*명/.test(v)){ [project,contractor]=v.split('_').map(s=>s.trim()); cur=null; mode=''; continue; }
+      const hm=v.match(/^(.+?)\s*:?\s*(\d+)\s*명/);
+      if(hm && !/하도사/.test(hm[1]) && contractor){ newRow(hm[1].trim(), +hm[2]); continue; }
+      if(hm){ continue; }                       // ■플랜텍: 25명 / ■하도사: 177명 (요약줄)
+      if(!contractor && !project){ project=v; } // ■(광양) 2고로 2차개수 같은 제목
+      continue;
+    }
+    if(!cur) continue;
+    if((m=l.match(/^\[\s*취약\s*작업자\s*:?(.*)\]$/))){
+      const g=k=>{ const r=m[1].match(k); return r?+r[1]:0; };
+      const a=g(/3\s*회\s*이하\s*:?\s*(\d+)/), b=g(/65\s*세\s*이상\s*:?\s*(\d+)/), c=g(/70\s*세\s*이상\s*:?\s*(\d+)/), d=g(/6\s*개월\s*이하\s*:?\s*(\d+)/);
+      cur.vulnerable=`${a}/${b}/${c}/${d}`; continue;
+    }
+    if((m=l.match(/^\[(.+)\]$/))){ // [관리10, 안전6, 작업91] 또는 직종 내역
+      const v=m[1].replace(/\s*\/\s*/g,', ');
+      if(mode==='task' || cur.task.length){ cur.trades=v; mode=''; } else cur.crew=v;
+      continue;
+    }
+    if((m=l.match(/^○\s*작업\s*시간\s*:?\s*(.*)$/))){ const tm=m[1].match(timeRe); cur.time=tm?tm[1].replace(/\s+/g,'').replace('익일','익일 '):m[1].trim(); continue; }
+    if(/^○\s*작업\s*내용/.test(l)){ mode='task'; continue; }
+    if((m=l.match(/^장비\s*:?\s*(.*)$/))){ cur.equip=/^없음$/.test(m[1].trim())?'':m[1].trim(); mode=''; continue; }
+    if(mode==='task'){
+      if((m=l.match(/^[-•·▪◦]\s*(.+)$/))) cur.task.push(m[1].trim());
+      else if(cur.task.length && /^\s/.test(raw0)) cur.task[cur.task.length-1]+=' '+l;   // 들여쓴 이어지는 줄
+      else if(cur.task.length && /^\(/.test(l)) cur.task[cur.task.length-1]+=' '+l;
+      else cur.task.push(l);
+      continue;
+    }
+  }
+  const shiftAll=kwShift(top+' '+head);
+  const explicit=/철야|야간|주간/.test(top+' '+head);
+  const out=rows.filter(r=>r.task.length||r.headcountN).map(r=>{
+    const task=r.task.length>1 ? r.task.map(x=>'- '+x).join('\n') : (r.task[0]||'');
+    const risks=kwRisks(task, r.equip);
+    const shift=explicit?shiftAll:kwShift('', r.time);
+    return {date:r.date||date, project:r.project||project, contractor:r.contractor||contractor, subcon:r.subcon,
+      headcount:r.headcount, headcountN:r.headcountN, vulnerable:r.vulnerable, vuln:parseVuln(r.vulnerable),
+      task, risk:risks.join(', '), risks, period:'', manager:r.manager, safety:'',
+      shift, time:r.time, crew:r.crew, trades:r.trades, equip:r.equip, src:'kakao'};
+  });
+  return out.length?out:null;
+}
+
 /* 전체 작업 목록 (모든 시공사 합침) */
 // 작업 고유 id 생성 (공용/개인 구분 + 날짜+시공사+하도사+작업내용 해시)
 function taskId(r, src){
-  const base=`${src}|${r.date||''}|${r.contractor||''}|${r.subcon||''}|${(r.task||'').slice(0,20)}`;
+  const base=`${src}|${r.date||''}|${r.contractor||''}|${r.subcon||''}|${(r.task||'').slice(0,20)}`+(r.shift?`|${r.shift}`:'');
   let h=0; for(let i=0;i<base.length;i++){ h=(h*31+base.charCodeAt(i))|0; }
   return src+'_'+(h>>>0).toString(36);
 }
@@ -1259,7 +1387,7 @@ function renderTaskList(){
         <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
         <div class="tr-main">
           <div class="tr-task">${srcBadge}${esc(firstTaskLine(t.task))}</div>
-          <div class="tr-meta">${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
+          <div class="tr-meta">${t.shift?`<span class="shift-badge s-${esc(t.shift)}">${esc(t.shift)}</span>`:''}${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
         </div>
         <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
         <span class="tr-caret">▶</span>
@@ -1318,7 +1446,7 @@ function renderHazard(t){
   const vparts=[];
   if(t.vuln){ VULN_LABELS.forEach((k,i)=>{ if(t.vuln[k]) vparts.push(`${VULN_SHORT[i]} ${t.vuln[k]}`); }); }
   manpower=`<div class="hz-block"><div class="hz-label">인력</div>
-    <div class="mp-detail">출력 <b>${t.headcountN}명</b>${vparts.length?` · 취약작업자 ${vparts.join(', ')}`:' · 취약작업자 없음'}${t.manager?`<br>현장책임: ${esc(t.manager)}`:''}</div></div>`;
+    <div class="mp-detail">${t.shift?`<b>${esc(t.shift)}</b>${t.time?` ${esc(t.time)}`:''}<br>`:''}출력 <b>${t.headcountN}명</b>${t.crew?` (${esc(t.crew)})`:''}${vparts.length?` · 취약작업자 ${vparts.join(', ')}`:' · 취약작업자 없음'}${t.trades?`<br>직종: ${esc(t.trades)}`:''}${t.equip?`<br>장비: ${esc(t.equip)}`:''}${t.manager?`<br>${/^감리/.test(t.manager)?'':'현장책임: '}${esc(t.manager)}`:''}</div></div>`;
   // 작업 상세: 여러 줄 작업내용 + 기간
   let head='';
   const parts=(t.task||'').split(/\s*-\s+/).map(s=>s.trim()).filter(Boolean);
@@ -1441,14 +1569,31 @@ function rowToLine(r){
 }
 // AI(LLM) 폴백 파싱 결과 (양식이 달라 결정론적 파서가 실패했을 때만 채워짐)
 let aiParsedRows=null;
-function currentRows(){ return (aiParsedRows&&aiParsedRows.length)?aiParsedRows:parsePaste($('pasteArea').value); }
+function currentRows(){
+  const rows=(aiParsedRows&&aiParsedRows.length)?aiParsedRows:parsePaste($('pasteArea').value);
+  const con=($('kwCon').value||'').trim();
+  return rows.map(r=>r.contractor?r:{...r,contractor:con});
+}
+// 근무조(주간·야간·철야)가 붙은 카톡 보고는 같은 날짜·시공사·근무조 묶음만 교체(수정본 재업로드 대응), 나머지는 유지
+function shiftKey(r){ return `${r.date||''}|${r.contractor||''}|${r.shift||''}`; }
+function mergeByShift(oldRows, newRows){
+  const keys=new Set(newRows.filter(r=>r.shift).map(shiftKey));
+  return (oldRows||[]).filter(r=>!(r.shift&&keys.has(shiftKey(r)))).concat(newRows);
+}
 function renderParsedRows(rows,label){
   const pc=$('parsedCount'), pv=$('parsedPreview');
   const cons=[...new Set(rows.map(r=>r.contractor||'기타'))];
   const dates=[...new Set(rows.map(r=>r.date).filter(Boolean))];
   pc.className='parsed-count';
-  pc.textContent=`${label?label+' · ':''}${rows.length}개 작업 인식됨 · 시공사 ${cons.length}곳${dates.length>1?` · ${dates.length}개 날짜`:''}`;
-  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'분류없음'}</span></div>`).join('');
+  const shifts=[...new Set(rows.map(r=>r.shift).filter(Boolean))];
+  pc.textContent=`${label?label+' · ':''}${rows.length}개 작업 인식됨 · 시공사 ${cons.length}곳${dates.length>1?` · ${dates.length}개 날짜`:''}${shifts.length?` · 카톡 보고 ${shifts.join('·')} — 같은 날짜·시공사·근무조는 새 내용으로 교체`:''}`;
+  const noCon=rows.some(r=>r.src==='kakao'&&!r.contractor);
+  $('kwConBox').style.display=noCon?'block':'none';
+  if(noCon){
+    $('kwConList').innerHTML=contractors.map(c=>`<option value="${esc(c)}">`).join('');
+    if(!$('kwCon').value) $('kwCon').value=loadJSON(LS_KWCON,'')||contractors.find(c=>/이앤씨|E&C/i.test(c))||'';
+  }
+  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${r.shift?`<span class="shift-badge s-${esc(r.shift)}">${esc(r.shift)}</span>`:''}${esc(r.contractor||(r.src==='kakao'?($('kwCon').value||'시공사?'):'기타'))} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'분류없음'}</span></div>`).join('');
 }
 function updatePreview(){
   aiParsedRows=null; // 원문이 바뀌면 이전 AI 인식 결과는 버림
@@ -1509,14 +1654,21 @@ function normalizeAiRows(aiRows){
     };
   });
 }
+function kwConOk(rows){
+  if(rows.some(r=>!r.contractor)){ toast('시공사를 입력하세요 (보고에 시공사명이 없습니다)'); $('kwCon').focus(); return false; }
+  const c=($('kwCon').value||'').trim(); if(c) saveJSON(LS_KWCON,c);
+  return true;
+}
 function saveInput(){
   const rows=currentRows();
   if(!rows.length){ toast('인식된 작업이 없습니다'); return; }
+  if(!kwConOk(rows)) return;
   const byCon={};
   rows.forEach(r=>{ const con=r.contractor||'기타'; (byCon[con]=byCon[con]||[]).push(r); });
   Object.keys(byCon).forEach(con=>{ if(!contractors.includes(con)) contractors.push(con); });
   saveJSON(LS_CONS,contractors);
-  Object.keys(byCon).forEach(con=>{ inputData[con]=byCon[con]; });
+  // 카톡 보고(근무조 있음)는 같은 날짜·근무조만 교체, 엑셀 표는 기존처럼 시공사 단위 교체
+  Object.keys(byCon).forEach(con=>{ inputData[con]= byCon[con].some(r=>r.shift) ? mergeByShift(inputData[con], byCon[con]) : byCon[con]; });
   saveJSON(LS_INPUT,inputData);
   const summary=Object.entries(byCon).map(([c,a])=>`${c} ${a.length}`).join(', ');
   toast(`내 화면에 추가됨: ${summary}`);
@@ -1528,11 +1680,14 @@ function saveInput(){
 async function pushShared(){
   const rows=currentRows();
   if(!rows.length){ toast('먼저 작업을 붙여넣으세요'); return; }
+  if(!kwConOk(rows)) return;
   const pass=$('adminPassInput').value.trim();
   if(!pass){ toast('관리자 암호를 입력하세요'); return; }
-  // 날짜별로 그룹핑
+  // 날짜별로 그룹핑 (서버는 날짜 단위로 통째 교체하므로, 카톡 보고는 기존 공용 작업과 근무조 단위로 합쳐서 보냄)
   const byDate={};
   rows.forEach(r=>{ const d=r.date||todayDot(); (byDate[d]=byDate[d]||[]).push(r); });
+  try{ await fetchSharedTasks(); }catch(e){}
+  Object.keys(byDate).forEach(d=>{ if(byDate[d].some(r=>r.shift)) byDate[d]=mergeByShift((sharedData.dates||{})[d], byDate[d]); });
   const btn=$('btnPushShared'); const old=btn.textContent; btn.textContent='업로드 중…'; btn.disabled=true;
   try{
     const res=await pushSharedTasks(byDate, pass);
@@ -2788,6 +2943,7 @@ $('btnClearAll').onclick=clearAllInput;
 $('btnExportPdf').onclick=exportPdf;
 $('btnExportXlsx').onclick=exportXlsx;
 $('pasteArea').addEventListener('input',updatePreview);
+$('kwCon').addEventListener('change',()=>{ if(!aiParsedRows) updatePreview(); });
 document.querySelectorAll('.modal-bg').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('show');});
 
 $('hSub').textContent=`광양 2고로 개수 현장 · v${APP.version} ${APP.channel}`;
