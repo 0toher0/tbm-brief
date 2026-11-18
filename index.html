@@ -363,6 +363,15 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 .r-diff{font-family:var(--num);font-weight:700}
 .r-diff.up{color:var(--green)} .r-diff.dn{color:var(--red)}
 .r-grp{margin-top:12px}
+.site-nums{display:flex;gap:16px;font-size:.82rem;color:var(--ink2);margin:2px 0 8px}
+.site-nums b{font-family:var(--num);font-size:1.15rem;color:var(--ink)}
+.site-grps .sg{font-size:.78rem;padding:6px 0;border-top:1px solid var(--line)}
+.site-grps .sg-kids{font-size:.7rem;color:var(--steel);margin:3px 0 0 12px;line-height:1.55}
+.site-works .sw{font-size:.76rem;padding:4px 0;border-top:1px solid var(--line)}
+.site-works .sw .t{font-family:var(--num);color:var(--steel);margin-right:4px}
+.r-grp.kid{margin-left:14px;margin-top:8px}
+.r-grp.kid .r-gh{border-bottom-width:1px}
+.r-grp.kid .r-gh .n{font-size:.84rem}
 .r-gh{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:0 2px 6px;border-bottom:2px solid var(--ink)}
 .r-gh .n{font-weight:800;font-size:.92rem}
 .r-gh .m{font-size:.7rem;color:var(--steel);font-weight:700}
@@ -433,6 +442,12 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
         <div class="mw" id="mwPm"><div class="v">—</div><div class="k">초미세먼지</div></div>
       </div>
     </div>
+
+    <!-- 현장톡 연동: 일일 현황(진도율·인원·장비) + 현장톡 작업 기록 -->
+    <section id="siteSec" style="display:none">
+      <div class="sec-h"><div class="sec-t">현장 현황 <small id="siteLabel">현장톡</small></div></div>
+      <div class="card" id="siteBox"></div>
+    </section>
 
     <!-- 시간대별 체감온도 (참고값, 축소) -->
     <section>
@@ -761,7 +776,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.12.0',
+  version : '5.13.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1364,6 +1379,66 @@ function renderToday(){
   renderWxRules(wxFired);
   $('briefTxt').textContent=buildBrief(wx,wxFired,agg,gLabel);
   $('stamp').textContent=`날씨 기준: ${wx.fetchedAt.toLocaleString('ko-KR')} · 측정소 ${wx.station} · 초미세먼지 PM2.5 ${wx.pm25||'-'}㎍/㎥`;
+  renderSiteBox(); // 브리핑 문구까지 만든 뒤 (현장 현황 줄을 덧붙이므로 맨 끝)
+}
+/* 오늘 탭 '현장 현황' — 현장톡의 일일 현황·작업 기록을 같은 날짜로 보여줌 */
+let siteCache={};
+async function renderSiteBox(){
+  const day=(selectedDate||todayDot()).replace(/\./g,'-');
+  const from=new Date(Date.parse(day+'T00:00:00Z')-7*86400e3).toISOString().slice(0,10);
+  let c=siteCache[day];
+  try{
+    if(!c||Date.now()-c.at>30000){
+      const [rep,sum]=await Promise.all([kApi(`reports?from=${from}&to=${day}`), kApi('summary?day='+day)]);
+      c=siteCache[day]={at:Date.now(),reps:rep.reports||[],sum};
+    }
+  }catch(e){ $('siteSec').style.display='none'; return; }
+  if(day!==(selectedDate||todayDot()).replace(/\./g,'-')) return; // 그 사이 날짜가 바뀜
+  const cur=c.reps[0], prev=c.reps[1], W=c.sum.works||[], ev=c.sum.events||[], prevOpen=(c.sum.openPrev||[]).length;
+  const evOpen=ev.filter(e=>e.status!=='done').length;
+  if(!cur && !W.length && !ev.length && !prevOpen){ $('siteSec').style.display='none'; return; }
+  $('siteSec').style.display='';
+  const exact=cur&&cur.day===day;
+  $('siteLabel').textContent=cur?(exact?`${day.slice(5).replace('-','/')} 일일 현황 · 현장톡`:`최근 일일 현황 ${cur.day.slice(5).replace('-','/')} 기준 · 현장톡`):'현장톡';
+  let h='';
+  if(cur){
+    const D=cur.data, P=prev&&prev.data;
+    const tops=D.groups.filter(g=>!g.parent);
+    h+=rProg('종합 진도율',D.overall);
+    h+=`<div class="site-nums"><span>출력 <b>${rFmt(rTot(D))}</b>명${P?rDl(rTot(D),rTot(P)):''}</span><span>장비 <b>${rFmt(rEq(D))}</b>대${P?rDl(rEq(D),rEq(P)):''}</span></div>`;
+    h+=`<div class="site-grps">${tops.map(g=>{
+      const kids=D.groups.filter(k=>k.parent===g.name);
+      const pr=g.actual!=null?` · 실적 ${g.actual}%${g.plan!=null?` <span class="r-diff ${g.actual>=g.plan?'up':'dn'}">${g.actual>=g.plan?'+':''}${(g.actual-g.plan).toFixed(2)}</span>`:''}`:'';
+      return `<div class="sg"><b>${esc(g.name)}</b> ${rFmt(g.people)}명${pr}${kids.length?`<div class="sg-kids">${kids.map(k=>`${esc(k.name.replace(/_[^_]+$/,''))} ${rFmt(k.people)}명${k.actual!=null?` · ${k.actual}%`:''}`).join('<br>')}</div>`:''}</div>`;
+    }).join('')}</div>`;
+    h+=rMismatch(D);
+  }
+  if(W.length||evOpen||prevOpen){
+    const ws=[...W].sort((x,y)=>(x.start_at||'99').localeCompare(y.start_at||'99'));
+    h+=`<div class="site-works"><div class="hz-label" style="margin-top:${cur?10:0}px">현장톡 작업 ${W.length}건${evOpen?` · 미결 이벤트 ${evOpen}건`:''}${prevOpen?` · 이전 미결 ${prevOpen}건`:''}</div>
+      ${ws.slice(0,8).map(w=>`<div class="sw"><span class="t">${w.start_at?kTime(w.start_at):'—'}~${w.end_at?kTime(w.end_at):''}</span><span class="kc-badge ${esc(w.status)}">${esc(w.status||'')}</span> ${esc(w.title)}</div>`).join('')}
+      ${ws.length>8?`<div class="tr-meta">외 ${ws.length-8}건</div>`:''}</div>`;
+  }
+  h+=`<div class="btn-row" style="margin-top:10px">${cur?'<button class="btn ghost" id="siteGoRep">📊 일일 현황</button>':''}<button class="btn ghost" id="siteGoTalk">현장톡 작업·이벤트</button></div>`;
+  $('siteBox').innerHTML=h;
+  const go=v=>{ kDay=day; if(v==='report') rDay=cur.day; kView=v; $('tabKakao').click(); setTimeout(()=>kSetView(v),50); };
+  if($('siteGoRep')) $('siteGoRep').onclick=()=>go('report');
+  $('siteGoTalk').onclick=()=>go('daily');
+  // 작업입력이 없는 날은 상단 '총 출력인원'을 일일 현황 기준으로 채움
+  if(exact && !allTasks(selectedDate||undefined).length && !allTasks(todayDot()).length){
+    $('mpHead').textContent=rFmt(rTot(cur.data));
+    $('vulnBreak').innerHTML=`<span class="vchip zero">출력인원은 현장톡 일일 현황 기준 · 작업별 위험은 작업입력 탭에서 붙여넣기</span>`;
+    $('monSummary').textContent=`작업 미입력 · 현장 출력 ${rFmt(rTot(cur.data))}명 · 장비 ${rFmt(rEq(cur.data))}대`;
+  }else if(exact && !/현장 전체/.test($('monSummary').textContent)){
+    // 작업입력 인원은 등록된 작업조만 — 현장 전체 인원을 같이 보여 혼동 방지
+    $('monSummary').textContent+=` · 현장 전체 ${rFmt(rTot(cur.data))}명(일일 현황)`;
+  }
+  // TBM 브리핑 스크립트 2번째 줄에 출력인원·장비·진도율 한 줄 추가 (중복 방지)
+  if(exact){
+    const D=cur.data, bt=$('briefTxt'), L=bt.textContent.split('\n');
+    const line=`· 오늘 현장 출력 ${rFmt(rTot(D))}명, 장비 ${rFmt(rEq(D))}대${D.overall.actual!=null?`, 종합 진도율 실적 ${D.overall.actual}%(계획 ${D.overall.plan}%)`:''}입니다.`;
+    if(!L.some(x=>x.startsWith('· 오늘 현장 출력'))){ L.splice(1,0,line); bt.textContent=L.join('\n'); }
+  }
 }
 function setMw(id,v,cls){const e=$(id);e.className='mw '+cls;e.querySelector('.v').textContent=v;}
 
@@ -1603,6 +1678,21 @@ function updatePreview(){
   const rows=parsePaste($('pasteArea').value);
   const pc=$('parsedCount'), pv=$('parsedPreview');
   if(!$('pasteArea').value.trim()){ pc.textContent=''; pv.innerHTML=''; return; }
+  const dr=!rows.length && parseDailyReport($('pasteArea').value);
+  if(dr && dr.groups.length){
+    const day=dr.day||rToday();
+    pc.className='parsed-count';
+    pc.innerHTML=`이 내용은 작업 목록이 아니라 <b>일일 작업현황 공지</b>(${esc(day)} · 출력 ${rFmt(rTot(dr))}명 · 장비 ${rFmt(rEq(dr))}대)입니다. 작업내용·위험유형이 없어 작업으로는 넣을 수 없고, 일일 현황으로 저장하면 <b>오늘 탭 '현장 현황'</b>과 현장톡에 표시됩니다.
+      <div class="btn-row"><button class="btn done" id="btnSaveReport">📊 일일 현황으로 저장</button></div>`;
+    pv.innerHTML='';
+    $('btnSaveReport').onclick=async()=>{
+      try{ const r=await kApi('report',{day,data:{...dr,day},raw:$('pasteArea').value,src:'paste'}); siteCache={};
+        toast(r.replaced?`${day} 일일 현황을 새 내용으로 바꿨습니다`:`${day} 일일 현황을 저장했습니다`);
+        $('pasteArea').value=''; updatePreview(); if(wx) renderToday(); }
+      catch(e){ toast(kErr(e)); }
+    };
+    return;
+  }
   if(!rows.length){
     pc.className='parsed-count err';
     pc.textContent='인식된 작업이 없습니다. 표준 양식의 헤더행(날짜·시공사·하도사…)부터 데이터까지 함께 복사했는지 확인하거나, 아래 AI 인식을 시도해보세요.';
@@ -1991,11 +2081,7 @@ function loadDemo(){
   const today=todayStr();
   const mk=(t,TMP,REH,WSD,POP,PCP)=>['TMP','REH','WSD','POP','PCP'].map((cat,idx)=>({fcstDate:today,fcstTime:t,category:cat,fcstValue:[TMP,REH,WSD,POP,PCP][idx]+''}));
   const items=[].concat(mk('0800',28,80,3,10,'강수없음'),mk('1000',31,72,4,10,'강수없음'),mk('1200',33,66,5,10,'강수없음'),mk('1400',35,60,6,20,'강수없음'),mk('1600',34,62,7,30,'강수없음'),mk('1800',31,70,5,30,'강수없음'));
-  // 데모 작업도 없으면 하나 넣어 미리보기
-  if(allTasks().length===0){
-    inputData['포스코이앤씨']=[parseRow('2고로개수\t포스코이앤씨\t대한기공\t12\t1/2/1/2\t노체 철피 용접\t고소작업, 화재/폭발\t김현장\t안전대·화재감시인 배치')];
-    saveJSON(LS_INPUT,inputData);
-  }
+  // (예전엔 가짜 작업을 실제 저장소에 넣었으나 함수가 없어 오류 + 실데이터 오염 위험 → 제거. 날씨만 데모)
   wx=buildWx(items,{pm10Value:'88',pm25Value:'41',stationName:'중동(데모)'}); wx.demo=true;
   renderToday(); $('errBox').style.display='none'; toast('데모 데이터를 표시합니다');
 }
@@ -2221,6 +2307,7 @@ async function kAnalyze(){
   try{
     const r=await kApi('analyze',{day:kDay});
     if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
+    siteCache={};
     toast(`분석 완료: 작업 ${r.works}건 · 이벤트 ${r.events}건${r.worksClosed?`, 이전 작업 ${r.worksClosed}건 종료`:''}${r.resolvedPrev?`, 이전 미결 ${r.resolvedPrev}건 완료`:''}`);
     await kLoadSummary();
   }catch(e){ toast(kErr(e)); }
@@ -2317,7 +2404,7 @@ async function kImport(){
       }
     }
     toast(done ? `완료: 새 메시지 ${ins}건 · 작업 ${nWorks}건 · 이벤트 ${nEv}건${fails.length?` (실패 ${fails.length}일)`:''}` : `업로드 완료: 새 메시지 ${ins}건 (중복 ${dup}건 건너뜀)`);
-    $('kFile').value=''; $('kPaste').value=''; kParsed=null;
+    $('kFile').value=''; $('kPaste').value=''; kParsed=null; siteCache={};
     if(days.length) kDay=days[days.length-1];
     renderKakao();
   }catch(e){ toast(kErr(e)); btn.disabled=false; }
@@ -2338,7 +2425,7 @@ function parseDailyReport(raw, fallbackDay){
     .map(x=>{ const m=x.match(/^(.*?)(\d+)\s*대?$/); return m&&m[1]?{name:m[1].trim(),n:+m[2]}:{name:x,n:1}; });
   const setProg=(tg,m)=>{ tg.plan=+m[1]; tg.actual=+m[2]; };
   const setOut=(tg,l)=>{
-    const d=l.match(/직\s*:?\s*(\d[\d,]*)/), s=l.match(/협\s*:?\s*(\d[\d,]*)/);
+    const d=l.match(/직(?:영)?\s*:?\s*(\d[\d,]*)/), s=l.match(/협(?:력)?\s*:?\s*(\d[\d,]*)/);
     if(d||s){ tg.direct=d?num(d[1]):null; tg.sub=s?num(s[1]):null; return true; }
     const n=l.match(/(\d[\d,]*)\s*명/); if(n){ tg.total=num(n[1]); return true; }
     return false;
@@ -2399,8 +2486,22 @@ function parseDailyReport(raw, fallbackDay){
     g.subPeople=sp; g.equipSum=g.subs.length?se:(g.equip||0);
     g.people = g.total!=null ? g.total : (g.direct!=null||g.sub!=null) ? (g.direct||0)+(g.sub!=null?g.sub:sp) : sp;
   }
-  R.peopleCalc=R.groups.reduce((a,g)=>a+(g.people||0),0);
-  R.equipCalc=R.groups.reduce((a,g)=>a+(g.equipSum||0),0);
+  // 하위 묶음: '원료 수송설비_플랜텍'처럼 이름 끝(_뒤)이 다른 묶음 이름이면 그 묶음의 세부 → 합계에서 중복 제외
+  const norm=s=>String(s||'').replace(/\s+/g,'');
+  for(const g of R.groups){
+    const m=g.name.match(/_([^_]+)$/); if(!m) continue;
+    const p=R.groups.find(x=>x!==g && norm(x.name)===norm(m[1]));
+    if(p) g.parent=p.name;
+  }
+  for(const p of R.groups){
+    const kids=R.groups.filter(g=>g.parent===p.name); if(!kids.length) continue;
+    if(!p.subs.length) p.equipSum=kids.reduce((a,g)=>a+(g.equipSum||0),0);
+    if(p.total==null&&p.direct==null&&p.sub==null) p.people=kids.reduce((a,g)=>a+(g.people||0),0);
+    p.kidPeople=kids.reduce((a,g)=>a+(g.people||0),0);
+  }
+  const tops=R.groups.filter(g=>!g.parent);
+  R.peopleCalc=tops.reduce((a,g)=>a+(g.people||0),0);
+  R.equipCalc=tops.reduce((a,g)=>a+(g.equipSum||0),0);
   if(!R.day && fallbackDay) R.day=fallbackDay;
   return R;
 }
@@ -2429,7 +2530,7 @@ async function rSave(){
   try{
     const r=await kApi('report',{day:rParsed.day,data:rParsed,raw:$('rPaste').value,src:'paste'});
     toast(r.replaced?`${rParsed.day} 현황을 새 내용으로 바꿨습니다`:`${rParsed.day} 현황을 저장했습니다`);
-    rDay=rParsed.day; $('rPaste').value=''; rPrepare(); await rLoad();
+    rDay=rParsed.day; siteCache={}; $('rPaste').value=''; rPrepare(); await rLoad();
   }catch(e){ toast(kErr(e)); btn.disabled=false; }
 }
 async function rLoad(){
@@ -2468,6 +2569,7 @@ function rRender(cur, prev){
         <div class="k-stat"><div class="v">${active}<small style="font-size:.7rem;color:var(--steel)">/${allSubs}</small></div><div class="k">투입 협력사</div></div>
       </div>
       ${D.people==null&&D.groups.length?'<div class="paste-hint" style="margin-top:6px">공지의 총 인원·장비가 비어 있어 업체별 합계로 계산했습니다.</div>':''}
+      ${rMismatch(D)}
       ${eqChips?`<div class="r-chips">${eqChips}</div>`:''}
       ${(D.notes||[]).length?`<div class="r-note">${esc(D.notes.join('\n'))}</div>`:''}
     </div>`;
@@ -2478,7 +2580,7 @@ function rRender(cur, prev){
       const eq=(s.equipItems||[]).map(e=>esc(e.name)+e.n).join(' · ');
       return `<tr class="${!s.people&&!s.equip?'zero':''}"><td>${esc(s.name)}</td><td class="num">${rFmt(s.people)}${ps?rDl(s.people,ps.people):''}</td><td class="num">${rFmt(s.equip)}</td><td class="eq">${eq}</td></tr>`;
     }).join('');
-    h+=`<div class="r-grp"><div class="r-gh"><span class="n">${esc(g.name)}</span>
+    h+=`<div class="r-grp${g.parent?' kid':''}"><div class="r-gh"><span class="n">${g.parent?'└ ':''}${esc(g.parent?g.name.replace(/_[^_]+$/,''):g.name)}</span>
         <span class="m">${g.direct!=null?`직 <b>${g.direct}</b> · `:''}${g.sub!=null?`협 <b>${rFmt(g.sub)}</b> · `:''}계 <b>${rFmt(g.people)}</b>${G?rDl(g.people,G.people):''}명 · 장비 <b>${g.equipSum}</b>대</span></div>
       ${g.actual!=null?`<div class="card" style="border-radius:0;margin:0;padding:8px 10px">${rProg('진도율',g)}</div>`:''}
       ${g.subs.length?`<div class="r-wrap"><table class="r-tbl"><thead><tr><th>협력사</th><th class="num">인원</th><th class="num">장비</th><th>장비 내역</th></tr></thead><tbody>${rows}
@@ -2497,9 +2599,18 @@ function rRender(cur, prev){
     try{ await kApi('report-delete',{day:cur.day}); toast('삭제했습니다'); rDay=null; rLoad(); }catch(e){ toast(kErr(e)); }
   };
 }
+// 공지에 적힌 총계와 업체별 합이 다르면 알려줌 (공지 작성 실수 확인용)
+function rMismatch(D){
+  const w=[];
+  if(D.people!=null && D.peopleCalc && D.people!==D.peopleCalc) w.push(`인원: 공지 ${D.people.toLocaleString()}명 ≠ 업체별 합 ${D.peopleCalc.toLocaleString()}명`);
+  if(D.equip!=null && D.equipCalc && D.equip!==D.equipCalc) w.push(`장비: 공지 ${D.equip}대 ≠ 업체별 합 ${D.equipCalc}대`);
+  (D.groups||[]).forEach(g=>{ if(g.sub!=null && g.subs.length && g.sub!==g.subPeople) w.push(`${g.name}: 협력 ${g.sub}명 ≠ 협력사 합 ${g.subPeople}명`);
+    if(g.kidPeople!=null && g.sub!=null && g.kidPeople!==g.sub && g.kidPeople!==g.people) w.push(`${g.name}: 협력 ${g.sub}명 ≠ 하위 묶음 합 ${g.kidPeople}명`); });
+  return w.length?`<div class="r-note" style="background:#fff0f0">⚠ 합계 확인 필요 — ${w.map(esc).join(' · ')}</div>`:'';
+}
 function rTrend(list){
   if(list.length<1){ $('rTrend').innerHTML=''; return; }
-  const names=[]; list.forEach(x=>x.data.groups.forEach(g=>{ if(!names.includes(g.name)) names.push(g.name); }));
+  const names=[]; list.forEach(x=>x.data.groups.forEach(g=>{ if(!g.parent && !names.includes(g.name)) names.push(g.name); }));
   const head=`<tr><th>날짜</th><th class="num">종합 실적</th><th class="num">인원</th><th class="num">장비</th>${names.map(n=>`<th class="num">${esc(n)}</th>`).join('')}</tr>`;
   const body=list.map(x=>{ const D=x.data, o=D.overall;
     const d=o.actual!=null&&o.plan!=null?o.actual-o.plan:null;
