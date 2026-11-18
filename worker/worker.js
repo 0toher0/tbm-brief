@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.10.0',
+        version: '2.11.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -518,6 +518,22 @@ async function handleKakao(request, env, url, cors) {
     if (!id) return json({ error: 'bad_payload' }, 400, cors);
     await db.prepare(`UPDATE kakao_events SET status=?, manual=1, updated_at=? WHERE id=?`).bind(status, now.ts, id).run();
     return json({ ok: true, id, status }, 200, cors);
+  }
+
+  // 이전 미결 일괄 처리: {before:'YYYY-MM-DD'} → 그 날짜 이전의 미결(이전 미결 목록과 같은 종류) 전부 완료
+  //                      {ids:[...], status:'open'} → 되돌리기
+  if (sub === 'events-bulk') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const status = body.status === 'open' ? 'open' : 'done';
+    let ids = Array.isArray(body.ids) ? body.ids.map(x => parseInt(x, 10)).filter(Boolean).slice(0, 2000) : [];
+    if (!ids.length && /^\d{4}-\d{2}-\d{2}$/.test(String(body.before || '')) && status === 'done') {
+      const r = await db.prepare(`SELECT id FROM kakao_events WHERE day<? AND status='open' AND kind IN ('지시','이슈','일정','안전','자재·장비') LIMIT 2000`).bind(String(body.before)).all();
+      ids = r.results.map(x => x.id);
+    }
+    if (!ids.length) return json({ ok: true, ids: [], changed: 0 }, 200, cors);
+    const res = await db.batch(ids.map(id => db.prepare(`UPDATE kakao_events SET status=?, manual=1, updated_at=? WHERE id=?`).bind(status, now.ts, id)));
+    const changed = res.reduce((a, r) => a + ((r.meta && r.meta.changes) || 0), 0);
+    return json({ ok: true, ids, status, changed }, 200, cors);
   }
 
   // ★주요 표시 토글 {type:'work'|'event', id, starred}. 표시한 항목은 manual=1이 되어 재분석해도 보존
