@@ -346,6 +346,37 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 .ks-dh .w{font-size:.76rem;font-weight:700;color:var(--steel)}
 .ks-dh .n{margin-left:auto;font-size:.68rem;color:var(--steel)}
 .ks-day .k-list{border-radius:0 0 12px 12px;border-top:none}
+/* 일일 작업현황 */
+.r-head{display:flex;align-items:baseline;gap:8px;margin:14px 2px 8px}
+.r-head .d{font-family:var(--num);font-size:1.3rem;font-weight:700}
+.r-head .ttl{font-size:.78rem;font-weight:700;color:var(--steel)}
+.r-head .del{margin-left:auto}
+.r-prog{margin:4px 0 10px}
+.r-prog .lb{display:flex;justify-content:space-between;font-size:.74rem;font-weight:700;color:var(--ink2);margin-bottom:4px}
+.r-prog .lb b{font-family:var(--num)}
+.r-bar{position:relative;height:12px;background:#e4e6e8;border-radius:6px;overflow:hidden}
+.r-bar .a{position:absolute;left:0;top:0;bottom:0;background:var(--green);border-radius:6px}
+.r-bar .a.behind{background:var(--red)}
+.r-bar .p{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.r-diff{font-family:var(--num);font-weight:700}
+.r-diff.up{color:var(--green)} .r-diff.dn{color:var(--red)}
+.r-grp{margin-top:12px}
+.r-gh{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:0 2px 6px;border-bottom:2px solid var(--ink)}
+.r-gh .n{font-weight:800;font-size:.92rem}
+.r-gh .m{font-size:.7rem;color:var(--steel);font-weight:700}
+.r-gh .m b{font-family:var(--num);color:var(--ink)}
+.r-tbl{width:100%;border-collapse:collapse;font-size:.76rem;background:var(--card)}
+.r-tbl th{font-size:.64rem;color:var(--steel);font-weight:700;text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);background:#f4f5f6}
+.r-tbl td{padding:6px;border-bottom:1px solid var(--line);vertical-align:top}
+.r-tbl td.num,.r-tbl th.num{text-align:right;font-family:var(--num);white-space:nowrap}
+.r-tbl tr.zero td{color:#aab0b6}
+.r-tbl tr.sum td{font-weight:800;background:#f4f5f6}
+.r-tbl .eq{font-size:.68rem;color:var(--ink2)}
+.r-dl{font-size:.62rem;font-weight:700;margin-left:3px}
+.r-dl.up{color:var(--green)} .r-dl.dn{color:var(--red)}
+.r-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:0 0 10px 10px;border-top:none}
+.r-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.r-note{font-size:.74rem;color:var(--ink2);background:#fff8e6;border-radius:8px;padding:6px 9px;margin-top:6px;white-space:pre-wrap}
 @media print{
   header,.bottombar,.k-seg,.ks-tools,.kc-star,#kDaily,.toast{display:none!important}
   body{background:#fff;padding:0} main{max-width:none;padding:0}
@@ -521,7 +552,23 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
   </div>
 
   <div id="kMain" style="display:none">
-    <div class="k-seg"><button class="on" data-kv="daily">일별 보기</button><button data-kv="star">★ 주요 이벤트</button></div>
+    <div class="k-seg"><button class="on" data-kv="daily">일별 보기</button><button data-kv="report">📊 일일 현황</button><button data-kv="star">★ 주요 이벤트</button></div>
+
+    <!-- 📊 일일 작업현황: 카톡 공지(진도율·출력인원·장비)를 붙여넣으면 날짜별로 정리 -->
+    <div id="kRepView" style="display:none">
+      <div class="card">
+        <div class="paste-hint">카톡의 <b>일일 작업현황 공지</b>(📍날짜, 종합 진도율, ◾️업체별 출력인원·진도율, -협력사 인원·장비)를 길게 눌러 복사한 뒤 그대로 붙여넣으세요. <b>같은 날짜는 덮어써서</b> 중복이 생기지 않습니다. 현장톡 대화 내보내기에 들어 있는 공지도 올릴 때 자동으로 저장됩니다.</div>
+        <textarea class="paste-area" id="rPaste" placeholder="📍'26.11.18(수)&#10;[광양 2고로 2차 개수]&#10;▪️종합 진도율: …" style="min-height:96px;white-space:pre-wrap"></textarea>
+        <div class="paste-hint" id="rInfo" style="margin-top:8px"></div>
+        <div class="btn-row"><button class="btn done" id="rSaveBtn" disabled>현황 저장</button></div>
+      </div>
+      <div id="rDayChips" class="date-chips" style="margin-top:12px"></div>
+      <div id="rBody"></div>
+      <section>
+        <div class="sec-h"><div class="sec-t">추이 <small>최근 저장분</small></div><button class="mini-btn" id="rCsv">엑셀(CSV)</button></div>
+        <div id="rTrend"></div>
+      </section>
+    </div>
 
     <!-- ★ 주요 이벤트 시트: 별표한 작업·이벤트를 날짜별로 한 페이지에 -->
     <div id="kStarView" style="display:none">
@@ -706,7 +753,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.9.0',
+  version : '5.10.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1838,7 +1885,7 @@ async function renderKakao(){
     const cnt=Object.fromEntries(d.days.map(x=>[x.day,x.n]));
     $('kDayChips').innerHTML=days.slice(0,30).map(dy=>`<button class="dchip ${dy===kDay?'on':''}" data-day="${dy}">${dy===d.today?'오늘':dy.slice(5).replace('-','/')}<span class="dc-cnt">${cnt[dy]||0}</span></button>`).join('');
     $('kDayChips').querySelectorAll('.dchip').forEach(b=>b.onclick=()=>{kDay=b.dataset.day; renderKakao();});
-    await Promise.all([kLoadSummary(), kLoadRooms(), kView==='star'?kLoadStarred():null]);
+    await Promise.all([kLoadSummary(), kLoadRooms(), kView==='star'?kLoadStarred():null, kView==='report'?rLoad():null]);
     if($('kMsgsBox').open) kLoadMsgs();
     if($('kRawBox').open) kLoadRaw();
   }catch(e){
@@ -1979,7 +2026,9 @@ function kSetView(v){
   document.querySelectorAll('.k-seg [data-kv]').forEach(b=>b.classList.toggle('on',b.dataset.kv===v));
   $('kDaily').style.display = v==='daily'?'':'none';
   $('kStarView').style.display = v==='star'?'':'none';
+  $('kRepView').style.display = v==='report'?'':'none';
   if(v==='star') kLoadStarred().catch(e=>toast(kErr(e)));
+  else if(v==='report') rLoad().catch(e=>toast(kErr(e)));
   else kLoadSummary().catch(e=>toast(kErr(e)));
 }
 async function kLoadRooms(){
@@ -2071,7 +2120,14 @@ function kPrepare(text){
   const p=parseKakaoExport(text);
   kParsed=p;
   if(p.room && !$('kImportRoom').value) $('kImportRoom').value=p.room;
-  if(!p.messages.length){ $('kImportInfo').innerHTML='<span style="color:var(--red)">메시지를 찾지 못했습니다. 카카오톡 내보내기 원본 파일인지 확인하세요.</span>'; return; }
+  if(!p.messages.length){
+    if(parseDailyReport(text)){
+      $('kImportInfo').innerHTML='이 내용은 <b>일일 작업현황 공지</b>로 보입니다. <button class="mini-btn" id="kToReport">📊 일일 현황으로 저장하기</button>';
+      $('kToReport').onclick=()=>{ $('rPaste').value=text; $('kPaste').value=''; kPrepare(''); kSetView('report'); rPrepare(); window.scrollTo({top:0,behavior:'smooth'}); };
+      return;
+    }
+    $('kImportInfo').innerHTML='<span style="color:var(--red)">메시지를 찾지 못했습니다. 카카오톡 내보내기 원본 파일인지 확인하세요.</span>'; return;
+  }
   const days=[...new Set(p.messages.map(m=>m.ts.slice(0,10)))].sort();
   $('kImportInfo').innerHTML=`메시지 <b>${p.messages.length.toLocaleString()}</b>건 · ${days[0]} ~ ${days[days.length-1]} (${days.length}일)`;
   $('kImportBtn').disabled=false;
@@ -2089,6 +2145,9 @@ async function kImport(){
       ins+=r.inserted; dup+=r.duplicates;
     }
     $('kImportInfo').innerHTML+=` → <b style="color:var(--green)">새로 ${ins}건 저장</b>, 중복 ${dup}건`;
+    btn.textContent='일일 현황 공지 찾는 중…';
+    const nRep=await rSaveFromMessages(msgs);
+    if(nRep) $('kImportInfo').innerHTML+=` · 📊 일일 현황 <b>${nRep}</b>일치 저장`;
     const days=[...new Set(msgs.map(m=>m.ts.slice(0,10)))].sort(); // 오래된 날부터 — 전날 미종료 작업이 다음 날 종료로 이어지게
     let done=0, nWorks=0, nEv=0, fails=[];
     if($('kAutoAnalyze').checked){
@@ -2106,6 +2165,225 @@ async function kImport(){
   }catch(e){ toast(kErr(e)); btn.disabled=false; }
   finally{ btn.textContent='올리기'; }
 }
+/* 카톡 '일일 작업현황' 공지 파서 → {day,title,overall,people,equip,groups[{name,direct,sub,people,plan,actual,equip,subs[{name,people,equip,equipItems}],notes}],notes} */
+function parseDailyReport(raw, fallbackDay){
+  const t=String(raw||'').replace(/\r\n?/g,'\n').replace(/️/g,'');
+  if(!/진도율|출력\s*인원|동원\s*인력/.test(t)) return null;
+  const pad=n=>String(n).padStart(2,'0');
+  const num=s=>{ const v=String(s==null?'':s).replace(/,/g,'').match(/\d+(?:\.\d+)?/); return v?+v[0]:null; };
+  const lines=t.split('\n').map(s=>s.trim()).filter(Boolean);
+  const R={day:null,title:'',overall:{plan:null,actual:null},people:null,equip:null,groups:[],notes:[]};
+  let grp=null, sub=null, progTarget=null, progWait=0, outTarget=null, outWait=0;
+  const reGroup=/^[◾◽■□◼◻▣▪▫●○◆◇]\s*(.+)$/u;
+  const reProg=/계획\s*:?\s*([\d.]+)\s*%?\s*[/,|]?\s*실적\s*:?\s*([\d.]+)\s*%?/;
+  const parseEquipItems=s=>String(s||'').split(/[.,·、/\s]+/).map(x=>x.trim()).filter(Boolean)
+    .map(x=>{ const m=x.match(/^(.*?)(\d+)\s*대?$/); return m&&m[1]?{name:m[1].trim(),n:+m[2]}:{name:x,n:1}; });
+  const setProg=(tg,m)=>{ tg.plan=+m[1]; tg.actual=+m[2]; };
+  const setOut=(tg,l)=>{
+    const d=l.match(/직\s*:?\s*(\d[\d,]*)/), s=l.match(/협\s*:?\s*(\d[\d,]*)/);
+    if(d||s){ tg.direct=d?num(d[1]):null; tg.sub=s?num(s[1]):null; return true; }
+    const n=l.match(/(\d[\d,]*)\s*명/); if(n){ tg.total=num(n[1]); return true; }
+    return false;
+  };
+  for(let i=0;i<lines.length;i++){
+    let l=lines[i], m;
+    // 날짜 ('26.11.18(수) / 2026.11.18 / 26년 11월 18일 / 11/18) — 첫 그룹 전에서만
+    if(!R.day && !grp && (m=l.match(/(?:^|[^\d.%])['’‘]?(\d{4}|\d{2})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})(?!\s*%|\d)/))){
+      let y=+m[1]; if(y<100) y+=2000;
+      if(+m[2]>=1&&+m[2]<=12&&+m[3]>=1&&+m[3]<=31){ R.day=`${y}-${pad(m[2])}-${pad(m[3])}`; continue; }
+    }
+    if(!R.title && !grp && (m=l.match(/^\[(.+)\]$/))){ R.title=m[1].trim(); continue; }
+    l=l.replace(/^[▪▫•·※*]\s*/u,'').trim();
+    // 업체 묶음(◾️본체설비_P-이앤씨 / ◽️플랜텍)
+    if((m=l.match(reGroup)) && !/진도율|출력|동원/.test(l)){
+      grp={name:m[1].replace(/\.{2,}$|…$/,'').trim(),direct:null,sub:null,total:null,plan:null,actual:null,subs:[],notes:[]};
+      R.groups.push(grp); sub=null; progTarget=null; outTarget=null; continue;
+    }
+    // 진도율 (값이 같은 줄 또는 다음 줄)
+    if(/진도율/.test(l)){
+      progTarget = grp && !/종합/.test(l) ? grp : R.overall;
+      if((m=l.match(reProg))){ setProg(progTarget,m); progTarget=null; } else progWait=2;
+      continue;
+    }
+    if((m=l.match(reProg))){
+      const tg=progTarget || (grp||R.overall);
+      if(tg.plan==null){ setProg(tg,m); progTarget=null; continue; }
+    }
+    if(progWait>0){ progWait--; if(!progWait) progTarget=null; }
+    // 총 동원 인력/장비
+    if((m=l.match(/총\s*동원\s*인력\s*:?\s*([\d,]*)/))){ R.people=num(m[1]); continue; }
+    if((m=l.match(/총\s*동원\s*장비\s*:?\s*([\d,]*)/))){ R.equip=num(m[1]); continue; }
+    // 출력인원
+    if(/출력\s*인원/.test(l)){
+      const tg=grp||R; const rest=l.replace(/.*출력\s*인원\s*:?/,'');
+      if(!setOut(tg,rest)) { outTarget=tg; outWait=1; }
+      continue;
+    }
+    if(outTarget && outWait-- >0 && setOut(outTarget,l)){ outTarget=null; continue; }
+    outTarget=null;
+    // 협력사: -남경: 12명
+    if((m=l.match(/^[-－–ㆍ]\s*(.+?)\s*:\s*([\d,]*)\s*명?\s*$/))){
+      sub={name:m[1].trim(),people:num(m[2]),equip:null,equipItems:[]};
+      (grp||(R.groups[0]||(grp={name:'기타',direct:null,sub:null,total:null,plan:null,actual:null,subs:[],notes:[]},R.groups.push(grp),grp))).subs.push(sub);
+      continue;
+    }
+    // 장비: 2대(굴착기2)
+    if((m=l.match(/^장비\s*:?\s*([\d,]*)\s*대?\s*(?:\((.*)\))?\s*$/))){
+      const tg=sub||grp; if(tg){ tg.equip=num(m[1]); tg.equipItems=parseEquipItems(m[2]); }
+      continue;
+    }
+    (grp?grp.notes:R.notes).push(l);
+  }
+  if(!R.groups.length && R.overall.plan==null) return null;
+  // 합계 계산 (공지에 비어 있으면 업체별 합으로)
+  for(const g of R.groups){
+    const sp=g.subs.reduce((a,s)=>a+(s.people||0),0), se=g.subs.reduce((a,s)=>a+(s.equip||0),0);
+    g.subPeople=sp; g.equipSum=g.subs.length?se:(g.equip||0);
+    g.people = g.total!=null ? g.total : (g.direct!=null||g.sub!=null) ? (g.direct||0)+(g.sub!=null?g.sub:sp) : sp;
+  }
+  R.peopleCalc=R.groups.reduce((a,g)=>a+(g.people||0),0);
+  R.equipCalc=R.groups.reduce((a,g)=>a+(g.equipSum||0),0);
+  if(!R.day && fallbackDay) R.day=fallbackDay;
+  return R;
+}
+
+/* ---- 📊 일일 작업현황 화면 ---- */
+let rDay=null, rParsed=null, rList=[];
+const rToday=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+const rTot=x=>x.people!=null?x.people:x.peopleCalc, rEq=x=>x.equip!=null?x.equip:x.equipCalc;
+const rFmt=n=>n==null?'—':Number(n).toLocaleString();
+const rDl=(a,b)=>{ if(a==null||b==null) return ''; const d=a-b; return d?`<span class="r-dl">${d>0?'▲':'▼'}${Math.abs(d).toLocaleString()}</span>`:''; };
+function rPrepare(){
+  const txt=$('rPaste').value; rParsed=null; $('rSaveBtn').disabled=true;
+  if(!txt.trim()){ $('rInfo').textContent=''; return; }
+  const p=parseDailyReport(txt);
+  if(!p){ $('rInfo').innerHTML='<span style="color:var(--red)">일일 현황 형식을 찾지 못했습니다 — 진도율·출력인원 줄이 들어 있어야 합니다.</span>'; return; }
+  const noDate=!p.day; if(noDate) p.day=rToday();
+  rParsed=p;
+  const subs=p.groups.reduce((a,g)=>a+g.subs.length,0);
+  const exists=rList.some(x=>x.day===p.day);
+  $('rInfo').innerHTML=`인식: <b>${p.day}</b>${noDate?' <span style="color:var(--amber)">(날짜를 못 찾아 오늘로)</span>':''} · 업체 묶음 ${p.groups.length}개 · 협력사 ${subs}곳 · 인원 <b>${rFmt(rTot(p))}</b>명 · 장비 <b>${rFmt(rEq(p))}</b>대${p.overall.actual!=null?` · 종합 실적 ${p.overall.actual}%`:''}${exists?' <span style="color:var(--amber)">· 이미 저장된 날짜 → 덮어씁니다</span>':''}`;
+  $('rSaveBtn').disabled=false;
+}
+async function rSave(){
+  if(!rParsed) return;
+  const btn=$('rSaveBtn'); btn.disabled=true;
+  try{
+    const r=await kApi('report',{day:rParsed.day,data:rParsed,raw:$('rPaste').value,src:'paste'});
+    toast(r.replaced?`${rParsed.day} 현황을 새 내용으로 바꿨습니다`:`${rParsed.day} 현황을 저장했습니다`);
+    rDay=rParsed.day; $('rPaste').value=''; rPrepare(); await rLoad();
+  }catch(e){ toast(kErr(e)); btn.disabled=false; }
+}
+async function rLoad(){
+  const r=await kApi('reports'); rList=r.reports||[];
+  if(!rList.length){
+    $('rDayChips').innerHTML=''; $('rBody').innerHTML='<div class="k-empty" style="margin-top:12px">아직 저장된 일일 현황이 없습니다. 위 칸에 카톡 공지를 붙여넣으세요.</div>'; $('rTrend').innerHTML=''; return;
+  }
+  if(!rDay||!rList.some(x=>x.day===rDay)) rDay=rList[0].day;
+  $('rDayChips').innerHTML=rList.slice(0,40).map(x=>`<button class="dchip ${x.day===rDay?'on':''}" data-rd="${x.day}">${x.day.slice(5).replace('-','/')}<span class="dc-cnt">${rFmt(rTot(x.data))}</span></button>`).join('');
+  $('rDayChips').querySelectorAll('[data-rd]').forEach(b=>b.onclick=()=>{ rDay=b.dataset.rd; rLoad().catch(e=>toast(kErr(e))); });
+  const i=rList.findIndex(x=>x.day===rDay);
+  rRender(rList[i], rList[i+1]);
+  rTrend(rList.slice(0,20));
+}
+function rProg(label,o){
+  if(!o||o.actual==null) return '';
+  const d=o.plan!=null?o.actual-o.plan:null;
+  return `<div class="r-prog"><div class="lb"><span>${esc(label)}</span><span>계획 <b>${o.plan??'—'}%</b> · 실적 <b>${o.actual}%</b>${d!=null?` <span class="r-diff ${d>=0?'up':'dn'}">${d>=0?'+':''}${d.toFixed(2)}%p</span>`:''}</span></div>
+    <div class="r-bar"><div class="a ${d!=null&&d<0?'behind':''}" style="width:${Math.min(100,o.actual)}%"></div>${o.plan!=null?`<div class="p" style="left:${Math.min(100,o.plan)}%"></div>`:''}</div></div>`;
+}
+function rRender(cur, prev){
+  const D=cur.data, P=prev&&prev.data, wd=K_WD[new Date(cur.day+'T00:00:00').getDay()];
+  const pg=name=>P&&P.groups.find(g=>g.name===name);
+  // 장비 종류별 합계
+  const eqMap={}; D.groups.forEach(g=>g.subs.forEach(s=>(s.equipItems||[]).forEach(e=>eqMap[e.name]=(eqMap[e.name]||0)+e.n)));
+  const eqChips=Object.entries(eqMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="kc-chip">${esc(k)} ${v}</span>`).join('');
+  const active=D.groups.reduce((a,g)=>a+g.subs.filter(s=>s.people>0).length,0), allSubs=D.groups.reduce((a,g)=>a+g.subs.length,0);
+  let h=`<div class="r-head"><span class="d">${+cur.day.slice(5,7)}.${+cur.day.slice(8)}</span><span class="ttl">${wd}요일${D.title?' · '+esc(D.title):''}</span>
+      <button class="mini-btn del" id="rDel">삭제</button></div>
+    <div class="card">
+      ${rProg('종합 진도율',D.overall)}
+      <div class="k-stats">
+        <div class="k-stat"><div class="v">${rFmt(rTot(D))}</div><div class="k">총 인원${P?rDl(rTot(D),rTot(P)):''}</div></div>
+        <div class="k-stat"><div class="v">${rFmt(rEq(D))}</div><div class="k">총 장비${P?rDl(rEq(D),rEq(P)):''}</div></div>
+        <div class="k-stat"><div class="v">${D.groups.length}</div><div class="k">업체 묶음</div></div>
+        <div class="k-stat"><div class="v">${active}<small style="font-size:.7rem;color:var(--steel)">/${allSubs}</small></div><div class="k">투입 협력사</div></div>
+      </div>
+      ${D.people==null&&D.groups.length?'<div class="paste-hint" style="margin-top:6px">공지의 총 인원·장비가 비어 있어 업체별 합계로 계산했습니다.</div>':''}
+      ${eqChips?`<div class="r-chips">${eqChips}</div>`:''}
+      ${(D.notes||[]).length?`<div class="r-note">${esc(D.notes.join('\n'))}</div>`:''}
+    </div>`;
+  for(const g of D.groups){
+    const G=pg(g.name);
+    const rows=g.subs.map(s=>{
+      const ps=G&&G.subs.find(x=>x.name===s.name);
+      const eq=(s.equipItems||[]).map(e=>esc(e.name)+e.n).join(' · ');
+      return `<tr class="${!s.people&&!s.equip?'zero':''}"><td>${esc(s.name)}</td><td class="num">${rFmt(s.people)}${ps?rDl(s.people,ps.people):''}</td><td class="num">${rFmt(s.equip)}</td><td class="eq">${eq}</td></tr>`;
+    }).join('');
+    h+=`<div class="r-grp"><div class="r-gh"><span class="n">${esc(g.name)}</span>
+        <span class="m">${g.direct!=null?`직 <b>${g.direct}</b> · `:''}${g.sub!=null?`협 <b>${rFmt(g.sub)}</b> · `:''}계 <b>${rFmt(g.people)}</b>${G?rDl(g.people,G.people):''}명 · 장비 <b>${g.equipSum}</b>대</span></div>
+      ${g.actual!=null?`<div class="card" style="border-radius:0;margin:0;padding:8px 10px">${rProg('진도율',g)}</div>`:''}
+      ${g.subs.length?`<div class="r-wrap"><table class="r-tbl"><thead><tr><th>협력사</th><th class="num">인원</th><th class="num">장비</th><th>장비 내역</th></tr></thead><tbody>${rows}
+        <tr class="sum"><td>합계</td><td class="num">${rFmt(g.subPeople)}</td><td class="num">${g.equipSum}</td><td></td></tr></tbody></table></div>`:''}
+      ${g.notes.length?`<div class="r-note">${esc(g.notes.join('\n'))}</div>`:''}
+    </div>`;
+  }
+  h+=`<details class="k-more"><summary>원문 보기 <small>(${esc((cur.updated_at||'').slice(5))} 저장)</small></summary><div class="card" id="rRaw" style="white-space:pre-wrap;font-size:.74rem">불러오는 중…</div></details>`;
+  $('rBody').innerHTML=h;
+  $('rBody').querySelector('details').addEventListener('toggle',async e=>{
+    if(!e.target.open) return;
+    try{ const r=await kApi('report?day='+cur.day); $('rRaw').textContent=(r.report&&r.report.raw)||'(원문 없음)'; }catch(err){ $('rRaw').textContent=kErr(err); }
+  });
+  $('rDel').onclick=async()=>{
+    if(!confirm(`${cur.day} 일일 현황을 삭제할까요? (되돌릴 수 없습니다 — 원문을 다시 붙여넣으면 복구됩니다)`)) return;
+    try{ await kApi('report-delete',{day:cur.day}); toast('삭제했습니다'); rDay=null; rLoad(); }catch(e){ toast(kErr(e)); }
+  };
+}
+function rTrend(list){
+  if(list.length<1){ $('rTrend').innerHTML=''; return; }
+  const names=[]; list.forEach(x=>x.data.groups.forEach(g=>{ if(!names.includes(g.name)) names.push(g.name); }));
+  const head=`<tr><th>날짜</th><th class="num">종합 실적</th><th class="num">인원</th><th class="num">장비</th>${names.map(n=>`<th class="num">${esc(n)}</th>`).join('')}</tr>`;
+  const body=list.map(x=>{ const D=x.data, o=D.overall;
+    const d=o.actual!=null&&o.plan!=null?o.actual-o.plan:null;
+    return `<tr data-rd="${x.day}" style="cursor:pointer;${x.day===rDay?'background:#eef4ff':''}"><td>${x.day.slice(5).replace('-','/')}</td>
+      <td class="num">${o.actual!=null?o.actual+'%':'—'}${d!=null?` <span class="r-diff ${d>=0?'up':'dn'}" style="font-size:.64rem">${d>=0?'+':''}${d.toFixed(2)}</span>`:''}</td>
+      <td class="num">${rFmt(rTot(D))}</td><td class="num">${rFmt(rEq(D))}</td>
+      ${names.map(n=>{ const g=D.groups.find(y=>y.name===n); return `<td class="num">${g?rFmt(g.people):''}</td>`; }).join('')}</tr>`; }).join('');
+  $('rTrend').innerHTML=`<div class="r-wrap" style="border-top:1px solid var(--line);border-radius:10px"><table class="r-tbl"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  $('rTrend').querySelectorAll('[data-rd]').forEach(tr=>tr.onclick=()=>{ rDay=tr.dataset.rd; rLoad().catch(e=>toast(kErr(e))); window.scrollTo({top:0,behavior:'smooth'}); });
+}
+function rCsv(){
+  if(!rList.length){ toast('저장된 일일 현황이 없습니다'); return; }
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[['날짜','요일','종합 계획%','종합 실적%','총 인원','총 장비','업체 묶음','묶음 직영','묶음 협력','묶음 계','묶음 계획%','묶음 실적%','협력사','인원','장비','장비 내역']];
+  [...rList].sort((a,b)=>a.day.localeCompare(b.day)).forEach(x=>{
+    const D=x.data, wd=K_WD[new Date(x.day+'T00:00:00').getDay()];
+    const base=[x.day,wd,D.overall.plan,D.overall.actual,rTot(D),rEq(D)];
+    D.groups.forEach(g=>{
+      const gb=[g.name,g.direct,g.sub,g.people,g.plan,g.actual];
+      if(!g.subs.length) rows.push(base.concat(gb,['',g.people,g.equipSum,'']));
+      g.subs.forEach(s=>rows.push(base.concat(gb,[s.name,s.people,s.equip,(s.equipItems||[]).map(e=>e.name+e.n).join(' ')])));
+    });
+  });
+  const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`일일현황_${rList[rList.length-1].day}~${rList[0].day}.csv`; a.click();
+}
+/* 카톡 내보내기 메시지 중 일일 현황 공지를 찾아 날짜별(마지막 것) 저장 */
+async function rSaveFromMessages(msgs){
+  const byDay={};
+  for(const m of msgs){
+    if(!/진도율/.test(m.text)||!/출력\s*인원/.test(m.text)) continue;
+    const p=parseDailyReport(m.text, m.ts.slice(0,10));
+    if(p&&p.groups.length) byDay[p.day]={p,raw:m.text};
+  }
+  let n=0;
+  for(const d of Object.keys(byDay)){ try{ await kApi('report',{day:d,data:byDay[d].p,raw:byDay[d].raw,src:'export'}); n++; }catch(e){} }
+  return n;
+}
+$('rPaste').addEventListener('input',rPrepare);
+$('rSaveBtn').onclick=rSave;
+$('rCsv').onclick=rCsv;
+
 $('kLoginBtn').onclick=async()=>{
   const p=$('kPass').value.trim(); if(!p) return;
   adminPass=p;

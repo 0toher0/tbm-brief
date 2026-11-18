@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.9.0',
+        version: '2.10.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -317,6 +317,8 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS kakao_works (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, room TEXT, wkey TEXT, title TEXT, place TEXT, company TEXT, start_at TEXT, end_at TEXT, status TEXT, features TEXT, people TEXT, equipment TEXT, manual INTEGER NOT NULL DEFAULT 0, note TEXT, updated_at TEXT)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_kakao_works_day ON kakao_works(day)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS kakao_raw (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, title TEXT, subtext TEXT, text40 TEXT, room TEXT, sender TEXT, stored INTEGER)`),
+    // v2.10.0: 일일 작업현황 공지(진도율·출력인원·장비) — 날짜당 1건
+    db.prepare(`CREATE TABLE IF NOT EXISTS site_daily (day TEXT PRIMARY KEY, data TEXT NOT NULL, raw TEXT, src TEXT, updated_at TEXT)`),
   ]);
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
   for (const t of ['kakao_works', 'kakao_events']) {
@@ -473,6 +475,33 @@ async function handleKakao(request, env, url, cors) {
       db.prepare(`SELECT * FROM kakao_works WHERE day=? ORDER BY CASE WHEN start_at='' THEN '99' ELSE start_at END, id`).bind(day),
     ]);
     return json({ day, analysis: an.results[0] || null, events: ev.results, openPrev: prev.results, msgCounts: cnt.results, works: wk.results }, 200, cors);
+  }
+
+  // ---- 일일 작업현황 (카톡 공지: 진도율·출력인원·장비). 앱이 파싱해 보냄. 날짜당 1건, 다시 올리면 덮어씀 ----
+  if (sub === 'report') {
+    if (request.method === 'POST') {
+      const day = String(body.day || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !body.data || typeof body.data !== 'object') return json({ error: 'bad_payload' }, 400, cors);
+      const data = JSON.stringify(body.data);
+      if (data.length > 300000) return json({ error: 'too_large' }, 400, cors);
+      const prev = await db.prepare(`SELECT day FROM site_daily WHERE day=?`).bind(day).first();
+      await db.prepare(`INSERT INTO site_daily(day,data,raw,src,updated_at) VALUES(?,?,?,?,?)
+        ON CONFLICT(day) DO UPDATE SET data=excluded.data, raw=excluded.raw, src=excluded.src, updated_at=excluded.updated_at`)
+        .bind(day, data, String(body.raw || '').slice(0, 30000), String(body.src || 'paste').slice(0, 20), now.ts).run();
+      return json({ ok: true, day, replaced: !!prev }, 200, cors);
+    }
+    const r = await db.prepare(`SELECT * FROM site_daily WHERE day=?`).bind(String(body.day || '')).first();
+    return json({ report: r ? { ...r, data: JSON.parse(r.data) } : null }, 200, cors);
+  }
+  if (sub === 'reports') {
+    const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+    const r = await db.prepare(`SELECT day, data, updated_at FROM site_daily WHERE day BETWEEN ? AND ? ORDER BY day DESC LIMIT 400`).bind(from, to).all();
+    return json({ reports: r.results.map(x => ({ day: x.day, updated_at: x.updated_at, data: JSON.parse(x.data) })) }, 200, cors);
+  }
+  if (sub === 'report-delete') {
+    if (request.method !== 'POST') return json({ error: 'post_only' }, 405, cors);
+    const r = await db.prepare(`DELETE FROM site_daily WHERE day=?`).bind(String(body.day || '')).run();
+    return json({ ok: true, deleted: (r.meta && r.meta.changes) || 0 }, 200, cors);
   }
 
   // 작업 기록 기간 조회 (CSV 내보내기용) GET /kakao/works?from=YYYY-MM-DD&to=YYYY-MM-DD
