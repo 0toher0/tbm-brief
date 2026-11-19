@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.11.0',
+        version: '2.12.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -319,6 +319,9 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS kakao_raw (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, title TEXT, subtext TEXT, text40 TEXT, room TEXT, sender TEXT, stored INTEGER)`),
     // v2.10.0: 일일 작업현황 공지(진도율·출력인원·장비) — 날짜당 1건
     db.prepare(`CREATE TABLE IF NOT EXISTS site_daily (day TEXT PRIMARY KEY, data TEXT NOT NULL, raw TEXT, src TEXT, updated_at TEXT)`),
+    // v2.12.0: 순회 체크 — 📌 고른 항목 + 상태·메모·사진
+    db.prepare(`CREATE TABLE IF NOT EXISTS patrol_items (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, src TEXT NOT NULL, ref TEXT NOT NULL, title TEXT, sub TEXT, memo TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT '', created_at TEXT, updated_at TEXT, UNIQUE(day, src, ref))`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS patrol_photos (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER NOT NULL, data TEXT NOT NULL, created_at TEXT)`),
   ]);
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
   for (const t of ['kakao_works', 'kakao_events']) {
@@ -518,6 +521,65 @@ async function handleKakao(request, env, url, cors) {
     if (!id) return json({ error: 'bad_payload' }, 400, cors);
     await db.prepare(`UPDATE kakao_events SET status=?, manual=1, updated_at=? WHERE id=?`).bind(status, now.ts, id).run();
     return json({ ok: true, id, status }, 200, cors);
+  }
+
+  // ---- 순회 체크: 📌 고른 항목(작업·현장톡 작업·이벤트·직접 추가)에 상태·메모·사진 ----
+  if (sub === 'patrol') {
+    const from = String(body.from || body.day || now.day), to = String(body.to || body.day || now.day);
+    const r = await db.prepare(`SELECT i.*, (SELECT group_concat(p.id) FROM patrol_photos p WHERE p.item_id=i.id) AS photo_ids
+      FROM patrol_items i WHERE i.day BETWEEN ? AND ? ORDER BY i.day DESC, i.id`).bind(from, to).all();
+    const d = await db.prepare(`SELECT day, COUNT(*) AS n, SUM(CASE WHEN status<>'' THEN 1 ELSE 0 END) AS done FROM patrol_items GROUP BY day ORDER BY day DESC LIMIT 60`).all();
+    return json({ today: now.day, items: r.results.map(x => ({ ...x, photo_ids: x.photo_ids ? String(x.photo_ids).split(',').map(Number) : [] })), days: d.results }, 200, cors);
+  }
+  if (sub === 'patrol-pin') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const day = String(body.day || now.day), src = String(body.src || ''), ref = String(body.ref || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !src || !ref) return json({ error: 'bad_payload' }, 400, cors);
+    if (body.on === false || body.on === 'false') {
+      const it = await db.prepare(`SELECT id, memo, status, (SELECT COUNT(*) FROM patrol_photos p WHERE p.item_id=patrol_items.id) AS ph FROM patrol_items WHERE day=? AND src=? AND ref=?`).bind(day, src, ref).first();
+      if (!it) return json({ ok: true, removed: false }, 200, cors);
+      if ((it.memo || it.status || it.ph) && !body.force) return json({ ok: false, error: 'has_content', id: it.id }, 200, cors);
+      await db.batch([db.prepare(`DELETE FROM patrol_photos WHERE item_id=?`).bind(it.id), db.prepare(`DELETE FROM patrol_items WHERE id=?`).bind(it.id)]);
+      return json({ ok: true, removed: true }, 200, cors);
+    }
+    await db.prepare(`INSERT INTO patrol_items(day,src,ref,title,sub,created_at,updated_at) VALUES(?,?,?,?,?,?,?)
+      ON CONFLICT(day,src,ref) DO UPDATE SET title=excluded.title, sub=excluded.sub`)
+      .bind(day, src, ref, String(body.title || '').slice(0, 300), String(body.sub || '').slice(0, 300), now.ts, now.ts).run();
+    const it = await db.prepare(`SELECT id FROM patrol_items WHERE day=? AND src=? AND ref=?`).bind(day, src, ref).first();
+    return json({ ok: true, id: it && it.id }, 200, cors);
+  }
+  if (sub === 'patrol-save') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const id = parseInt(body.id, 10); if (!id) return json({ error: 'bad_payload' }, 400, cors);
+    const sets = [], args = [];
+    if (body.memo != null) { sets.push('memo=?'); args.push(String(body.memo).slice(0, 20000)); }
+    if (body.status != null) { sets.push('status=?'); args.push(['', '양호', '지적', '조치완료'].includes(body.status) ? body.status : ''); }
+    if (body.title != null) { sets.push('title=?'); args.push(String(body.title).slice(0, 300)); }
+    if (!sets.length) return json({ error: 'nothing' }, 400, cors);
+    await db.prepare(`UPDATE patrol_items SET ${sets.join(',')}, updated_at=? WHERE id=?`).bind(...args, now.ts, id).run();
+    return json({ ok: true, id, at: now.ts }, 200, cors);
+  }
+  if (sub === 'patrol-delete') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const id = parseInt(body.id, 10);
+    await db.batch([db.prepare(`DELETE FROM patrol_photos WHERE item_id=?`).bind(id), db.prepare(`DELETE FROM patrol_items WHERE id=?`).bind(id)]);
+    return json({ ok: true }, 200, cors);
+  }
+  if (sub === 'patrol-photo') {
+    if (request.method === 'POST') {
+      const item = parseInt(body.item_id, 10), data = String(body.data || '');
+      if (!item || !/^data:image\//.test(data)) return json({ error: 'bad_payload' }, 400, cors);
+      if (data.length > 1400000) return json({ error: 'too_large' }, 400, cors);
+      const r = await db.prepare(`INSERT INTO patrol_photos(item_id,data,created_at) VALUES(?,?,?)`).bind(item, data, now.ts).run();
+      return json({ ok: true, id: r.meta && r.meta.last_row_id }, 200, cors);
+    }
+    const r = await db.prepare(`SELECT data FROM patrol_photos WHERE id=?`).bind(parseInt(body.id, 10)).first();
+    return json({ data: r ? r.data : null }, 200, cors);
+  }
+  if (sub === 'patrol-photo-delete') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    await db.prepare(`DELETE FROM patrol_photos WHERE id=?`).bind(parseInt(body.id, 10)).run();
+    return json({ ok: true }, 200, cors);
   }
 
   // 이전 미결 일괄 처리: {before:'YYYY-MM-DD'} → 그 날짜 이전의 미결(이전 미결 목록과 같은 종류) 전부 완료

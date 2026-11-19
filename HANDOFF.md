@@ -348,3 +348,12 @@ const APP = {
 - 일일 현황 파서: `X_부모` 이름이면 하위 묶음(parent) → 합계 중복 제외·들여쓰기, 추이 표는 상위 묶음만. `직영:`/`협력:` 표기 인식. 공지 합계 ≠ 업체별 합이면 ⚠ 표시(`rMismatch`).
 - 작업입력에 일일 현황 공지를 붙이면 안내 + '📊 일일 현황으로 저장' 버튼.
 - `loadDemo()`가 없는 함수(parseRow) 호출로 오류 + 가짜 작업을 실저장소에 넣던 코드 제거(날씨만 데모).
+
+## 19. 📌 순회 체크 (v5.14.0 / Worker v2.12.0, 2026-11-19)
+- 오늘 탭 작업(src=task, ref=taskId), 현장톡 작업(work)·이벤트(event) 옆 📌(`pinBtn`, 문서 캡처 단계 클릭 위임) → D1 `patrol_items`(UNIQUE day,src,ref; title/sub 스냅샷, memo, status 양호/지적/조치완료). 직접 항목 src=free.
+- 순시메모 탭 상단 세그먼트 [📝 메모 | 📌 순회 체크]. 날짜 칩·진행 막대·필터(전체/미확인/지적)·카드(상태 버튼, 메모 700ms 자동 저장, 🎤, 📷).
+- 🎤: Web Speech API(`ko-KR`, continuous=false, 중간결과 표시, `[HH:MM]` 접두). 미지원(카톡 내장 브라우저 등)이면 키보드 음성입력 안내. 순시메모 본문에도 🎤.
+- 사진: `patrol_photos`(행당 ≤1.4MB, `mShrinkImage` 재사용), 목록엔 id만, 썸네일은 `/kakao/patrol-photo?id` 지연 로드.
+- 결과: `pReportText` → navigator.share(카톡) 또는 복사, 순시메모 노트로 저장.
+- API: `/kakao/patrol`(기간 목록), `patrol-pin`(on/off, 내용 있으면 has_content→확인 후 force), `patrol-save`, `patrol-delete`, `patrol-photo`(GET/POST), `patrol-photo-delete`.
+- 음성 인식은 실기기 미검증(테스트 브라우저 마이크 차단).

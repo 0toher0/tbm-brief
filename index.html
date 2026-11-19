@@ -363,6 +363,36 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 .r-diff{font-family:var(--num);font-weight:700}
 .r-diff.up{color:var(--green)} .r-diff.dn{color:var(--red)}
 .r-grp{margin-top:12px}
+/* 📌 순회 체크 */
+.pin-btn{border:none;background:none;font-size:1.05rem;line-height:1;padding:2px 3px;filter:grayscale(1);opacity:.35}
+.pin-btn.on{filter:none;opacity:1}
+.p-badge{display:inline-block;min-width:16px;font-size:.62rem;background:var(--red);color:#fff;border-radius:8px;padding:0 4px}
+.p-badge:empty{display:none}
+.p-progbar{height:8px;background:#e4e6e8;border-radius:4px;overflow:hidden;margin-top:10px}
+.p-progbar div{height:100%;background:var(--green)}
+.p-progtxt{font-size:.74rem;color:var(--ink2);margin-top:4px}
+.p-item{background:var(--card);border:1px solid var(--line);border-left:5px solid #c3c8cd;border-radius:12px;padding:10px 12px;margin-top:10px}
+.p-item.st-양호{border-left-color:var(--green)} .p-item.st-지적{border-left-color:var(--red);background:#fff7f7} .p-item.st-조치완료{border-left-color:#2f6fed}
+.p-src{font-size:.6rem;font-weight:800;color:var(--steel);background:#eef0f2;border-radius:4px;padding:1px 5px}
+.p-title{font-weight:800;font-size:.9rem;margin-top:4px}
+.p-sub{font-size:.7rem;color:var(--steel);margin-top:2px}
+.p-st{display:flex;gap:6px;margin-top:8px}
+.p-st button{flex:1;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 2px;font-weight:800;font-size:.78rem;color:var(--ink2)}
+.p-st button.on[data-st="양호"]{background:var(--green);color:#fff;border-color:var(--green)}
+.p-st button.on[data-st="지적"]{background:var(--red);color:#fff;border-color:var(--red)}
+.p-st button.on[data-st="조치완료"]{background:#2f6fed;color:#fff;border-color:#2f6fed}
+.p-memo{width:100%;min-height:64px;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:8px;font:inherit;font-size:.82rem;resize:vertical;box-sizing:border-box}
+.p-tools{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.p-tools .p-saved{font-size:.66rem;color:var(--steel);flex:1;text-align:right}
+.p-tools .p-del{color:var(--red)}
+.p-mic.rec,#mBodyMic.rec,#pVoiceNew.rec{background:var(--red)!important;color:#fff!important;animation:pPulse 1s infinite}
+@keyframes pPulse{50%{opacity:.6}}
+.p-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.p-ph{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;background:#eef0f2}
+.p-ph img{width:100%;height:100%;object-fit:cover}
+.p-phx{position:absolute;top:2px;right:2px;border:none;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:20px;height:20px;line-height:18px;padding:0;font-size:.8rem}
+.p-zoom{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:80;display:flex;align-items:center;justify-content:center}
+.p-zoom img{max-width:96%;max-height:92%}
 .site-nums{display:flex;gap:16px;font-size:.82rem;color:var(--ink2);margin:2px 0 8px}
 .site-nums b{font-family:var(--num);font-size:1.15rem;color:var(--ink)}
 .site-grps .sg{font-size:.78rem;padding:6px 0;border-top:1px solid var(--line)}
@@ -680,6 +710,23 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
     </div>
   </div>
   <div id="mMain" style="display:none">
+    <div class="k-seg" id="mSeg"><button class="on" data-mv2="memo">📝 메모</button><button data-mv2="patrol">📌 순회 체크 <span id="pBadge" class="p-badge"></span></button></div>
+    <!-- 📌 순회 체크: 고른 항목만 모아 현장 확인 · 상태 · 음성 메모 · 사진 -->
+    <div id="pView" style="display:none">
+      <div id="pDayChips" class="date-chips"></div>
+      <div id="pProg"></div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn ghost" id="pAddFree">＋ 직접 항목</button>
+        <button class="btn primary" id="pVoiceNew">🎤 말로 추가</button>
+      </div>
+      <div class="date-chips" id="pFilt" style="margin-top:10px"><button class="dchip on" data-pf="all">전체</button><button class="dchip" data-pf="todo">미확인</button><button class="dchip" data-pf="bad">⚠ 지적</button></div>
+      <div id="pList"></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn done" id="pShare">📤 결과 공유 (카톡)</button>
+        <button class="btn ghost" id="pToMemo">📝 순시메모로 저장</button>
+      </div>
+      <div class="paste-hint" style="margin-top:8px">🎤 음성 입력은 <b>크롬</b>에서 됩니다. 카톡 안에서 연 화면은 음성 인식이 막혀 있을 수 있어요 — 그때는 키보드의 마이크 버튼을 쓰거나 크롬으로 여세요.</div>
+    </div>
     <div id="mListView">
       <section style="margin-top:4px">
         <div class="sec-h"><div class="sec-t">순시메모 <small>날짜별 · 엑셀 표·사진 첨부</small></div></div>
@@ -710,6 +757,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
           <div><label class="f-label" style="margin-top:0">제목</label><input class="f-input" id="mTitle" placeholder="예: 3층 BFG 라인 순시"></div>
         </div>
         <textarea class="f-input" id="mBody" placeholder="순시 메모 (자동 저장)"></textarea>
+        <button class="mini-btn" id="mBodyMic" style="margin-top:6px">🎤 말하기</button>
         <div id="mSaveState"></div>
       </div>
       <section>
@@ -776,7 +824,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.13.0',
+  version : '5.14.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1467,6 +1515,7 @@ function renderTaskList(){
           <div class="tr-meta">${t.shift?`<span class="shift-badge s-${esc(t.shift)}">${esc(t.shift)}</span>`:''}${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
         </div>
         <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
+        ${pinBtn(dotToDash(t.date||todayDot()),'task',t._id,firstTaskLine(t.task),[t.shift,t.contractor,t.subcon,t.headcountN?t.headcountN+'명':''].filter(Boolean).join(' · '))}
         <span class="tr-caret">▶</span>
       </div>
       <div class="taskrow-detail">${renderHazard(t)}
@@ -2155,7 +2204,8 @@ function kWorkCard(w, opts={}){
       ${w.features?`<div class="kc-desc">${esc(w.features)}</div>`:''}
       ${w.note?`<div class="kc-note">${esc(w.note)}</div>`:''}
     </div>
-    <div class="kc-side"><button class="kc-star ${w.starred?'on':''}" data-star="work:${w.id}" title="주요 이벤트에 표시">${w.starred?'★':'☆'}</button></div>
+    <div class="kc-side"><button class="kc-star ${w.starred?'on':''}" data-star="work:${w.id}" title="주요 이벤트에 표시">${w.starred?'★':'☆'}</button>
+      ${pinBtn(w.day,'work',w.id,w.title,[w.start_at?kTime(w.start_at)+'~'+(w.end_at?kTime(w.end_at):''):'',w.place,w.company].filter(Boolean).join(' · '))}</div>
   </div>`;
 }
 function kEvCard(e, opts={}){
@@ -2174,6 +2224,7 @@ function kEvCard(e, opts={}){
     </div>
     <div class="kc-side">
       <button class="kc-star ${e.starred?'on':''}" data-star="event:${e.id}" title="주요 이벤트에 표시">${e.starred?'★':'☆'}</button>
+      ${pinBtn(e.day,'event',e.id,`[${e.kind}] ${e.title}`,[e.at?kTime(e.at):'',e.who,e.room].filter(Boolean).join(' · '))}
       ${opts.check===false?'':`<input type="checkbox" data-ev="${e.id}" ${done?'checked':''} title="완료">`}
     </div>
   </div>`;
@@ -3054,6 +3105,225 @@ $('mLoginBtn').onclick=async()=>{ const p=$('mPass').value.trim(); if(!p) return
   try{ await mApi('list'); saveJSON(LS_ADMIN,p); kShowTab(); renderMemo(); }catch(e){ adminPass=''; toast(mErr(e)); } };
 
 /* ================= 네비/이벤트 ================= */
+
+/* ================= 📌 순회 체크 =================
+ * 오늘 탭 작업·현장톡 작업·이벤트에서 📌로 고른 항목만 모아 현장을 돌며 확인.
+ * 항목마다 상태(양호/지적/조치완료) · 메모(🎤 말하면 글씨로) · 사진, 결과는 카톡 공유·순시메모 저장.
+ * 서버 D1 patrol_items / patrol_photos — 지우지 않는 한 남는다. */
+let pSet=new Set(), pAll=[], pDay=null, pMode='memo', pFilter='all';
+const pKey=(day,src,ref)=>`${day}|${src}|${ref}`;
+const dotToDash=d=>String(d||'').replace(/\./g,'-');
+const pHHMM=()=>new Date(Date.now()+9*3600e3).toISOString().slice(11,16);
+const P_SRC={task:'작업',work:'현장톡 작업',event:'현장톡 이벤트',free:'직접'};
+function pinBtn(day,src,ref,title,sub){
+  const on=pSet.has(pKey(day,src,ref));
+  return `<button class="pin-btn ${on?'on':''}" data-pin="${esc(day)}|${src}|${esc(String(ref))}" data-t="${esc(title||'')}" data-s="${esc(sub||'')}" title="순회 체크에 담기">📌</button>`;
+}
+async function pRefresh(){
+  const from=new Date(Date.now()+9*3600e3-90*86400e3).toISOString().slice(0,10);
+  const r=await kApi(`patrol?from=${from}&to=2999-12-31`);
+  pAll=r.items||[]; pSet=new Set(pAll.map(x=>pKey(x.day,x.src,x.ref)));
+  if(!pDay) pDay=r.today;
+  pBadge(r.today);
+  return r;
+}
+function pBadge(today){
+  const n=pAll.filter(x=>x.day===(today||rToday())&&!x.status).length;
+  if($('pBadge')) $('pBadge').textContent=n?n:'';
+}
+async function pinToggle(btn, info){
+  const k=pKey(info.day,info.src,info.ref), on=!pSet.has(k);
+  try{
+    try{ await kApi('patrol-pin',{...info,on}); }
+    catch(e){
+      if(e.message!=='has_content') throw e;
+      if(!confirm('이 항목에 상태·메모·사진이 있습니다. 순회 체크에서 빼면 함께 지워집니다. 뺄까요?')) return;
+      await kApi('patrol-pin',{...info,on:false,force:true});
+    }
+    on?pSet.add(k):pSet.delete(k);
+    document.querySelectorAll('[data-pin]').forEach(b=>{ if(b.dataset.pin===btn.dataset.pin) b.classList.toggle('on',on); });
+    toast(on?'📌 순회 체크에 담았습니다 — 순시메모 탭 > 순회 체크':'순회 체크에서 뺐습니다');
+    pRefresh().catch(()=>{});
+  }catch(e){ toast(kErr(e)); }
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-pin]'); if(!b) return;
+  e.stopPropagation(); e.preventDefault();
+  const [day,src,...rest]=b.dataset.pin.split('|');
+  pinToggle(b,{day,src,ref:rest.join('|'),title:b.dataset.t||'',sub:b.dataset.s||''});
+},true);
+
+/* ---- 🎤 음성 → 글씨 (Web Speech API, 한국어). 지원 안 하는 브라우저(카톡 내장 등)는 키보드 음성입력 안내 ---- */
+const PSR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let pRec=null;
+function pVoice(ta, btn, onEnd){
+  if(pRec){ pRec.stop(); return; }
+  if(!PSR){
+    toast('이 브라우저는 음성 인식을 지원하지 않습니다. 키보드의 🎤(음성 입력)를 누르거나, 크롬에서 앱을 여세요');
+    ta.focus(); return;
+  }
+  const rec=new PSR(); rec.lang='ko-KR'; rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
+  const base=ta.value, head=(base&&!base.endsWith('\n')?'\n':'')+`[${pHHMM()}] `;
+  let fin='';
+  rec.onresult=e=>{
+    let inter=''; fin='';
+    for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript; else inter+=r[0].transcript; }
+    ta.value=base+head+fin+inter;
+  };
+  rec.onerror=e=>toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'마이크 권한을 허용해 주세요 (주소창 옆 🔒 > 마이크)':e.error==='no-speech'?'말소리가 들리지 않았습니다':'음성 인식 오류: '+e.error);
+  rec.onend=()=>{
+    pRec=null; btn.classList.remove('rec'); btn.innerHTML=btn.dataset.label||'🎤 말하기';
+    ta.value = fin.trim() ? base+head+fin.trim() : base;
+    ta.dispatchEvent(new Event('input'));
+    if(onEnd) onEnd(fin.trim());
+  };
+  btn.dataset.label=btn.dataset.label||btn.innerHTML;
+  try{ rec.start(); pRec=rec; btn.classList.add('rec'); btn.innerHTML='■ 듣는 중… (누르면 끝)'; }
+  catch(e){ toast('음성 인식을 시작하지 못했습니다'); }
+}
+
+/* ---- 화면 ---- */
+function pSetMode(m){
+  pMode=m;
+  document.querySelectorAll('#mSeg [data-mv2]').forEach(b=>b.classList.toggle('on',b.dataset.mv2===m));
+  $('pView').style.display=m==='patrol'?'':'none';
+  ['mListView','mReadView','mEditView'].forEach(id=>{ if(m==='patrol') $(id).dataset.was=$(id).style.display, $(id).style.display='none'; });
+  if(m==='patrol') pLoad();
+  else { mShow(mView||'list'); renderMemo(); }
+}
+async function pLoad(){
+  try{ await pRefresh(); }catch(e){ toast(kErr(e)); return; }
+  pRender();
+}
+function pRender(){
+  const today=rToday();
+  const days=[...new Set(pAll.map(x=>x.day).concat([today]))].sort().reverse();
+  if(!days.includes(pDay)) pDay=today;
+  $('pDayChips').innerHTML=days.slice(0,20).map(d=>{ const n=pAll.filter(x=>x.day===d).length;
+    return `<button class="dchip ${d===pDay?'on':''}" data-pd="${d}">${d===today?'오늘':d.slice(5).replace('-','/')}<span class="dc-cnt">${n}</span></button>`; }).join('');
+  $('pDayChips').querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{ pDay=b.dataset.pd; pRender(); });
+  const items=pAll.filter(x=>x.day===pDay);
+  const ok=items.filter(x=>x.status==='양호').length, bad=items.filter(x=>x.status==='지적').length, fixed=items.filter(x=>x.status==='조치완료').length, done=ok+bad+fixed;
+  $('pProg').innerHTML=items.length?`<div class="p-progbar"><div style="width:${Math.round(done/items.length*100)}%"></div></div>
+    <div class="p-progtxt">확인 <b>${done}/${items.length}</b> · 양호 ${ok} · <span style="color:var(--red)">지적 ${bad}</span> · 조치완료 ${fixed}</div>`:'';
+  $('pFilt').querySelectorAll('[data-pf]').forEach(b=>b.classList.toggle('on',b.dataset.pf===pFilter));
+  const shown=items.filter(x=>pFilter==='all'||(pFilter==='todo'&&!x.status)||(pFilter==='bad'&&x.status==='지적'));
+  $('pList').innerHTML=!items.length
+    ? `<div class="k-empty" style="margin-top:10px">아직 고른 항목이 없습니다.<br><b>오늘</b> 탭 작업이나 <b>현장톡</b> 작업·이벤트 옆 <b>📌</b>를 누르면 여기 모입니다.<br>또는 아래 <b>＋ 직접 항목</b> / <b>🎤 말로 추가</b>.</div>`
+    : shown.length ? shown.map(pCard).join('') : '<div class="k-empty">해당하는 항목이 없습니다</div>';
+  $('pList').querySelectorAll('.p-item').forEach(pBind);
+  pBadge(today);
+}
+function pCard(x){
+  return `<div class="p-item st-${esc(x.status||'none')}" data-pid="${x.id}">
+    <div class="p-top">
+      <span class="p-src">${esc(P_SRC[x.src]||x.src)}</span>
+      <div class="p-title">${esc(x.title||'(제목 없음)')}</div>
+      ${x.sub?`<div class="p-sub">${esc(x.sub)}</div>`:''}
+    </div>
+    <div class="p-st">${['양호','지적','조치완료'].map(s=>`<button data-st="${s}" class="${x.status===s?'on':''}">${s==='양호'?'✓ 양호':s==='지적'?'⚠ 지적':'🔧 조치완료'}</button>`).join('')}</div>
+    <textarea class="p-memo" placeholder="메모 — 🎤를 누르고 말하면 글씨로 들어갑니다 (자동 저장)">${esc(x.memo||'')}</textarea>
+    <div class="p-tools">
+      <button class="mini-btn p-mic">🎤 말하기</button>
+      <label class="mini-btn p-cam">📷 사진<input type="file" accept="image/*" capture="environment" hidden></label>
+      <span class="p-saved">${x.updated_at&&x.memo?'저장됨 '+esc(x.updated_at.slice(11)):''}</span>
+      <button class="mini-btn p-del" title="순회 체크에서 빼기">빼기</button>
+    </div>
+    <div class="p-photos">${(x.photo_ids||[]).map(id=>`<span class="p-ph" data-ph="${id}"><img alt=""><button class="p-phx" title="사진 삭제">×</button></span>`).join('')}</div>
+  </div>`;
+}
+const pPhotoCache={};
+async function pPhoto(id){ if(!pPhotoCache[id]){ const r=await kApi('patrol-photo?id='+id); pPhotoCache[id]=r.data; } return pPhotoCache[id]; }
+function pBind(el){
+  const id=+el.dataset.pid, it=pAll.find(x=>x.id===id); if(!it) return;
+  const ta=el.querySelector('.p-memo'), saved=el.querySelector('.p-saved');
+  const save=async(patch)=>{
+    saved.textContent='저장 중…';
+    try{ const r=await kApi('patrol-save',{id,...patch}); Object.assign(it,patch,{updated_at:r.at}); saved.textContent='저장됨 '+r.at.slice(11); }
+    catch(e){ saved.textContent='⚠ 저장 실패 — 다시 시도'; toast(kErr(e)); }
+  };
+  let tm=null;
+  ta.addEventListener('input',()=>{ saved.textContent='입력 중…'; clearTimeout(tm); tm=setTimeout(()=>save({memo:ta.value}),700); });
+  ta.addEventListener('blur',()=>{ if(ta.value!==(it.memo||'')){ clearTimeout(tm); save({memo:ta.value}); } });
+  el.querySelectorAll('[data-st]').forEach(b=>b.onclick=async()=>{
+    const s=it.status===b.dataset.st?'':b.dataset.st;
+    await save({status:s}); pRender();
+  });
+  const mic=el.querySelector('.p-mic'); mic.onclick=()=>pVoice(ta,mic);
+  el.querySelector('.p-cam input').onchange=async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    saved.textContent='사진 저장 중…';
+    try{
+      const im=await mShrinkImage(await mFileToDataUrl(f), f.type);
+      const r=await kApi('patrol-photo',{item_id:id,data:im.data});
+      pPhotoCache[r.id]=im.data; (it.photo_ids=it.photo_ids||[]).push(r.id); saved.textContent='📷 사진 저장됨'; pRender();
+    }catch(err){ saved.textContent='사진 저장 실패'; toast(err.message==='too_large'?'사진이 너무 큽니다':kErr(err)); }
+  };
+  el.querySelectorAll('[data-ph]').forEach(ph=>{
+    const pid=+ph.dataset.ph, img=ph.querySelector('img');
+    pPhoto(pid).then(d=>{ if(d) img.src=d; }).catch(()=>{});
+    img.onclick=()=>{ const o=document.createElement('div'); o.className='p-zoom'; o.innerHTML=`<img src="${img.src}">`; o.onclick=()=>o.remove(); document.body.appendChild(o); };
+    ph.querySelector('.p-phx').onclick=async()=>{
+      if(!confirm('이 사진을 삭제할까요?')) return;
+      try{ await kApi('patrol-photo-delete',{id:pid}); it.photo_ids=it.photo_ids.filter(x=>x!==pid); pRender(); }catch(e){ toast(kErr(e)); }
+    };
+  });
+  el.querySelector('.p-del').onclick=async()=>{
+    if((it.memo||it.status||(it.photo_ids||[]).length) && !confirm('상태·메모·사진도 함께 지워집니다. 뺄까요?')) return;
+    try{ await kApi('patrol-delete',{id}); pSet.delete(pKey(it.day,it.src,it.ref)); pAll=pAll.filter(x=>x.id!==id); pRender(); toast('뺐습니다'); }catch(e){ toast(kErr(e)); }
+  };
+}
+async function pAddFree(voice){
+  let title='';
+  if(!voice){ title=(prompt('항목 이름 (예: 3층 BFG 라인 비계, 남측 출입구)')||'').trim(); if(!title) return; }
+  else title=`현장 메모 ${pHHMM()}`;
+  const ref='free-'+Date.now();
+  try{
+    const r=await kApi('patrol-pin',{day:pDay||rToday(),src:'free',ref,title,sub:'',on:true});
+    await pRefresh(); pRender();
+    if(voice){
+      const el=$('pList').querySelector(`[data-pid="${r.id}"]`);
+      if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); const ta=el.querySelector('.p-memo'), mic=el.querySelector('.p-mic');
+        pVoice(ta,mic,async txt=>{ if(txt){ const t=txt.slice(0,30); const it=pAll.find(x=>x.id===r.id); try{ await kApi('patrol-save',{id:r.id,title:t}); if(it) it.title=t; el.querySelector('.p-title').textContent=t; }catch(e){} } }); }
+    }
+  }catch(e){ toast(kErr(e)); }
+}
+function pReportText(){
+  const items=pAll.filter(x=>x.day===pDay);
+  const dt=new Date(pDay+'T00:00:00'), wd=K_WD[dt.getDay()];
+  const cnt=s=>items.filter(x=>x.status===s).length, done=items.filter(x=>x.status).length;
+  const order={'지적':0,'조치완료':1,'':2,'양호':3};
+  const L=[`[순회 체크] ${+pDay.slice(5,7)}/${+pDay.slice(8)}(${wd})`, `확인 ${done}/${items.length} · 양호 ${cnt('양호')} · 지적 ${cnt('지적')} · 조치완료 ${cnt('조치완료')}`, ''];
+  [...items].sort((a,b)=>order[a.status||'']-order[b.status||'']).forEach((x,i)=>{
+    L.push(`${i+1}. [${x.status||'미확인'}] ${x.title}${x.sub?` (${x.sub})`:''}`);
+    (x.memo||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(s=>L.push('   - '+s));
+    if((x.photo_ids||[]).length) L.push(`   📷 사진 ${x.photo_ids.length}장`);
+  });
+  return L.join('\n');
+}
+async function pShare(){
+  if(!pAll.some(x=>x.day===pDay)){ toast('공유할 항목이 없습니다'); return; }
+  const text=pReportText();
+  if(navigator.share){ try{ await navigator.share({text}); return; }catch(e){ if(e.name==='AbortError') return; } }
+  try{ await navigator.clipboard.writeText(text); toast('결과를 복사했습니다 — 카톡 방에 붙여넣으세요'); }
+  catch(e){ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); toast('결과를 복사했습니다 — 카톡 방에 붙여넣으세요'); }
+}
+async function pToMemo(){
+  if(!pAll.some(x=>x.day===pDay)){ toast('저장할 항목이 없습니다'); return; }
+  try{ await mApi('note',{day:pDay,title:`순회 체크 결과 ${pDay.slice(5).replace('-','/')}`,body:pReportText()}); toast('📝 순시메모에 저장했습니다 (사진은 순회 체크에 남아 있음)'); }
+  catch(e){ toast(mErr(e)); }
+}
+$('pAddFree').onclick=()=>pAddFree(false);
+$('pVoiceNew').onclick=()=>pAddFree(true);
+$('pShare').onclick=pShare;
+$('pToMemo').onclick=pToMemo;
+$('pFilt').querySelectorAll('[data-pf]').forEach(b=>b.onclick=()=>{ pFilter=b.dataset.pf; pRender(); });
+document.querySelectorAll('#mSeg [data-mv2]').forEach(b=>b.onclick=()=>pSetMode(b.dataset.mv2));
+// 순시메모 본문에도 🎤
+$('mBodyMic').onclick=()=>pVoice($('mBody'),$('mBodyMic'));
+// 시작 시 📌 상태 불러와 오늘 탭 목록에 반영
+pRefresh().then(()=>{ if(wx) renderTaskList(); }).catch(()=>{});
+
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===b.dataset.pg));
@@ -3061,7 +3331,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   if(b.dataset.pg==='pgRecords') renderRecords();
   if(b.dataset.pg==='pgInfo') renderInfo();
   if(b.dataset.pg==='pgKakao') renderKakao();
-  if(b.dataset.pg==='pgMemo') renderMemo();
+  if(b.dataset.pg==='pgMemo'){ if(pMode==='patrol') pLoad(); else renderMemo(); }
 });
 $('btnSettings').onclick=openSettings;
 $('btnRefresh').onclick=loadAll;
