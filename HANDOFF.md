@@ -357,3 +357,14 @@ const APP = {
 - 결과: `pReportText` → navigator.share(카톡) 또는 복사, 순시메모 노트로 저장.
 - API: `/kakao/patrol`(기간 목록), `patrol-pin`(on/off, 내용 있으면 has_content→확인 후 force), `patrol-save`, `patrol-delete`, `patrol-photo`(GET/POST), `patrol-photo-delete`.
 - 음성 인식은 실기기 미검증(테스트 브라우저 마이크 차단).
+
+## 20. SD 일일작업 표 인식 · Class 조회 · D+ 표기 (v5.15.0, 2026-11-20)
+- `parseSdDaily()`: 탭 있는 붙여넣기에서 '금일 작업'·'명일 작업' 헤더 두 줄의 칸 위치로 범위 추출(병합 셀 대응). 공종·설비(#1000…) 위 행 이어받음.
+  - 금일 → 표 날짜 행(kind='금일', 일정·진도율·장비·공정 표시), 명일 → 다음 날 행(kind='명일', hazard·safety(대책)·manager(주간/야간/철야 관리·안전)).
+  - 인원표(주간/야간/철야 × 업체) → 금일 행에 `sdHead`(합계)·`coHead`(업체). 공사진도 → `sdProg`, 야간·철야 근무자 → `sdNight`(저장만).
+  - 시공사 P-E&C 고정, src='sd', grp=`sd|표날짜` → 같은 표 재업로드 시 그 표 행만 교체(`rowGroup`/`mergeByShift`).
+  - `sdReconcile`: 다음 날 표의 금일 행과 전날 표의 명일 행이 같은 일(같은 날짜·업체·작업명 앞 14자)이면 위험요인·대책·담당자를 이어받고 예정 행은 `merged=true`로 숨김(삭제 안 함 → 재업로드 시 다시 연결).
+  - `kwRisks`가 위험요인 문장(질식·산소결핍·화상·불티·추락·협착·충돌·낙하 등)까지 봄.
+- 오늘 탭: 총 출력인원 = 일반 작업 인원 + SD 인원표 주간 합계(Class 선택 시 해당 업체 합), 요약에 야간·철야·공사진도.
+- Class: `CLASS_NAMES` 1000 고로본체 … 9000 Utility, `taskCls()`(cls 없으면 `guessCls`로 이름 추정). 오늘 탭 Class 칩·Class 순 정렬·배지.
+- D+: `SD_DAY1='2026-11-12'`(D+1), `dPlus()` — 오늘 탭 상단·날짜 칩, 현장톡, 주요 이벤트, 일일 현황, 순회 체크(공유 문구 포함), 순시메모, 작업입력 미리보기.

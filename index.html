@@ -117,6 +117,9 @@ section{margin-top:16px}
 .tr-main{flex:1;min-width:0}
 .tr-task{font-size:.86rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tr-meta{font-size:.68rem;color:var(--steel);margin-top:1px}
+.cls-badge{display:inline-block;font-size:.6rem;font-weight:800;padding:0 5px;border-radius:4px;margin-right:4px;background:#e8eefc;color:#2f4bb0;font-family:var(--num);vertical-align:1px}
+.src-badge.plan{background:#fff1c2;color:#8a6100}
+.dplus{font-size:.62rem;font-weight:800;color:var(--accent,#2f6fed);margin-left:1px}
 .shift-badge{display:inline-block;font-size:.6rem;font-weight:800;padding:0 5px;border-radius:4px;margin-right:4px;background:#fff1c2;color:#8a6100;vertical-align:1px}
 .shift-badge.s-야간{background:#dfe7ff;color:#2f4bb0} .shift-badge.s-철야{background:#2f3a4a;color:#fff}
 .tr-risks{display:flex;gap:3px;flex-wrap:wrap;flex:none}
@@ -449,6 +452,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
   <div id="content" style="display:none">
     <div id="dateChips" class="date-chips"></div>
     <div id="conChips" class="date-chips"></div>
+    <div id="clsChips" class="date-chips"></div>
     <!-- 작업환경 종합 모니터링 -->
     <div class="mon" id="mon">
       <div class="mon-band">
@@ -824,7 +828,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.14.0',
+  version : '5.15.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -847,6 +851,7 @@ let activeCon = contractors[0] || '';
 let openTaskIdx = -1;
 let selectedDate = '';   // '오늘' 화면에서 선택된 작업 날짜 (빈값=전체)
 let selectedCon = '';    // '오늘' 화면에서 선택된 시공사 필터 (빈값=전체)
+let selectedCls = '';    // '오늘' 화면에서 선택된 설비 Class (1000~9000, 빈값=전체)
 
 /* ================= 취약작업자 & 안전Risk유형 ================= */
 const VULN_LABELS=['작업실적3회이하','65세이상','70세이상','입사6개월이하'];
@@ -932,6 +937,8 @@ function looksVuln(v){ return /^\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*\/\s*\d+\s*$/.tes
 function parsePaste(text){
   // (0) 카톡 작업 보고 텍스트(■업체 상세 / [주간·야간·철야 작업 보고]) — 엑셀 표(탭)가 아닐 때
   if(!/\t/.test(text)){ const kw=parseKakaoWork(text); if(kw) return kw; }
+  // (0-1) 'SD 공사 일일작업' 표 (금일작업 + 명일작업 + 인원표)
+  else { const sd=parseSdDaily(text); if(sd) return sd; }
   const logRows=parseTSV(text);
   // (A) 표준 양식: 헤더행에 '시공사'+'작업내용'+'밀폐' 있으면 헤더 기반 파싱
   let hi=-1, cols=null;
@@ -1034,12 +1041,13 @@ function kwRisks(task, equip){
   const s=String(task||'')+' '+String(equip||'');
   const out=[];
   const add=k=>{ if(!out.includes(k)) out.push(k); };
-  if(/밀폐|탱크\s*내부|Bin\s*내부|노내|내부\s*진입|맨홀/i.test(s)) add('밀폐공간');
+  // 작업명·장비 + (SD 표의) 위험요인 문장까지 보고 판단
+  if(/밀폐|탱크\s*내부|Bin\s*내부|노내|내부\s*진입|맨홀|산소\s*결핍|질식|잔류\s*가스|일산화/i.test(s)) add('밀폐공간');
   if(/활\s*가스|BFG|COG|LDG|가스\s*배관|맹판/i.test(s)) add('15m이내 활가스 배관');
-  if(/용접|절단|용단|화기|Jet\s*Lance|산소|가우징|그라인더|발파/i.test(s)) add('화재/폭발');
-  if(/철거|해체|해선|열반|압쇄/.test(s)) add('철거/낙하');
-  if(/비계|고소|스카이|Deck|상부|개구|난간|Top/i.test(s)) add('고소작업');
-  if(/크레인|크롤러|인양|양중|중량물|하역|기자재|Crawler/i.test(s)) add('중량물협착');
+  if(/용접|절단|용단|화기|Jet\s*Lance|산소|가우징|그라인더|발파|화상|불티|화재|발화|인화/i.test(s)) add('화재/폭발');
+  if(/철거|해체|해선|열반|압쇄|낙하|맞음|붕락/.test(s)) add('철거/낙하');
+  if(/비계|고소|스카이|Deck|상부|개구|난간|Top|추락|떨어짐|안전대|생명줄/i.test(s)) add('고소작업');
+  if(/크레인|크롤러|인양|양중|중량물|하역|기자재|Crawler|C\/C|협착|충돌|끼임/i.test(s)) add('중량물협착');
   return RISK_ORDER.filter(k=>out.includes(k));
 }
 function parseKakaoWork(raw){
@@ -1134,10 +1142,134 @@ function parseKakaoWork(raw){
   return out.length?out:null;
 }
 
+/* ===== SD(Shut Down) 공사 공통: D+ 표기 · 설비 Class ===== */
+const SD_DAY1='2026-11-12'; // 이 날이 D+1
+function dPlus(d){
+  const s=String(d||'').replace(/\./g,'-').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
+  const n=Math.round((Date.parse(s+'T00:00:00Z')-Date.parse(SD_DAY1+'T00:00:00Z'))/86400e3)+1;
+  return n>=1?`D+${n}`:`D${n-1}`;
+}
+const CLASS_NAMES={'1000':'고로본체','2000':'노정설비','3000':'주상','4000':'열풍로','5000':'청정설비','6000':'원료수송설비','7000':'전기','8000':'토목·건축','9000':'Utility'};
+const clsLabel=c=>c?`${c} ${CLASS_NAMES[c]||''}`.trim():'';
+function taskCls(r){ return r.cls || guessCls(`${r.project||''} ${r.task||''}`); }
+// Class가 없는 작업(카톡 보고 등)은 프로젝트·작업명으로 추정
+function guessCls(s){
+  s=String(s||'');
+  const m=s.match(/#\s*([1-9])\d{3}\b/); if(m) return m[1]+'000';
+  const map=[[/원료|PCI|Coke|코크스|소결/i,'6000'],[/열풍|Stack|COG\s*Booster/i,'4000'],[/노정|Top\s*Bunker|Offtake|Uptake/i,'2000'],[/주상|출선|탕도/,'3000'],
+    [/청정|Scrubber|집진|Dust\s*catcher/i,'5000'],[/전기|MCR|Panel|Cable|전장품/i,'7000'],[/토목|건축|기초|콘크리트/,'8000'],[/Utility|펌프|Pump|수처리|Cooling\s*Tower/i,'9000'],[/본체|노체|노저|철피|Stave|풍구|환상관/i,'1000']];
+  for(const [re,c] of map) if(re.test(s)) return c;
+  return '';
+}
+
+/* ===== 'SD 공사 일일작업' 엑셀 표 (금일작업 + 명일작업 + 인원표) =====
+ * 헤더 두 줄(공종·설비·금일작업·업체명·일정·진도율·공정·명일작업·업체명·위험요인·대책·담당자 / 작업내용·장비사용·주간·20시·22시·철야·관리·안전)의
+ * 위치로 칸을 찾고, 그 사이 칸을 묶어 읽는다(병합 셀 대응). 공종·설비는 위에서 이어받음.
+ * 금일작업 → 그날(D) 작업, 명일작업 → 다음날(D+1) 예정 작업(위험요인·대책·담당자 포함). */
+function parseSdDaily(text){
+  if(!/금\s*일\s*작\s*업/.test(text) || !/명\s*일\s*작\s*업/.test(text)) return null;
+  const R=parseTSV(text).map(r=>r.map(c=>String(c||'').replace(/\r/g,'').trim()));
+  const pad=n=>String(n).padStart(2,'0');
+  // 날짜·진도
+  let date='', overall=null;
+  for(const r of R.slice(0,8)){
+    const j=r.join(' ');
+    const m=j.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/)||j.match(/(\d{4})[.\-/]\s*(\d{1,2})[.\-/]\s*(\d{1,2})/);
+    if(m&&!date) date=`${m[1]}.${pad(m[2])}.${pad(m[3])}`;
+    const p=j.match(/공사\s*진도[^=]*=\s*([\d.]+)\s*%\s*\/\s*([\d.]+)\s*%/); if(p) overall={actual:+p[1],plan:+p[2]};
+  }
+  const hi=R.findIndex(r=>r.some(c=>/금\s*일\s*작\s*업/.test(c))&&r.some(c=>/명\s*일\s*작\s*업/.test(c)));
+  if(hi<0||!date) return null;
+  const h1=R[hi], h2=R[hi+1]||[];
+  const find=(row,re,from=0)=>{ for(let i=from;i<row.length;i++) if(re.test(row[i])) return i; return -1; };
+  const C={};
+  C.gong=find(h1,/^공\s*종$/); C.sb=find(h1,/^설\s*비$/);
+  C.t1=find(h1,/금\s*일\s*작\s*업/); C.t2=find(h1,/명\s*일\s*작\s*업/);
+  C.co1=find(h1,/업\s*체\s*명/); C.co2=find(h1,/업\s*체\s*명/,C.t2);
+  C.sched=find(h1,/일\s*정/); C.prog=find(h1,/진\s*도\s*율/); C.proc=find(h1,/^공\s*정$/);
+  C.hz=find(h1,/위험\s*요인$/); C.ms=find(h1,/대\s*책/);
+  C.eq1=find(h2,/장\s*비/); C.eq2=find(h2,/장\s*비/,C.t2);
+  const t2b=find(h2,/작업\s*내용/,C.t2); if(t2b>=0) C.t2=t2b;
+  const t1b=find(h2,/작업\s*내용/,C.t1); if(t1b>=0&&t1b<C.t2) C.t1=t1b;
+  const marks=[['주간',find(h2,/^주간$/)],['20시',find(h2,/^20\s*시$/)],['22시',find(h2,/^22\s*시$/)],['철야',find(h2,/^철야$/)]].filter(x=>x[1]>=0);
+  const mgr=[]; h1.forEach((c,i)=>{ const m=c.match(/담당자\s*\((주간|야간|철야)\)/); if(m) mgr.push([m[1],i]); });
+  // 칸 범위: 각 시작 위치부터 다음 시작 위치 전까지
+  const starts=[...new Set([C.gong,C.sb,C.t1,C.eq1,C.co1,C.sched,C.prog,...marks.map(x=>x[1]),C.t2,C.eq2,C.co2,C.hz,C.ms,...mgr.map(x=>x[1])].filter(x=>x>=0))].sort((a,b)=>a-b);
+  const get=(row,start)=>{ if(start<0) return ''; const k=starts.indexOf(start), end=k>=0&&k<starts.length-1?starts[k+1]:start+1;
+    return row.slice(start,end).filter(Boolean).join(' ').trim(); };
+  const clean=s=>String(s||'').replace(/^-\s*/,'').replace(/\s{2,}/g,' ').trim();
+  const dash=s=>/^-?$/.test(String(s||'').trim())?'':String(s).trim();
+  const d0=new Date(date.replace(/\./g,'-')+'T00:00:00Z'), d1=new Date(d0.getTime()+86400e3);
+  const date2=`${d1.getUTCFullYear()}.${pad(d1.getUTCMonth()+1)}.${pad(d1.getUTCDate())}`;
+  const grp=`sd|${date}`;
+  const rows=[]; let gong='', sb='', head=null, night={};
+  for(let i=hi+2;i<R.length;i++){
+    const r=R[i]; if(!r.some(Boolean)) continue;
+    const j=r.join(' ');
+    // 인원표
+    if(r.some(c=>/^업\s*체\s*명$/.test(c)) && /인\s*원/.test(j)){
+      const ni=r.findIndex(c=>/^업\s*체\s*명$/.test(c)); const names={}; r.forEach((c,k)=>{ if(k>ni&&c) names[k]=c; });
+      head={names,by:{}};
+      for(let k=i+1;k<Math.min(i+5,R.length);k++){ const rr=R[k], lab=(rr.find(c=>/^(주|야|철)\s*(간|야)$/.test(c.replace(/\s+/g,' ')))||'').replace(/\s+/g,'');
+        if(!lab) continue; head.by[lab]={}; Object.keys(names).forEach(x=>{ const v=parseInt(String(rr[x]||'').replace(/[^\d]/g,''),10); if(!isNaN(v)) head.by[lab][names[x]]=v; }); }
+      continue;
+    }
+    if(/근무자/.test(j)){ const m=j.match(/(야간근무자\s*\(~?\d+:\d+\)|철야근무자)\s*(.*)$/); if(m&&m[2].trim()) night[m[1].replace(/\s+/g,'')]=m[2].trim(); continue; }
+    if(head) continue;
+    const g=get(r,C.gong); if(g) gong=g.replace(/\s+/g,'');
+    const s=get(r,C.sb); const sm=s.match(/#?\s*(\d{4})/); if(sm) sb=sm[1];
+    const t1=clean(get(r,C.t1)), t2=clean(get(r,C.t2));
+    if(!t1&&!t2) continue;
+    const base={project:'',contractor:'P-E&C',headcount:'',headcountN:0,vulnerable:'0/0/0/0',vuln:parseVuln('0/0/0/0'),cls:sb,trade:gong,src:'sd',grp,sdDate:date};
+    if(t1){
+      const mk=marks.filter(([,k])=>r[k]).map(([lab])=>lab).join('·');
+      const equip=dash(get(r,C.eq1));
+      const risks=kwRisks(t1,equip);
+      rows.push({...base,date,kind:'금일',subcon:get(r,C.co1),task:t1,equip,period:get(r,C.sched),progress:get(r,C.prog).replace(/\s+/g,''),marks:mk,
+        risk:risks.join(', '),risks,manager:'',safety:'',hazard:''});
+    }
+    if(t2){
+      const equip=dash(get(r,C.eq2)), hazard=get(r,C.hz), safety=get(r,C.ms);
+      const who=mgr.map(([lab,k])=>{ const a=r[k]||'', b=r[k+1]||''; return a||b?`${lab} 관리 ${a||'-'}·안전 ${b||'-'}`:''; }).filter(Boolean).join(' / ');
+      const risks=kwRisks(t2+' '+hazard,equip);
+      rows.push({...base,date:date2,kind:'명일',subcon:get(r,C.co2)||get(r,C.co1),task:t2,equip,period:'',progress:'',marks:'',
+        risk:risks.join(', '),risks,manager:who,safety,hazard});
+    }
+  }
+  // 업체별 인원(주간·야간·철야)을 그날(금일) 작업에 붙임 — 같은 업체 작업이 여러 개여도 합계는 한 번만
+  if(head){
+    const tot={}; ['주간','야간','철야'].forEach(s=>{ const by=head.by[s]||{}; tot[s]=by['합계']!=null?by['합계']:Object.entries(by).filter(([k])=>k!=='합계').reduce((a,[,v])=>a+v,0); });
+    const norm=s=>String(s||'').replace(/\s+/g,'').replace(/산업|건설|기전|공작|㈜|\(주\)/g,'');
+    rows.forEach(r=>{ if(r.kind!=='금일') return; r.sdHead=tot;
+      const co={}; ['주간','야간','철야'].forEach(s=>{ const by=head.by[s]||{}; const k=Object.keys(by).find(n=>n===r.subcon||norm(n)===norm(r.subcon)); if(k&&by[k]) co[s]=by[k]; });
+      if(Object.keys(co).length) r.coHead=co; });
+  }
+  rows.forEach(r=>{ if(Object.keys(night).length) r.sdNight=night; if(overall) r.sdProg=overall; });
+  return rows.length?rows:null;
+}
+// 그룹 키: SD 표는 '같은 표(작성일)' 단위, 카톡 보고는 날짜·시공사·근무조 단위로 교체
+function rowGroup(r){ return r.grp || (r.shift?`${r.date||''}|${r.contractor||''}|${r.shift}`:''); }
+// 전날 표의 '명일 예정' 작업과 오늘 표의 '금일' 작업이 같은 일이면 하나로 합침(위험요인·대책·담당자는 예정 쪽 것을 이어받음)
+function sdReconcile(list){
+  const nk=s=>String(s||'').replace(/[^0-9A-Za-z가-힣]/g,'').slice(0,14);
+  // 예정 행은 지우지 않고 merged 표시만(표를 다시 올려도 위험요인·대책을 다시 이어받을 수 있게)
+  list.forEach(p=>{ if(p.kind==='명일') p.merged=false; });
+  list.forEach(p=>{
+    if(p.kind!=='명일') return;
+    const a=list.find(x=>x.kind==='금일'&&x.date===p.date&&x.subcon===p.subcon&&nk(x.task)===nk(p.task));
+    if(!a) return;
+    if(!a.hazard){ a.hazard=p.hazard; a.safety=p.safety; a.manager=p.manager; a.risks=RISK_ORDER.filter(k=>(a.risks||[]).includes(k)||(p.risks||[]).includes(k)); a.risk=a.risks.join(', '); }
+    p.merged=true;
+  });
+  return list;
+}
+
 /* 전체 작업 목록 (모든 시공사 합침) */
 // 작업 고유 id 생성 (공용/개인 구분 + 날짜+시공사+하도사+작업내용 해시)
 function taskId(r, src){
-  const base=`${src}|${r.date||''}|${r.contractor||''}|${r.subcon||''}|${(r.task||'').slice(0,20)}`+(r.shift?`|${r.shift}`:'');
+  const base=`${src}|${r.date||''}|${r.contractor||''}|${r.subcon||''}|${(r.task||'').slice(0,20)}`+(r.shift?`|${r.shift}`:'')
+    +(r.src==='sd'?`|${r.kind}|${(r.task||'').slice(20,80)}|${r.cls||''}`:''); // SD 표: 예정/금일 구분 + 앞부분이 같은 작업 구분
   let h=0; for(let i=0;i<base.length;i++){ h=(h*31+base.charCodeAt(i))|0; }
   return src+'_'+(h>>>0).toString(36);
 }
@@ -1149,6 +1281,7 @@ function allTasks(dateFilter, conFilter){
   const dates = dateFilter ? [dateFilter] : Object.keys(sharedData.dates||{});
   for(const d of dates){
     (sharedData.dates?.[d]||[]).forEach(r=>{
+      if(r.merged) return; // 다음 날 표의 금일 작업에 합쳐진 '명일 예정' 행
       if(conFilter && r.contractor!==conFilter) return;
       const id=taskId(r,'pub');
       if(overlay.hidden[id]) return; // 개인이 숨긴 공용 작업
@@ -1159,6 +1292,7 @@ function allTasks(dateFilter, conFilter){
   for(const con of contractors){
     if(conFilter && con!==conFilter) continue;
     (inputData[con]||[]).forEach(r=>{
+      if(r.merged) return;
       if(dateFilter && r.date && r.date!==dateFilter) return;
       const id=taskId(r,'my');
       if(overlay.hidden[id]) return;
@@ -1201,9 +1335,15 @@ async function pushSharedTasks(byDate, pass){
   if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
   return data;
 }
-function aggregate(dateFilter, conFilter){
-  const tasks=allTasks(dateFilter, conFilter);
-  const totalHead=tasks.reduce((a,r)=>a+(r.headcountN||0),0);
+function aggregate(dateFilter, conFilter, clsFilter){
+  const tasks=allTasks(dateFilter, conFilter).filter(r=>!clsFilter||taskCls(r)===clsFilter);
+  // SD 표 작업은 작업별 인원이 없고 업체별 인원표만 있음 → 인원표 주간 합계를 날짜별로 한 번만(Class로 거르면 업체별 합)
+  let totalHead=tasks.reduce((a,r)=>a+(r.headcountN||0),0);
+  const sdDay={};
+  tasks.forEach(r=>{ if(r.kind!=='금일') return;
+    const k=r.date||''; sdDay[k]=sdDay[k]||{tot:r.sdHead&&r.sdHead.주간||0,co:{}};
+    if(r.coHead&&r.coHead.주간) sdDay[k].co[r.subcon]=r.coHead.주간; });
+  Object.values(sdDay).forEach(x=>{ totalHead+= clsFilter ? Object.values(x.co).reduce((a,b)=>a+b,0) : (x.tot||Object.values(x.co).reduce((a,b)=>a+b,0)); });
   const vulnSum={}; VULN_LABELS.forEach(k=>vulnSum[k]=0);
   tasks.forEach(r=>VULN_LABELS.forEach(k=>vulnSum[k]+=(r.vuln?.[k]||0)));
   const vulnTotal=VULN_LABELS.reduce((a,k)=>a+vulnSum[k],0);
@@ -1335,7 +1475,7 @@ function pmLabel(pm25){
 function renderToday(){
   if(!wx) return;
   $('content').style.display='block'; $('errBox').style.display='none';
-  $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()}${wx.demo?' · 데모':''} · v${APP.version}`;
+  $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()} ${dPlus(todayDot())}${wx.demo?' · 데모':''} · v${APP.version}`;
 
   // 날짜 칩: 입력된 작업의 날짜들
   const dates=availableDates();
@@ -1356,7 +1496,7 @@ function renderToday(){
       const isToday=d===todayDot();
       const el=document.createElement('button');
       el.className='dchip'+(d===selectedDate?' on':'');
-      el.innerHTML=`${mm}${isToday?' (오늘)':''}<span class="dc-cnt">${cnt}</span>`;
+      el.innerHTML=`${mm}${isToday?' (오늘)':''} <small class="dplus">${dPlus(d)}</small><span class="dc-cnt">${cnt}</span>`;
       el.onclick=()=>{ selectedDate=d; openTaskIdx=-1; renderToday(); };
       dc.appendChild(el);
     });
@@ -1380,7 +1520,19 @@ function renderToday(){
     });
   }
 
-  const agg=aggregate(selectedDate, selectedCon);
+  // 설비 Class 칩 (1000 고로본체 … 9000 Utility)
+  const clsCnt={}; allTasks(selectedDate, selectedCon).forEach(t=>{ const c=taskCls(t); if(c) clsCnt[c]=(clsCnt[c]||0)+1; });
+  const clsKeys=Object.keys(clsCnt).sort();
+  if(selectedCls && !clsCnt[selectedCls]) selectedCls='';
+  const kc=$('clsChips');
+  if(!clsKeys.length){ kc.style.display='none'; selectedCls=''; }
+  else{
+    kc.style.display='flex';
+    kc.innerHTML=`<button class="dchip${!selectedCls?' on':''}" data-cls="">Class 전체</button>`+
+      clsKeys.map(c=>`<button class="dchip${c===selectedCls?' on':''}" data-cls="${c}">${c} ${esc(CLASS_NAMES[c]||'')}<span class="dc-cnt">${clsCnt[c]}</span></button>`).join('');
+    kc.querySelectorAll('.dchip').forEach(b=>{ b.onclick=()=>{ selectedCls=b.dataset.cls; openTaskIdx=-1; renderToday(); }; });
+  }
+  const agg=aggregate(selectedDate, selectedCon, selectedCls);
   const wxFired=firedWxRules(wx);
   const [gLabel,gCls]=overallGrade(wxFired,agg);
 
@@ -1389,7 +1541,9 @@ function renderToday(){
   $('monGrade').textContent=gLabel;
   const conLine = agg.cons.length? agg.cons.join('·') : '작업 미입력';
   const riskLine = agg.risks.length? ' · 위험작업 '+agg.risks.map(r=>RISK_TYPES[r].short).join('/') : '';
-  $('monSummary').textContent = `${conLine}${riskLine}`;
+  const sdT=allTasks(selectedDate).find(t=>t.sdHead&&t.kind==='금일');
+  const sdLine=sdT?` · 인원표 주간 ${sdT.sdHead.주간}·야간 ${sdT.sdHead.야간||0}·철야 ${sdT.sdHead.철야||0}${sdT.sdProg?` · 공사진도 ${sdT.sdProg.actual}%/${sdT.sdProg.plan}%`:''}`:'';
+  $('monSummary').textContent = `${conLine}${riskLine}${sdLine}`;
 
   // 인력 집계
   $('mpHead').textContent=agg.totalHead||'0';
@@ -1447,7 +1601,7 @@ async function renderSiteBox(){
   if(!cur && !W.length && !ev.length && !prevOpen){ $('siteSec').style.display='none'; return; }
   $('siteSec').style.display='';
   const exact=cur&&cur.day===day;
-  $('siteLabel').textContent=cur?(exact?`${day.slice(5).replace('-','/')} 일일 현황 · 현장톡`:`최근 일일 현황 ${cur.day.slice(5).replace('-','/')} 기준 · 현장톡`):'현장톡';
+  $('siteLabel').textContent=cur?(exact?`${day.slice(5).replace('-','/')} ${dPlus(day)} 일일 현황 · 현장톡`:`최근 일일 현황 ${cur.day.slice(5).replace('-','/')} 기준 · 현장톡`):'현장톡';
   let h='';
   if(cur){
     const D=cur.data, P=prev&&prev.data;
@@ -1492,8 +1646,10 @@ function setMw(id,v,cls){const e=$(id);e.className='mw '+cls;e.querySelector('.v
 
 /* 작업 목록 (누르면 유해위험) */
 function renderTaskList(){
-  const list=$('taskList'); const tasks=allTasks(selectedDate, selectedCon);
-  const filterTag = selectedCon? ` · ${shortCon(selectedCon)}만 보는 중`:'';
+  const list=$('taskList');
+  const tasks=allTasks(selectedDate, selectedCon).filter(t=>!selectedCls||taskCls(t)===selectedCls)
+    .map((t,i)=>[t,i]).sort((a,b)=>(taskCls(a[0])||'9999').localeCompare(taskCls(b[0])||'9999')||a[1]-b[1]).map(x=>x[0]); // Class 순서
+  const filterTag = (selectedCon? ` · ${shortCon(selectedCon)}만 보는 중`:'')+(selectedCls?` · ${clsLabel(selectedCls)}`:'');
   if(!tasks.length){
     list.innerHTML=`<div class="empty"><b>표시할 작업이 없습니다</b>관리자가 공유한 작업이 여기 표시됩니다. 직접 추가하려면 '작업입력' 탭을 이용하세요.</div>`;
     $('taskCountLabel').textContent='작업 없음'+filterTag;
@@ -1511,8 +1667,8 @@ function renderTaskList(){
       <div class="taskrow-head">
         <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
         <div class="tr-main">
-          <div class="tr-task">${srcBadge}${esc(firstTaskLine(t.task))}</div>
-          <div class="tr-meta">${t.shift?`<span class="shift-badge s-${esc(t.shift)}">${esc(t.shift)}</span>`:''}${esc(t.subcon||'-')} · ${t.headcountN}명${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
+          <div class="tr-task">${srcBadge}${t.kind==='명일'?'<span class="src-badge plan">예정</span>':''}${esc(firstTaskLine(t.task))}</div>
+          <div class="tr-meta">${taskCls(t)?`<span class="cls-badge">${taskCls(t)}</span>`:''}${t.shift?`<span class="shift-badge s-${esc(t.shift)}">${esc(t.shift)}</span>`:''}${esc(t.subcon||'-')}${t.src==='sd'?(t.progress?` · ${esc(t.progress)}`:'')+(t.period?` · ${esc(t.period)}`:''):` · ${t.headcountN}명`}${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager&&t.src!=='sd'?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
         </div>
         <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
         ${pinBtn(dotToDash(t.date||todayDot()),'task',t._id,firstTaskLine(t.task),[t.shift,t.contractor,t.subcon,t.headcountN?t.headcountN+'명':''].filter(Boolean).join(' · '))}
@@ -1572,15 +1728,17 @@ function renderHazard(t){
   const vparts=[];
   if(t.vuln){ VULN_LABELS.forEach((k,i)=>{ if(t.vuln[k]) vparts.push(`${VULN_SHORT[i]} ${t.vuln[k]}`); }); }
   manpower=`<div class="hz-block"><div class="hz-label">인력</div>
-    <div class="mp-detail">${t.shift?`<b>${esc(t.shift)}</b>${t.time?` ${esc(t.time)}`:''}<br>`:''}출력 <b>${t.headcountN}명</b>${t.crew?` (${esc(t.crew)})`:''}${vparts.length?` · 취약작업자 ${vparts.join(', ')}`:' · 취약작업자 없음'}${t.trades?`<br>직종: ${esc(t.trades)}`:''}${t.equip?`<br>장비: ${esc(t.equip)}`:''}${t.manager?`<br>${/^감리/.test(t.manager)?'':'현장책임: '}${esc(t.manager)}`:''}</div></div>`;
+    <div class="mp-detail">${t.src==='sd'?`${taskCls(t)?`<b>${esc(clsLabel(taskCls(t)))}</b> · `:''}${esc(t.trade||'')}${t.kind==='명일'?` · <b>명일 예정 작업</b> (${esc(String(t.sdDate||'').slice(5))} 표)`:''}${t.period?`<br>일정 ${esc(t.period)}`:''}${t.progress?` · 진도 <b>${esc(t.progress)}</b>`:''}${t.marks?` · 공정 ${esc(t.marks)}`:''}<br>`:''}${t.shift?`<b>${esc(t.shift)}</b>${t.time?` ${esc(t.time)}`:''}<br>`:''}${t.coHead?`${esc(t.subcon)} 인원 ${['주간','야간','철야'].filter(s=>t.coHead[s]).map(s=>`${s} <b>${t.coHead[s]}</b>`).join(' · ')}`:(t.src==='sd'?'인원은 당일 표의 인원표 기준':`출력 <b>${t.headcountN}명</b>`)}${t.crew?` (${esc(t.crew)})`:''}${vparts.length?` · 취약작업자 ${vparts.join(', ')}`:' · 취약작업자 없음'}${t.trades?`<br>직종: ${esc(t.trades)}`:''}${t.equip?`<br>장비: ${esc(t.equip)}`:''}${t.manager?`<br>${/^감리/.test(t.manager)?'':t.src==='sd'?'담당: ':'현장책임: '}${esc(t.manager)}`:''}</div></div>`;
   // 작업 상세: 여러 줄 작업내용 + 기간
   let head='';
   const parts=(t.task||'').split(/\s*-\s+/).map(s=>s.trim()).filter(Boolean);
   if(parts.length>1){
-    head=`<div class="hz-block"><div class="hz-label">작업내용 (${parts.length}건)</div><ul class="hz-acts">${parts.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>${t.period?`<div class="hz-basis">기간: ${esc(t.period)}</div>`:''}</div>`;
-  }else if(t.period){
+    head=`<div class="hz-block"><div class="hz-label">작업내용 (${parts.length}건)</div><ul class="hz-acts">${parts.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>${t.period&&t.src!=='sd'?`<div class="hz-basis">기간: ${esc(t.period)}</div>`:''}</div>`;
+  }else if(t.period&&t.src!=='sd'){
     head=`<div class="hz-block"><div class="hz-basis">기간: ${esc(t.period)}</div></div>`;
   }
+  // SD 표의 '명일 예정 작업 위험요인' 원문
+  if(t.hazard) head+=`<div class="hz-block"><div class="hz-label">위험요인 (작업 표)</div><div class="hz-hazard">⚠ ${esc(t.hazard)}</div></div>`;
   if(!t.risks||!t.risks.length){
     let s=manpower+head+`<div class="hz-block"><div class="hz-label">유해·위험요인</div><div class="tr-meta">지정된 안전Risk유형이 없습니다.</div></div>`;
     if(t.safety) s+=renderSafetyChecks(t);
@@ -1603,7 +1761,7 @@ function renderHazard(t){
 /* 날씨 조치사항 (연관 표기) */
 // 안전조치를 개별 항목으로 쪼개 확인 체크박스 제공 (체크는 개인 오버레이에 저장)
 function renderSafetyChecks(t){
-  const items=(t.safety||'').split(/\s*-\s+|\n/).map(s=>s.trim()).filter(Boolean);
+  const items=(t.safety||'').split(/\s*-\s+|\n|\s+(?=\d+\)\s)/).map(s=>s.trim()).filter(Boolean);
   if(!items.length) return '';
   const rows=items.map((it,idx)=>{
     const key='s'+idx; const on=(t._checked&&t._checked[key])?'checked':'';
@@ -1688,7 +1846,7 @@ function renderSavedPreview(){
   // 공용/개인 모두 표시
   const all=allTasks(null);
   if(!all.length){ box.innerHTML=`<div class="pp-row" style="color:var(--steel)">표시할 작업이 없습니다. 관리자 공유를 받거나 위에서 붙여넣어 추가하세요.</div>`; return; }
-  box.innerHTML=all.map(r=>`<div class="pp-row"><span>${r._src==='my'?'<span class="src-badge my">내</span>':''}${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'-'}</span></div>`).join('');
+  box.innerHTML=all.map(r=>`<div class="pp-row"><span>${r._src==='my'?'<span class="src-badge my">내</span>':''}${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))} <small class="dplus">${dPlus(r.date)}</small></b> `:''}${r.kind==='명일'?'<span class="src-badge plan">예정</span>':''}${taskCls(r)?`<span class="cls-badge">${taskCls(r)}</span>`:''}${esc(r.contractor||'기타')} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.src==='sd'?esc(r.progress||'예정'):r.headcountN+'명'}</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'-'}</span></div>`).join('');
 }
 function rowToLine(r){
   return [r.project,r.contractor,r.subcon,r.headcount,r.vulnerable,r.task,r.risk,r.manager,r.safety].join('\t');
@@ -1701,10 +1859,10 @@ function currentRows(){
   return rows.map(r=>r.contractor?r:{...r,contractor:con});
 }
 // 근무조(주간·야간·철야)가 붙은 카톡 보고는 같은 날짜·시공사·근무조 묶음만 교체(수정본 재업로드 대응), 나머지는 유지
-function shiftKey(r){ return `${r.date||''}|${r.contractor||''}|${r.shift||''}`; }
+// SD 표(같은 작성일 표), 카톡 보고(날짜·시공사·근무조) 단위로 교체 — rowGroup 참고
 function mergeByShift(oldRows, newRows){
-  const keys=new Set(newRows.filter(r=>r.shift).map(shiftKey));
-  return (oldRows||[]).filter(r=>!(r.shift&&keys.has(shiftKey(r)))).concat(newRows);
+  const keys=new Set(newRows.map(rowGroup).filter(Boolean));
+  return sdReconcile((oldRows||[]).filter(r=>!keys.has(rowGroup(r))).concat(newRows));
 }
 function renderParsedRows(rows,label){
   const pc=$('parsedCount'), pv=$('parsedPreview');
@@ -1713,13 +1871,18 @@ function renderParsedRows(rows,label){
   pc.className='parsed-count';
   const shifts=[...new Set(rows.map(r=>r.shift).filter(Boolean))];
   pc.textContent=`${label?label+' · ':''}${rows.length}개 작업 인식됨 · 시공사 ${cons.length}곳${dates.length>1?` · ${dates.length}개 날짜`:''}${shifts.length?` · 카톡 보고 ${shifts.join('·')} — 같은 날짜·시공사·근무조는 새 내용으로 교체`:''}`;
+  if(rows[0]&&rows[0].src==='sd'){
+    const r0=rows[0], a=rows.filter(r=>r.kind==='금일'), b=rows.filter(r=>r.kind==='명일');
+    const hd=(rows.find(r=>r.sdHead)||{}).sdHead;
+    pc.textContent=`📋 SD 일일작업 표 · ${r0.sdDate} ${dPlus(r0.sdDate)}${r0.sdProg?` · 공사진도 ${r0.sdProg.actual}%/${r0.sdProg.plan}%`:''} — 금일 작업 ${a.length}건(${a[0]?a[0].date.slice(5):''}) · 명일 예정 ${b.length}건(${b[0]?b[0].date.slice(5):''}, 위험요인·대책 포함)${hd?` · 인원 주간 ${hd.주간}·야간 ${hd.야간}·철야 ${hd.철야}`:''} · 같은 날짜 표를 다시 올리면 새 내용으로 교체`;
+  }
   const noCon=rows.some(r=>r.src==='kakao'&&!r.contractor);
   $('kwConBox').style.display=noCon?'block':'none';
   if(noCon){
     $('kwConList').innerHTML=contractors.map(c=>`<option value="${esc(c)}">`).join('');
     if(!$('kwCon').value) $('kwCon').value=loadJSON(LS_KWCON,'')||contractors.find(c=>/이앤씨|E&C/i.test(c))||'';
   }
-  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))}</b> `:''}${r.shift?`<span class="shift-badge s-${esc(r.shift)}">${esc(r.shift)}</span>`:''}${esc(r.contractor||(r.src==='kakao'?($('kwCon').value||'시공사?'):'기타'))} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.headcountN}명</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'분류없음'}</span></div>`).join('');
+  pv.innerHTML=rows.map(r=>`<div class="pp-row"><span>${r.date?`<b style="color:var(--steel)">${esc(r.date.slice(5))} <small class="dplus">${dPlus(r.date)}</small></b> `:''}${r.kind==='명일'?'<span class="src-badge plan">예정</span>':''}${taskCls(r)?`<span class="cls-badge">${taskCls(r)}</span>`:''}${r.shift?`<span class="shift-badge s-${esc(r.shift)}">${esc(r.shift)}</span>`:''}${esc(r.contractor||(r.src==='kakao'?($('kwCon').value||'시공사?'):'기타'))} · ${esc(r.subcon||'-')} · ${esc(firstTaskLine(r.task))} · ${r.src==='sd'?esc(r.progress||'예정'):r.headcountN+'명'}</span><span class="pp-risk">${(r.risks||[]).map(x=>RISK_TYPES[x]?RISK_TYPES[x].short:x).join('/')||'분류없음'}</span></div>`).join('');
 }
 function updatePreview(){
   aiParsedRows=null; // 원문이 바뀌면 이전 AI 인식 결과는 버림
@@ -1809,7 +1972,7 @@ function saveInput(){
   Object.keys(byCon).forEach(con=>{ if(!contractors.includes(con)) contractors.push(con); });
   saveJSON(LS_CONS,contractors);
   // 카톡 보고(근무조 있음)는 같은 날짜·근무조만 교체, 엑셀 표는 기존처럼 시공사 단위 교체
-  Object.keys(byCon).forEach(con=>{ inputData[con]= byCon[con].some(r=>r.shift) ? mergeByShift(inputData[con], byCon[con]) : byCon[con]; });
+  Object.keys(byCon).forEach(con=>{ inputData[con]= byCon[con].some(r=>rowGroup(r)) ? mergeByShift(inputData[con], byCon[con]) : byCon[con]; });
   saveJSON(LS_INPUT,inputData);
   const summary=Object.entries(byCon).map(([c,a])=>`${c} ${a.length}`).join(', ');
   toast(`내 화면에 추가됨: ${summary}`);
@@ -1828,7 +1991,7 @@ async function pushShared(){
   const byDate={};
   rows.forEach(r=>{ const d=r.date||todayDot(); (byDate[d]=byDate[d]||[]).push(r); });
   try{ await fetchSharedTasks(); }catch(e){}
-  Object.keys(byDate).forEach(d=>{ if(byDate[d].some(r=>r.shift)) byDate[d]=mergeByShift((sharedData.dates||{})[d], byDate[d]); });
+  Object.keys(byDate).forEach(d=>{ if(byDate[d].some(r=>rowGroup(r))) byDate[d]=mergeByShift((sharedData.dates||{})[d], byDate[d]); });
   const btn=$('btnPushShared'); const old=btn.textContent; btn.textContent='업로드 중…'; btn.disabled=true;
   try{
     const res=await pushSharedTasks(byDate, pass);
@@ -2175,7 +2338,7 @@ async function renderKakao(){
     if(!days.includes(kDay)) days.push(kDay);
     days.sort().reverse();
     const cnt=Object.fromEntries(d.days.map(x=>[x.day,x.n]));
-    $('kDayChips').innerHTML=days.slice(0,30).map(dy=>`<button class="dchip ${dy===kDay?'on':''}" data-day="${dy}">${dy===d.today?'오늘':dy.slice(5).replace('-','/')}<span class="dc-cnt">${cnt[dy]||0}</span></button>`).join('');
+    $('kDayChips').innerHTML=days.slice(0,30).map(dy=>`<button class="dchip ${dy===kDay?'on':''}" data-day="${dy}">${dy===d.today?'오늘':dy.slice(5).replace('-','/')} <small class="dplus">${dPlus(dy)}</small><span class="dc-cnt">${cnt[dy]||0}</span></button>`).join('');
     $('kDayChips').querySelectorAll('.dchip').forEach(b=>b.onclick=()=>{kDay=b.dataset.day; $('kPrevUndo').style.display='none'; renderKakao();});
     await Promise.all([kLoadSummary(), kLoadRooms(), kView==='star'?kLoadStarred():null, kView==='report'?rLoad():null]);
     if($('kMsgsBox').open) kLoadMsgs();
@@ -2293,7 +2456,7 @@ async function kLoadStarred(){
   $('kStarList').innerHTML=Object.keys(byDay).sort().map(d=>{
     const dt=new Date(d+'T00:00:00'), items=byDay[d];
     return `<div class="ks-day">
-      <div class="ks-dh"><span class="d">${+d.slice(5,7)}.${+d.slice(8)}</span><span class="w">${K_WD[dt.getDay()]}요일</span><span class="n">${items.length}건</span></div>
+      <div class="ks-dh"><span class="d">${+d.slice(5,7)}.${+d.slice(8)}</span><span class="w">${K_WD[dt.getDay()]}요일 · ${dPlus(d)}</span><span class="n">${items.length}건</span></div>
       <div class="k-list">${items.map(x=>x.type==='work'?kWorkCard({...x,starred:1}):kEvCard({...x,starred:1},{check:false})).join('')}</div>
     </div>`;
   }).join('');
@@ -2590,7 +2753,7 @@ async function rLoad(){
     $('rDayChips').innerHTML=''; $('rBody').innerHTML='<div class="k-empty" style="margin-top:12px">아직 저장된 일일 현황이 없습니다. 위 칸에 카톡 공지를 붙여넣으세요.</div>'; $('rTrend').innerHTML=''; return;
   }
   if(!rDay||!rList.some(x=>x.day===rDay)) rDay=rList[0].day;
-  $('rDayChips').innerHTML=rList.slice(0,40).map(x=>`<button class="dchip ${x.day===rDay?'on':''}" data-rd="${x.day}">${x.day.slice(5).replace('-','/')}<span class="dc-cnt">${rFmt(rTot(x.data))}</span></button>`).join('');
+  $('rDayChips').innerHTML=rList.slice(0,40).map(x=>`<button class="dchip ${x.day===rDay?'on':''}" data-rd="${x.day}">${x.day.slice(5).replace('-','/')} <small class="dplus">${dPlus(x.day)}</small><span class="dc-cnt">${rFmt(rTot(x.data))}</span></button>`).join('');
   $('rDayChips').querySelectorAll('[data-rd]').forEach(b=>b.onclick=()=>{ rDay=b.dataset.rd; rLoad().catch(e=>toast(kErr(e))); });
   const i=rList.findIndex(x=>x.day===rDay);
   rRender(rList[i], rList[i+1]);
@@ -2609,7 +2772,7 @@ function rRender(cur, prev){
   const eqMap={}; D.groups.forEach(g=>g.subs.forEach(s=>(s.equipItems||[]).forEach(e=>eqMap[e.name]=(eqMap[e.name]||0)+e.n)));
   const eqChips=Object.entries(eqMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="kc-chip">${esc(k)} ${v}</span>`).join('');
   const active=D.groups.reduce((a,g)=>a+g.subs.filter(s=>s.people>0).length,0), allSubs=D.groups.reduce((a,g)=>a+g.subs.length,0);
-  let h=`<div class="r-head"><span class="d">${+cur.day.slice(5,7)}.${+cur.day.slice(8)}</span><span class="ttl">${wd}요일${D.title?' · '+esc(D.title):''}</span>
+  let h=`<div class="r-head"><span class="d">${+cur.day.slice(5,7)}.${+cur.day.slice(8)}</span><span class="ttl">${wd}요일 · ${dPlus(cur.day)}${D.title?' · '+esc(D.title):''}</span>
       <button class="mini-btn del" id="rDel">삭제</button></div>
     <div class="card">
       ${rProg('종합 진도율',D.overall)}
@@ -2959,7 +3122,7 @@ async function renderMemo(){
     const byDay={}; r.notes.forEach(n=>(byDay[n.day]=byDay[n.day]||[]).push(n));
     $('mList').innerHTML=Object.keys(byDay).sort().reverse().map(d=>{
       const dt=new Date(d+'T00:00:00');
-      return `<div class="ks-day"><div class="ks-dh"><span class="d">${+d.slice(5,7)}.${+d.slice(8)}</span><span class="w">${K_WD[dt.getDay()]}요일</span><span class="n">${d===r.today?'오늘':''}</span></div>
+      return `<div class="ks-day"><div class="ks-dh"><span class="d">${+d.slice(5,7)}.${+d.slice(8)}</span><span class="w">${K_WD[dt.getDay()]}요일 · ${dPlus(d)}</span><span class="n">${d===r.today?'오늘':''}</span></div>
         <div class="k-list">${byDay[d].map(n=>`<div class="m-item" data-note="${n.id}">
           <div class="kc-title">${esc(n.title||'(제목 없음)')}</div>
           ${n.preview?`<div class="kc-desc">${esc(n.preview)}</div>`:''}
@@ -3200,7 +3363,7 @@ function pRender(){
   const days=[...new Set(pAll.map(x=>x.day).concat([today]))].sort().reverse();
   if(!days.includes(pDay)) pDay=today;
   $('pDayChips').innerHTML=days.slice(0,20).map(d=>{ const n=pAll.filter(x=>x.day===d).length;
-    return `<button class="dchip ${d===pDay?'on':''}" data-pd="${d}">${d===today?'오늘':d.slice(5).replace('-','/')}<span class="dc-cnt">${n}</span></button>`; }).join('');
+    return `<button class="dchip ${d===pDay?'on':''}" data-pd="${d}">${d===today?'오늘':d.slice(5).replace('-','/')} <small class="dplus">${dPlus(d)}</small><span class="dc-cnt">${n}</span></button>`; }).join('');
   $('pDayChips').querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{ pDay=b.dataset.pd; pRender(); });
   const items=pAll.filter(x=>x.day===pDay);
   const ok=items.filter(x=>x.status==='양호').length, bad=items.filter(x=>x.status==='지적').length, fixed=items.filter(x=>x.status==='조치완료').length, done=ok+bad+fixed;
@@ -3293,7 +3456,7 @@ function pReportText(){
   const dt=new Date(pDay+'T00:00:00'), wd=K_WD[dt.getDay()];
   const cnt=s=>items.filter(x=>x.status===s).length, done=items.filter(x=>x.status).length;
   const order={'지적':0,'조치완료':1,'':2,'양호':3};
-  const L=[`[순회 체크] ${+pDay.slice(5,7)}/${+pDay.slice(8)}(${wd})`, `확인 ${done}/${items.length} · 양호 ${cnt('양호')} · 지적 ${cnt('지적')} · 조치완료 ${cnt('조치완료')}`, ''];
+  const L=[`[순회 체크] ${+pDay.slice(5,7)}/${+pDay.slice(8)}(${wd}) ${dPlus(pDay)}`, `확인 ${done}/${items.length} · 양호 ${cnt('양호')} · 지적 ${cnt('지적')} · 조치완료 ${cnt('조치완료')}`, ''];
   [...items].sort((a,b)=>order[a.status||'']-order[b.status||'']).forEach((x,i)=>{
     L.push(`${i+1}. [${x.status||'미확인'}] ${x.title}${x.sub?` (${x.sub})`:''}`);
     (x.memo||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(s=>L.push('   - '+s));
