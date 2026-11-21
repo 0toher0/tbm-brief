@@ -440,3 +440,10 @@ const APP = {
 - D1 `progress_map(day PK, data{states,note})`. `/kakao/progress-map` GET 전체·POST(관리자, 상태값 검증), `/kakao/progress-map-delete`(관리자·POST). 예전 키(bunker·cEq·thoL/R·묶음 id)는 `pmNorm`이 칸으로 변환.
 - 관리자: '✎ 오늘 상태 편집'(그 날 기록 없으면 직전 기록에서 시작) → 칸 선택·상태·메모·저장/삭제, '✓ 오늘 직전과 동일 확정'(직전 기록을 오늘로 복사, 메모 '변동 없음'). 누구나 ◀ ▶·슬라이더·D+n·▶ 추이 재생·눌러서 전체화면.
 - 덤: 숨긴 '되돌리기' 띠(`#undoBar`)가 화면 아래 검은 동그라미로 남던 문제 — 숨김 시 visibility:hidden.
+
+## 32. 출력인원 메인 시공사별 구분 (앱 v6.11.0 / Worker v3.5.0, 2026-11-22)
+- 문제: 출력인원이 날짜·근무조당 1건이라 플랜텍 보고를 붙이면 P-E&C 기록을 덮어씀. 현장 메인 시공사는 P-E&C(포스코이앤씨)·플랜텍·P-DX(포스코DX) 3곳.
+- D1 `manpower_co(day, shift, co, data, raw, updated_at, PK(day,shift,co))`, co ∈ `MP_COS`. 예전 `manpower` 행은 스키마 준비 때 내용으로 시공사를 추정(`mpCoGuess`)해 옮기고 비움. `/kakao/manpower` POST·`manpower-delete`에 `co` 추가, GET 응답에 `cos`.
+- 앱 `parseManpower`: 메인 시공사 직영 줄(■P-이앤씨/■플랜텍/■포스코DX: n명) → `pec`, ■협력사/하도사 → `partner`(+[직종]·[취약작업자]), '■구역_플랜텍' 머리 → 업체 `area`, ○/□ 작업시간·작업내용, '장비: …' 줄(대수 합). `co`는 자동 판별 + 저장 옆 선택칸. 예전 저장분은 `mpFix`가 보정.
+- 화면: 현장 전체 출력인원(근무조 × 시공사, 직영·협력, 현장 합계·미입력 표시) → 업체별(시공사 묶음) → 근무조 선택 후 시공사별 칸(구역별 업체 카드, 시공사별 삭제).
+- 미검증: 포스코DX 실제 보고 형식(플랜텍과 비슷하다고 가정).

@@ -687,6 +687,15 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 .de-l .f-input{padding:7px 6px;font-size:.8rem;min-width:0;flex:1}
 .mp-tasks{margin:6px 0 0 18px;padding:0;font-size:.76rem;line-height:1.5;color:var(--ink2)}
 .mp-tasks li.more{display:none}
+.mp-cotag{display:inline-block;color:#fff;font-size:.66rem;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:middle;white-space:nowrap}
+.mp-sub{font-size:.6rem;color:var(--steel);font-weight:600;white-space:nowrap}
+.mp-cohead td{background:#f1f3f5;font-weight:800}
+.mp-cohead small{color:var(--steel);font-weight:600;margin-left:4px}
+.mp-cosec{border-left:4px solid #495057;padding:2px 0 2px 10px;margin-top:14px}
+.mp-coh{font-size:.9rem;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.mp-coh small{color:var(--steel);font-weight:600;font-size:.7rem}
+.mp-cosec>.meta{font-size:.72rem;color:var(--ink2);margin-top:3px}
+.mp-area{font-size:.74rem;font-weight:800;color:var(--steel);margin:10px 0 2px}
 .mp-tasks.open li.more{display:list-item}
 .h-admin.on{background:#2b8a3e;border-color:#2b8a3e;color:#fff}
 </style>
@@ -817,10 +826,10 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   <div class="card paste-hint" id="mpLockNote" style="display:none;margin-top:4px">🔒 출력인원 올리기·삭제는 관리자만 할 수 있습니다. <button class="mini-btn" onclick="openAdminLogin()">관리자 로그인</button> · 올라온 내용은 누구나 볼 수 있습니다.</div>
   <div class="card" id="mpUpCard" style="margin-top:4px">
     <div class="sec-t" style="margin-bottom:6px">출력인원·작업사항 붙여넣기</div>
-    <div class="paste-hint">카톡의 출력인원 보고(<b>정규 · 연장 · 철야</b>)를 길게 눌러 복사해 그대로 붙여넣으세요. 첫 줄의 '연장'·'철야'로 근무조를 자동 구분하고, 같은 날짜·근무조를 다시 올리면 새 내용으로 바뀝니다.</div>
+    <div class="paste-hint">카톡의 출력인원 보고(<b>정규 · 연장 · 철야</b>)를 길게 눌러 복사해 그대로 붙여넣으세요. 메인 시공사 <b>P-E&amp;C(포스코이앤씨) · 플랜텍 · P-DX(포스코DX)</b> 보고를 각각 붙여넣으면 시공사별로 따로 쌓이고, 아래에서 현장 전체 합계와 시공사별 인원을 함께 봅니다. 근무조·시공사는 내용으로 자동 구분하며(틀리면 아래에서 고르기), 같은 날짜·근무조·시공사를 다시 올리면 그 시공사 것만 새 내용으로 바뀝니다.</div>
     <textarea class="paste-area" id="mpPaste" style="min-height:96px;white-space:pre-wrap" placeholder="<2026.11.21 (토)>&#10;■P-이앤씨: 29명&#10;■협력사: 580명(관91, 작489, 장비40) …"></textarea>
     <div class="paste-hint" id="mpInfo" style="margin-top:8px"></div>
-    <div class="btn-row"><select class="f-input" id="mpShift" style="flex:.5"><option>정규</option><option>연장</option><option>철야</option></select><button class="btn done" id="mpSave" disabled>저장</button></div>
+    <div class="btn-row"><select class="f-input" id="mpCo" style="flex:.6"><option value="P-E&amp;C">P-E&amp;C</option><option value="플랜텍">플랜텍</option><option value="P-DX">P-DX</option></select><select class="f-input" id="mpShift" style="flex:.5"><option>정규</option><option>연장</option><option>철야</option></select><button class="btn done" id="mpSave" disabled>저장</button></div>
   </div>
   <div id="mpDays" class="date-chips" style="margin-top:12px"></div>
   <div id="mpBody"></div>
@@ -1299,7 +1308,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.10.0',
+  version : '6.11.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -5162,9 +5171,21 @@ document.querySelectorAll('#dModes [data-dm]').forEach(b=>b.onclick=()=>{ dMode=
 ['dFile','dCam'].forEach(id=>$(id).onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ await dAnalyzeImage(await mFileToDataUrl(f)); }catch(err){ dStatus(err.data?kErr(err):err.message,'err'); } });
 
-/* 카톡 '출력인원·작업사항' 보고(정규/연장/철야) → {day, shift, title, pec, partner{total,mgr,work,equip}, companies[...]} */
+/* 카톡 '출력인원·작업사항' 보고(정규/연장/철야) → {day, shift, co, title, pec(=메인 시공사 직영), partner{total,mgr,work,equip,crew,vuln}, companies[...]}
+   메인 시공사 3곳(P-E&C·플랜텍·P-DX) 보고 형식을 함께 읽음:
+   P-E&C  : ■P-이앤씨: 29명 / ■협력사: 580명(관91, 작489, 장비40) / ■업체: n명 …
+   플랜텍 : ■(광양) 2고로 2차개수 / ■플랜텍: 12명 / ■하도사: 145명 / [직종] / [취약작업자…] / ■원료수송설비_플랜텍 / ■동진건설 100명 / ○ 작업시간 … */
+const MP_COS=['P-E&C','플랜텍','P-DX'];
+const MP_CO_FULL={'P-E&C':'포스코이앤씨','플랜텍':'포스코플랜텍','P-DX':'포스코DX'};
+const MP_CO_COLOR={'P-E&C':'#1c5fa8','플랜텍':'#d9480f','P-DX':'#2b8a3e'};
+function mpCoOf(s){ s=String(s||'');
+  if(/P-?\s*이앤씨|포스코\s*이앤씨|P-?\s*E\s*&\s*C|포스코건설/i.test(s)) return 'P-E&C';
+  if(/플랜텍|plantec/i.test(s)) return '플랜텍';
+  if(/P-?\s*DX|포스코\s*(DX|디엑스)|디엑스/i.test(s)) return 'P-DX';
+  return ''; }
+function mpCoTag(co){ return `<span class="mp-cotag" style="background:${MP_CO_COLOR[co]||'#495057'}">${esc(co)}</span>`; }
 function parseManpower(raw){
-  const t=String(raw||'').replace(/\r\n?/g,'\n').replace(/ /g,' ');
+  const t=String(raw||'').replace(/\r\n?/g,'\n').replace(/ /g,' ');
   if(!/■/.test(t)||!/\d+\s*명/.test(t)) return null;
   const head=t.slice(0,160);
   const shift=/철야/.test(head)?'철야':/연장|추가/.test(head)?'연장':'정규';
@@ -5172,30 +5193,49 @@ function parseManpower(raw){
   const dm=t.match(/(\d{4})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})/);
   const day=dm?`${dm[1]}-${pad(dm[2])}-${pad(dm[3])}`:'';
   const num=s=>{ const m=String(s||'').match(/\d+/); return m?+m[0]:0; };
-  const R={day,shift,title:'',pec:null,partner:null,companies:[],notes:[]};
-  let cur=null, mode='';
+  const vulnOf=l=>{ const g=re=>{ const x=l.match(re); return x?+x[1]:0; };
+    return {exp3:g(/3\s*회\s*이하\D{0,3}(\d+)/),age65:g(/65\s*세\s*이상\D{0,3}(\d+)/),age70:g(/70\s*세\s*이상\D{0,3}(\d+)/),new6:g(/6\s*개월\s*이하\D{0,3}(\d+)/)}; };
+  const equipCnt=s=>s.split(/\s*,\s*/).filter(x=>x.trim()).reduce((a,x)=>{ const m=x.match(/(\d+)\s*(?:대|ea)?\s*$/i); return a+(m?+m[1]:1); },0);
+  const R={day,shift,co:'',title:'',pec:null,partner:null,companies:[],notes:[]};
+  let cur=null, mode='', area='', inPartner=false;
   for(let line of t.split('\n')){
     const l=line.trim(); if(!l) continue;
     if(/^이상입니다|작업사항입니다\.?$|^금일\s/.test(l)) continue;
     if(/^<.*>$/.test(l)) continue;
     if(!R.title&&/개수|고로/.test(l)&&!/■/.test(l)){ R.title=l; continue; }
     let m;
-    if((m=l.match(/^■\s*(.+?)\s*:\s*(\d+)\s*명\s*(?:\((.*)\))?/))){
-      const name=m[1].trim(), n=+m[2];
-      if(/^P-?\s*이앤씨|^포스코이앤씨|^P-?E&C/i.test(name)&&!R.companies.length){ R.pec=n; cur=null; continue; }
-      if(/^협력사/.test(name)&&!R.companies.length){ const b=m[3]||''; R.partner={total:n,mgr:num((b.match(/관\D*(\d+)/)||[])[1]),work:num((b.match(/작\D*(\d+)/)||[])[1]),equip:num((b.match(/장비\D*(\d+)/)||[])[1])}; cur=null; continue; }
-      cur={name:name.replace(/\(주\)|㈜/g,'').trim(),people:n,crew:'',vuln:null,time:'',tasks:[],equipN:null,equip:''}; R.companies.push(cur); mode=''; continue;
+    if((m=l.match(/^■\s*(.+)$/))){
+      const v=m[1].trim(); mode='';
+      const hm=v.match(/^(.+?)\s*:?\s*(\d+)\s*명\s*(?:\((.*)\))?/);
+      if(hm){
+        const name=hm[1].trim(), n=+hm[2], co=mpCoOf(name);
+        // 메인 시공사 직영 인원(맨 위 요약줄)
+        if(co&&!/_/.test(name)&&name.replace(/\(주\)|㈜|\s/g,'').length<=8&&!R.companies.length&&R.pec==null){ R.co=co; R.pec=n; cur=null; inPartner=false; continue; }
+        // 협력사·하도사 합계(요약줄)
+        if(/^(협력사|하도사|협력업체)/.test(name)&&!R.companies.length&&!R.partner){ const b=hm[3]||'';
+          R.partner={total:n,mgr:num((b.match(/관\D*(\d+)/)||[])[1]),work:num((b.match(/작\D*(\d+)/)||[])[1]),equip:num((b.match(/장비\D*(\d+)/)||[])[1]),crew:'',vuln:null};
+          cur=null; inPartner=true; continue; }
+        inPartner=false;
+        cur={name:name.replace(/\(주\)|㈜/g,'').trim(),area,people:n,crew:'',vuln:null,time:'',tasks:[],equipN:null,equip:''}; R.companies.push(cur); continue;
+      }
+      // 인원 없는 ■줄: '원료수송설비_플랜텍' 같은 구역 머리 / 공사 제목
+      inPartner=false; cur=null;
+      if(/_/.test(v)){ const k=v.lastIndexOf('_'); area=v.slice(0,k).trim(); if(!R.co) R.co=mpCoOf(v.slice(k+1)); continue; }
+      if(!R.title){ R.title=v; continue; }
+      R.notes.push(l); continue;
     }
-    if(!cur){ R.notes.push(l); continue; }
-    if(/^\[/.test(l)&&/취약/.test(l)){
-      const g=re=>{ const x=l.match(re); return x?+x[1]:0; };
-      cur.vuln={exp3:g(/3\s*회\s*이하\D{0,3}(\d+)/),age65:g(/65\s*세\s*이상\D{0,3}(\d+)/),age70:g(/70\s*세\s*이상\D{0,3}(\d+)/),new6:g(/6\s*개월\s*이하\D{0,3}(\d+)/)};
+    if(inPartner&&/^\[/.test(l)){
+      if(/취약/.test(l)) R.partner.vuln=vulnOf(l);
+      else R.partner.crew=l.replace(/^\[|\]$/g,'').replace(/\s*,\s*/g,', ').trim();
       continue;
     }
+    if(!cur){ R.notes.push(l); continue; }
+    if(/^\[/.test(l)&&/취약/.test(l)){ cur.vuln=vulnOf(l); continue; }
     if(/^\[/.test(l)){ cur.crew=l.replace(/^\[|\]$/g,'').replace(/\s*,\s*/g,', ').trim(); continue; }
-    if((m=l.match(/^□\s*작업\s*시간\s*:?\s*(.*)$/))){ cur.time=m[1].replace(/\s+/g,'').replace('~','~'); continue; }
-    if(/^□\s*작업\s*내용/.test(l)){ mode='task'; continue; }
+    if((m=l.match(/^[□○●◦]\s*작업\s*시간\s*:?\s*(.*)$/))){ cur.time=m[1].replace(/\s+/g,'').replace('~','~'); continue; }
+    if(/^[□○●◦]\s*작업\s*내용/.test(l)){ mode='task'; continue; }
     if((m=l.match(/^-?\.?\s*장비\s*[\[(]\s*(\d+)\s*[\])]\s*:?\s*(.*)$/))){ cur.equipN=+m[1]; cur.equip=/^없음\.?$/.test(m[2].trim())?'':m[2].trim(); mode=''; continue; }
+    if((m=l.match(/^장비\s*:?\s*(.+)$/))){ const e=m[1].trim(); if(/^없음\.?$/.test(e)){ cur.equipN=0; cur.equip=''; } else { cur.equipN=equipCnt(e); cur.equip=e; } mode=''; continue; }
     if(mode==='task'){
       const s=l.replace(/^-\.?\s*/,'').trim();
       if(!s) continue;
@@ -5205,15 +5245,25 @@ function parseManpower(raw){
     }
     R.notes.push(l);
   }
-  if(!R.companies.length&&R.pec==null) return null;
+  if(!R.companies.length&&R.pec==null&&!R.partner) return null;
+  R.co=R.co||mpCoOf(t.slice(0,400))||'P-E&C';
   R.subSum=R.companies.reduce((a,c)=>a+c.people,0);
   R.total=(R.pec||0)+(R.partner?R.partner.total:R.subSum);
   R.equipSum=R.companies.reduce((a,c)=>a+(c.equipN||0),0);
   return R;
 }
+// 예전(v6.10 이전) 저장분 보정: 시공사 직영·하도사 요약줄이 업체로 들어간 경우
+function mpFix(x){
+  const d=x.data; if(!d||d._fixed) return x; d._fixed=1;
+  if(d.pec==null&&d.companies&&d.companies.length&&mpCoOf(d.companies[0].name)===x.co){ d.pec=d.companies.shift().people; }
+  if(!d.partner&&d.companies&&d.companies.length&&/^(협력사|하도사)/.test(d.companies[0].name)){ const c=d.companies.shift(); d.partner={total:c.people,mgr:0,work:0,equip:0,crew:c.crew,vuln:c.vuln}; }
+  d.subSum=d.companies.reduce((a,c)=>a+c.people,0);
+  d.total=(d.pec||0)+(d.partner?d.partner.total:d.subSum);
+  return x;
+}
 
 
-/* ================= 👷 일일 출력인원 (카톡 보고: 정규 · 연장 · 철야) ================= */
+/* ================= 👷 일일 출력인원 (카톡 보고: 정규 · 연장 · 철야 × 메인 시공사 P-E&C · 플랜텍 · P-DX) ================= */
 let mpParsed=null, mpList=[], mpDay=null, mpShiftView='정규';
 const MP_SHIFTS=['정규','연장','철야'];
 function mpPrepare(){
@@ -5222,27 +5272,36 @@ function mpPrepare(){
   const p=parseManpower(txt);
   if(!p){ $('mpInfo').innerHTML='<span style="color:var(--red)">출력인원 보고 형식을 찾지 못했습니다 — ■업체: n명 줄이 있어야 합니다</span>'; return; }
   if(!p.day) p.day=rToday();
-  mpParsed=p; $('mpShift').value=p.shift;
-  const ex=mpList.some(x=>x.day===p.day&&x.shift===p.shift);
-  const warn=p.partner&&p.partner.total!==p.subSum?` <span style="color:var(--red)">⚠ 협력사 ${p.partner.total}명 ≠ 업체별 합 ${p.subSum}명</span>`:'';
-  $('mpInfo').innerHTML=`인식: <b>${sMD(p.day)} ${dPlus(p.day)}</b> · <b>${p.shift}</b> · P-이앤씨 ${p.pec??'—'}명 · 협력사 ${p.partner?p.partner.total:p.subSum}명${p.partner?` (관${p.partner.mgr}·작${p.partner.work}·장비${p.partner.equip})`:''} · 업체 ${p.companies.length}곳 · 합계 <b>${p.total}</b>명${warn}${ex?' <span style="color:var(--amber)">· 같은 날짜·근무조가 있어 새 내용으로 바뀝니다</span>':''}`;
+  mpParsed=p; $('mpShift').value=p.shift; $('mpCo').value=p.co;
+  mpInfo();
   $('mpSave').disabled=false;
+}
+function mpInfo(){
+  const p=mpParsed; if(!p) return;
+  const co=$('mpCo').value, shift=$('mpShift').value;
+  const ex=mpList.some(x=>x.day===p.day&&x.shift===shift&&x.co===co);
+  const others=mpList.filter(x=>x.day===p.day&&x.shift===shift&&x.co!==co).map(x=>x.co);
+  const pt=p.partner?p.partner.total:p.subSum;
+  const warn=p.partner&&p.partner.total!==p.subSum&&p.companies.length?` <span style="color:var(--red)">⚠ 협력사 ${p.partner.total}명 ≠ 업체별 합 ${p.subSum}명</span>`:'';
+  $('mpInfo').innerHTML=`인식: <b>${sMD(p.day)} ${dPlus(p.day)}</b> · <b>${shift}</b> · ${mpCoTag(co)} 직영 ${p.pec??'—'}명 · 협력사 ${pt}명${p.partner&&p.partner.mgr?` (관${p.partner.mgr}·작${p.partner.work}·장비${p.partner.equip})`:''} · 업체 ${p.companies.length}곳 · 합계 <b>${p.total}</b>명${warn}`+
+    (ex?` <span style="color:var(--amber)">· 같은 날짜·근무조의 ${esc(co)} 기록을 새 내용으로 바꿉니다</span>`:'')+
+    (others.length?` <span style="color:var(--steel)">· 다른 시공사(${others.map(esc).join('·')}) 기록은 그대로 둡니다</span>`:'');
 }
 async function mpSave(){
   if(!mpParsed) return;
-  const shift=$('mpShift').value, data={...mpParsed,shift}, b=$('mpSave'); b.disabled=true;
-  try{ const r=await kApi('manpower',{day:data.day,shift,data,raw:$('mpPaste').value});
-    toast(`${sMD(data.day)} ${shift} 출력인원을 ${r.replaced?'새 내용으로 바꿨':'저장했'}습니다`);
+  const shift=$('mpShift').value, co=$('mpCo').value, data={...mpParsed,shift,co}, b=$('mpSave'); b.disabled=true;
+  try{ const r=await kApi('manpower',{day:data.day,shift,co,data,raw:$('mpPaste').value});
+    toast(`${sMD(data.day)} ${shift} ${co} 출력인원을 ${r.replaced?'새 내용으로 바꿨':'저장했'}습니다`);
     mpDay=data.day; mpShiftView=shift; $('mpPaste').value=''; mpPrepare(); await mpLoad(); }
   catch(e){ toast(kErr(e)); b.disabled=false; }
 }
 async function mpLoad(){
-  try{ const r=await kApi('manpower'); mpList=r.items||[]; }
+  try{ const r=await kApi('manpower'); mpList=(r.items||[]).map(x=>mpFix({...x,co:x.co||'P-E&C'})); }
   catch(e){ $('mpBody').innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
   const days=[...new Set(mpList.map(x=>x.day))].sort().reverse();
   if(!mpDay||!days.includes(mpDay)) mpDay=days[0];
-  $('mpDays').innerHTML=days.slice(0,40).map(d=>{ const reg=mpList.find(x=>x.day===d&&x.shift==='정규');
-    return `<button class="dchip ${d===mpDay?'on':''}" data-md="${d}">${d===rToday()?'오늘':sMD(d)} <small class="dplus">${dPlus(d)}</small><span class="dc-cnt">${reg?reg.data.total:'-'}</span></button>`; }).join('');
+  $('mpDays').innerHTML=days.slice(0,40).map(d=>{ const reg=mpList.filter(x=>x.day===d&&x.shift==='정규');
+    return `<button class="dchip ${d===mpDay?'on':''}" data-md="${d}">${d===rToday()?'오늘':sMD(d)} <small class="dplus">${dPlus(d)}</small><span class="dc-cnt">${reg.length?reg.reduce((a,x)=>a+x.data.total,0):'-'}</span></button>`; }).join('');
   $('mpDays').querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{ mpDay=b.dataset.md; mpLoad(); });
   if(!mpDay){ $('mpBody').innerHTML='<div class="k-empty" style="margin-top:10px">아직 올린 출력인원이 없습니다.</div>'; return; }
   mpRender(mpDay);
@@ -5255,39 +5314,67 @@ function mpSpan(d){
   const en=ts.map(m=>p(m[2])).sort((a,b)=>{ const k=x=>x<st?'2'+x:'1'+x; return k(a)<k(b)?-1:1; }).pop(); // 자정 넘으면 다음 날로
   return `${st}~${en}`;
 }
+function mpVulnTxt(v){ v=v||{}; return [v.exp3?`실적3회↓ ${v.exp3}`:'',v.age65?`65세↑ ${v.age65}`:'',v.age70?`70세↑ ${v.age70}`:'',v.new6?`입사6개월↓ ${v.new6}`:''].filter(Boolean).join(' · '); }
 function mpRender(day){
-  const by={}; mpList.filter(x=>x.day===day).forEach(x=>by[x.shift]=x);
+  const by={}; mpList.filter(x=>x.day===day).forEach(x=>{ (by[x.shift]=by[x.shift]||{})[x.co]=x.data; });
   const shifts=MP_SHIFTS.filter(s=>by[s]);
   if(!shifts.includes(mpShiftView)) mpShiftView=shifts[0];
-  // 근무조별 요약
+  const cosOf=s=>MP_COS.filter(c=>by[s]&&by[s][c]);
+  const sumOf=s=>cosOf(s).reduce((a,c)=>a+by[s][c].total,0);
+  const title=(()=>{ for(const s of shifts) for(const c of cosOf(s)) if(by[s][c].title) return by[s][c].title; return ''; })();
+  // 근무조 × 메인 시공사 요약 (현장 전체)
   let h=`<div class="card" style="margin-top:10px"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:1.05rem">${sFmt(day)}</b><span class="dplus">${dPlus(day)}</span>
-    <span style="margin-left:auto;font-size:.66rem;color:var(--steel)">${esc((by[shifts[0]]&&by[shifts[0]].data.title)||'')}</span></div>
-    <div style="overflow-x:auto;margin-top:8px"><table class="s-t"><tr><th>근무조</th><th class="s-num">P-이앤씨</th><th class="s-num">협력사</th><th class="s-num">합계</th><th class="s-num">관리·작업·장비</th></tr>
-    ${MP_SHIFTS.map(s=>{ const d=by[s]&&by[s].data; if(!d) return `<tr style="color:#adb5bd"><td>${s}</td><td colspan="4">미입력</td></tr>`;
-      const pt=d.partner||{total:d.subSum}; const bad=d.partner&&d.partner.total!==d.subSum;
-      return `<tr><td><b>${s}</b>${mpSpan(d)?`<div style="font-size:.62rem;color:var(--steel)">${esc(mpSpan(d))}</div>`:''}</td><td class="s-num">${d.pec??'—'}</td><td class="s-num">${pt.total}${bad?' <span style="color:var(--red)">⚠</span>':''}</td><td class="s-num"><b>${d.total}</b></td><td class="s-num" style="font-size:.68rem">${d.partner?`${d.partner.mgr}·${d.partner.work}·${d.partner.equip}`:''}</td></tr>`; }).join('')}
+    <span style="margin-left:auto;font-size:.66rem;color:var(--steel)">${esc(title)}</span></div>
+    <div class="s-sec" style="margin-top:8px">현장 전체 출력인원 <small>메인 시공사별 · 직영+협력사</small></div>
+    <div style="overflow-x:auto"><table class="s-t mp-sum"><tr><th>근무조</th>${MP_COS.map(c=>`<th class="s-num">${mpCoTag(c)}</th>`).join('')}<th class="s-num">현장 합계</th></tr>
+    ${MP_SHIFTS.map(s=>{ if(!by[s]) return `<tr style="color:#adb5bd"><td>${s}</td><td colspan="${MP_COS.length+1}">미입력</td></tr>`;
+      const all=cosOf(s).flatMap(c=>by[s][c].companies), sp=mpSpan({companies:all});
+      return `<tr><td><b>${s}</b>${sp?`<div style="font-size:.62rem;color:var(--steel)">${esc(sp)}</div>`:''}</td>`+
+        MP_COS.map(c=>{ const d=by[s][c]; if(!d) return `<td class="s-num" style="color:#ced4da">—</td>`;
+          const pt=d.partner?d.partner.total:d.subSum, bad=d.partner&&d.companies.length&&d.partner.total!==d.subSum;
+          return `<td class="s-num"><b>${d.total}</b>${bad?' <span style="color:var(--red)">⚠</span>':''}<div class="mp-sub">직영 ${d.pec??'—'} · 협력 ${pt}</div></td>`; }).join('')+
+        `<td class="s-num"><b style="font-size:.95rem">${sumOf(s)}</b>${cosOf(s).length<MP_COS.length?`<div class="mp-sub">${MP_COS.filter(c=>!by[s][c]).map(esc).join('·')} 미입력</div>`:''}</td></tr>`; }).join('')}
     </table></div>`;
-  // 업체 × 근무조
-  const names=[]; shifts.forEach(s=>by[s].data.companies.forEach(c=>{ if(!names.includes(c.name)) names.push(c.name); }));
-  h+=`<div class="s-sec" style="margin-top:12px">업체별 <small>근무조별 인원</small></div><div style="overflow-x:auto"><table class="s-t"><tr><th>업체</th>${MP_SHIFTS.map(s=>`<th class="s-num">${s}</th>`).join('')}</tr>
-    ${names.map(n=>`<tr><td>${esc(n)}</td>${MP_SHIFTS.map(s=>{ const c=by[s]&&by[s].data.companies.find(x=>x.name===n); return `<td class="s-num">${c?c.people:'<span style="color:#ced4da">-</span>'}</td>`; }).join('')}</tr>`).join('')}</table></div></div>`;
-  // 근무조 선택 → 업체 카드
-  h+=`<div class="k-seg" id="mpSeg" style="margin-top:12px">${shifts.map(s=>`<button class="${s===mpShiftView?'on':''}" data-ms="${s}">${s} ${by[s].data.total}명</button>`).join('')}</div>`;
-  const D=by[mpShiftView].data;
-  h+=D.companies.map((c,i)=>{ const v=c.vuln||{}; const vs=[v.exp3?`실적3회↓ ${v.exp3}`:'',v.age65?`65세↑ ${v.age65}`:'',v.age70?`70세↑ ${v.age70}`:'',v.new6?`입사6개월↓ ${v.new6}`:''].filter(Boolean);
-    return `<div class="d-tm mp-co"><div class="t">${esc(c.name)} <span style="color:var(--accent)">${c.people}명</span> <small style="font-weight:600;color:var(--steel)">${esc(c.time||'')}</small></div>
+  // 업체 × 근무조 (시공사별 묶음)
+  h+=`<div class="s-sec" style="margin-top:12px">업체별 <small>근무조별 인원</small></div><div style="overflow-x:auto"><table class="s-t"><tr><th>업체</th>${MP_SHIFTS.map(s=>`<th class="s-num">${s}</th>`).join('')}</tr>`;
+  MP_COS.forEach(co=>{
+    const names=[]; shifts.forEach(s=>{ const d=by[s][co]; if(d) d.companies.forEach(c=>{ if(!names.includes(c.name)) names.push(c.name); }); });
+    if(!shifts.some(s=>by[s][co])) return;
+    h+=`<tr class="mp-cohead"><td colspan="${MP_SHIFTS.length+1}">${mpCoTag(co)} <small>${esc(MP_CO_FULL[co])}</small></td></tr>`;
+    h+=`<tr><td style="color:var(--steel)">직영</td>${MP_SHIFTS.map(s=>{ const d=by[s]&&by[s][co]; return `<td class="s-num">${d&&d.pec!=null?d.pec:'<span style="color:#ced4da">-</span>'}</td>`; }).join('')}</tr>`;
+    h+=names.map(n=>`<tr><td>${esc(n)}</td>${MP_SHIFTS.map(s=>{ const c=by[s]&&by[s][co]&&by[s][co].companies.find(x=>x.name===n); return `<td class="s-num">${c?c.people:'<span style="color:#ced4da">-</span>'}</td>`; }).join('')}</tr>`).join('');
+  });
+  h+=`</table></div></div>`;
+  // 근무조 선택 → 시공사별 업체 카드
+  h+=`<div class="k-seg" id="mpSeg" style="margin-top:12px">${shifts.map(s=>`<button class="${s===mpShiftView?'on':''}" data-ms="${s}">${s} ${sumOf(s)}명</button>`).join('')}</div>`;
+  let ci=0;
+  cosOf(mpShiftView).forEach(co=>{
+    const D=by[mpShiftView][co], pt=D.partner;
+    h+=`<div class="mp-cosec" style="border-left-color:${MP_CO_COLOR[co]}"><div class="mp-coh">${mpCoTag(co)} <b>${esc(MP_CO_FULL[co])}</b> <span style="color:var(--accent);font-weight:800">${D.total}명</span>
+        <small>직영 ${D.pec??'—'} · 협력사 ${pt?pt.total:D.subSum}${pt&&pt.mgr?` (관${pt.mgr}·작${pt.work}·장비${pt.equip})`:''}</small></div>
+      ${pt&&pt.crew?`<div class="meta">${esc(pt.crew)}</div>`:''}
+      ${pt&&mpVulnTxt(pt.vuln)?`<div class="meta" style="color:#c92a2a">취약작업자 ${mpVulnTxt(pt.vuln)}</div>`:''}`;
+    let area=null;
+    D.companies.forEach(c=>{ const i=ci++, vs=mpVulnTxt(c.vuln);
+      if(c.area&&c.area!==area){ area=c.area; h+=`<div class="mp-area">▸ ${esc(area)}</div>`; }
+      h+=`<div class="d-tm mp-co"><div class="t">${esc(c.name)} <span style="color:var(--accent)">${c.people}명</span> <small style="font-weight:600;color:var(--steel)">${esc(c.time||'')}</small></div>
       ${c.crew?`<div class="meta">${esc(c.crew)}</div>`:''}
-      ${vs.length?`<div class="meta" style="color:#c92a2a">취약작업자 ${vs.join(' · ')}</div>`:''}
+      ${vs?`<div class="meta" style="color:#c92a2a">취약작업자 ${vs}</div>`:''}
       ${c.tasks.length?`<ul class="mp-tasks" data-i="${i}">${c.tasks.map((t,k)=>`<li class="${k>=4?'more':''}">${esc(t)}</li>`).join('')}</ul>${c.tasks.length>4?`<button class="mini-btn mp-more" data-i="${i}">작업 ${c.tasks.length-4}건 더 보기</button>`:''}`:''}
-      ${c.equipN!=null?`<div class="meta" style="margin-top:4px">🏗 장비 ${c.equipN}대${c.equip?` · ${esc(c.equip)}`:''}</div>`:''}</div>`; }).join('');
-  if(isEditor()) h+=`<div class="btn-row"><button class="btn ghost" id="mpDel" style="color:var(--red)">${mpShiftView} 출력인원 삭제</button></div>`;
+      ${c.equipN!=null?`<div class="meta" style="margin-top:4px">🏗 장비 ${c.equipN}대${c.equip?` · ${esc(c.equip)}`:''}</div>`:''}</div>`; });
+    if(isEditor()) h+=`<div class="btn-row"><button class="btn ghost mp-del" data-co="${esc(co)}" style="color:var(--red)">${mpShiftView} ${esc(co)} 출력인원 삭제</button></div>`;
+    h+=`</div>`;
+  });
   $('mpBody').innerHTML=h;
   $('mpBody').querySelectorAll('[data-ms]').forEach(b=>b.onclick=()=>{ mpShiftView=b.dataset.ms; mpRender(day); });
   $('mpBody').querySelectorAll('.mp-more').forEach(b=>b.onclick=()=>{ $('mpBody').querySelector(`.mp-tasks[data-i="${b.dataset.i}"]`).classList.add('open'); b.remove(); });
-  if($('mpDel')) $('mpDel').onclick=async()=>{ if(!confirm(`${day} ${mpShiftView} 출력인원을 삭제할까요? (원문을 다시 붙여넣으면 복구됩니다)`)) return;
-    try{ await kApi('manpower-delete',{day,shift:mpShiftView}); toast('삭제했습니다'); await mpLoad(); }catch(e){ toast(kErr(e)); } };
+  $('mpBody').querySelectorAll('.mp-del').forEach(b=>b.onclick=async()=>{ const co=b.dataset.co;
+    if(!confirm(`${day} ${mpShiftView} ${co} 출력인원을 삭제할까요? (원문을 다시 붙여넣으면 복구됩니다)`)) return;
+    try{ await kApi('manpower-delete',{day,shift:mpShiftView,co}); toast('삭제했습니다'); await mpLoad(); }catch(e){ toast(kErr(e)); } });
 }
 $('mpPaste').addEventListener('input',mpPrepare);
+$('mpShift').addEventListener('change',mpInfo);
+$('mpCo').addEventListener('change',mpInfo);
 $('mpSave').onclick=mpSave;
 
 /* ================= ⚖️ 법률 (법령정리: 법령 링크·핵심 기준·배치인원·최신 개정·사내 검토) ================= */

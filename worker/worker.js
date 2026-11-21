@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.4.0',
+        version: '3.5.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -343,12 +343,32 @@ async function kakaoSchema(db) {
     // v3.4.0: 고로 모식도 부위별 상태 — 날짜당 1건 {states:{부위:상태}, note}
     db.prepare(`CREATE TABLE IF NOT EXISTS progress_map (day TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS manpower (day TEXT NOT NULL, shift TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift))`),
+    // v3.5.0: 출력인원을 메인 시공사(P-E&C·플랜텍·P-DX)별로 — 날짜·근무조·시공사당 1건
+    db.prepare(`CREATE TABLE IF NOT EXISTS manpower_co (day TEXT NOT NULL, shift TEXT NOT NULL, co TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift, co))`),
   ]);
+  // v3.5.0: 예전 manpower(시공사 구분 없음) → manpower_co 로 옮김(시공사는 내용으로 추정)
+  try {
+    const old = await db.prepare(`SELECT day, shift, data, raw, updated_at FROM manpower`).all();
+    if (old.results.length) {
+      const st = old.results.map(x => db.prepare(`INSERT OR IGNORE INTO manpower_co(day,shift,co,data,raw,updated_at) VALUES(?,?,?,?,?,?)`).bind(x.day, x.shift, mpCoGuess(x.data + '\n' + (x.raw || '')), x.data, x.raw, x.updated_at));
+      st.push(db.prepare(`DELETE FROM manpower`));
+      await db.batch(st);
+    }
+  } catch (e) { /* 다음 기동 때 다시 시도 */ }
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
   for (const t of ['kakao_works', 'kakao_events']) {
     try { await db.prepare(`ALTER TABLE ${t} ADD COLUMN starred INTEGER NOT NULL DEFAULT 0`).run(); } catch (e) { /* 이미 있음 */ }
   }
   KAKAO_SCHEMA_READY = true;
+}
+
+// 출력인원 메인 시공사 이름 → 표준 코드
+const MP_COS = ['P-E&C', '플랜텍', 'P-DX'];
+function mpCoGuess(t) {
+  t = String(t || '');
+  if (/플랜텍|plantec/i.test(t)) return '플랜텍';
+  if (/P-?\s*DX|포스코\s*(DX|디엑스)|디엑스/i.test(t)) return 'P-DX';
+  return 'P-E&C';
 }
 
 // 한국시간(KST, UTC+9) 기준 'YYYY-MM-DD HH:MM'
@@ -666,23 +686,23 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok: true, restored: h.reason, from: h.updated_at }, 200, cors);
   }
 
-  // ---- 일일 출력인원 (카톡 보고: 정규/연장/철야) — 앱이 파싱해 보냄. 날짜·근무조당 1건 ----
+  // ---- 일일 출력인원 (카톡 보고: 정규/연장/철야) — 앱이 파싱해 보냄. 날짜·근무조·메인 시공사당 1건 ----
   if (sub === 'manpower') {
     if (request.method === 'POST') {
-      const day = String(body.day || ''), shift = String(body.shift || '');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !['정규', '연장', '철야'].includes(shift) || !body.data) return json({ error: 'bad_payload' }, 400, cors);
+      const day = String(body.day || ''), shift = String(body.shift || ''), co = String(body.co || 'P-E&C');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !['정규', '연장', '철야'].includes(shift) || !MP_COS.includes(co) || !body.data) return json({ error: 'bad_payload' }, 400, cors);
       const data = JSON.stringify(body.data); if (data.length > 300000) return json({ error: 'too_large' }, 400, cors);
-      const prev = await db.prepare(`SELECT day FROM manpower WHERE day=? AND shift=?`).bind(day, shift).first();
-      await db.prepare(`INSERT INTO manpower(day,shift,data,raw,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day,shift) DO UPDATE SET data=excluded.data, raw=excluded.raw, updated_at=excluded.updated_at`)
-        .bind(day, shift, data, String(body.raw || '').slice(0, 60000), now.ts).run();
+      const prev = await db.prepare(`SELECT day FROM manpower_co WHERE day=? AND shift=? AND co=?`).bind(day, shift, co).first();
+      await db.prepare(`INSERT INTO manpower_co(day,shift,co,data,raw,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(day,shift,co) DO UPDATE SET data=excluded.data, raw=excluded.raw, updated_at=excluded.updated_at`)
+        .bind(day, shift, co, data, String(body.raw || '').slice(0, 60000), now.ts).run();
       return json({ ok: true, replaced: !!prev }, 200, cors);
     }
     const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
-    const r = await db.prepare(`SELECT day, shift, data, updated_at FROM manpower WHERE day BETWEEN ? AND ? ORDER BY day DESC LIMIT 600`).bind(from, to).all();
-    return json({ today: now.day, items: r.results.map(x => ({ ...x, data: JSON.parse(x.data) })) }, 200, cors);
+    const r = await db.prepare(`SELECT day, shift, co, data, updated_at FROM manpower_co WHERE day BETWEEN ? AND ? ORDER BY day DESC LIMIT 1800`).bind(from, to).all();
+    return json({ today: now.day, cos: MP_COS, items: r.results.map(x => ({ ...x, data: JSON.parse(x.data) })) }, 200, cors);
   }
   if (sub === 'manpower-delete') {
-    await db.prepare(`DELETE FROM manpower WHERE day=? AND shift=?`).bind(String(body.day || ''), String(body.shift || '')).run();
+    await db.prepare(`DELETE FROM manpower_co WHERE day=? AND shift=? AND co=?`).bind(String(body.day || ''), String(body.shift || ''), String(body.co || 'P-E&C')).run();
     return json({ ok: true }, 200, cors);
   }
   // ---- 고로 진행률 그림: 날짜당 1장 (GET 목록 / GET ?day= 한 장 / POST 저장) ----
