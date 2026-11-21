@@ -54,7 +54,13 @@ header{background:var(--ink);color:#fff;padding:calc(env(safe-area-inset-top,0px
 .h-title{font-family:var(--num);font-weight:700;font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase}
 .h-title span{color:var(--accent)}
 .h-sub{font-size:.72rem;color:#aeb6bf;margin-top:1px}
-.h-btns{display:flex;gap:8px}
+.h-btns{display:flex;gap:6px;align-items:center;flex:none}
+.h-btns > *{flex:none}
+header > div:first-child{min-width:0;flex:1}
+#hSub{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.h-back{background:#ffd43b;border:none;color:#16202b;border-radius:9px;font-size:.78rem;font-weight:800;padding:8px 10px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.h-back:active{background:#fcc419}
+@media (max-width:400px){ .h-btns .h-admin{white-space:normal;max-width:66px;line-height:1.15;padding:4px 6px;text-align:center} .h-btns .icon-btn{width:34px;height:34px} .h-btns .h-back{padding:8px 8px} }
 .icon-btn{background:#2b323a;border:none;color:#e9ecef;width:38px;height:38px;border-radius:9px;font-size:1.05rem;display:flex;align-items:center;justify-content:center}
 .icon-btn:active{background:#3d444d}
 .h-admin{background:none;border:1px solid #4a535d;color:#adb5bd;border-radius:8px;font-size:.66rem;font-weight:700;padding:5px 7px;align-self:center;white-space:nowrap}
@@ -602,6 +608,7 @@ table.s-t tr[data-act]{cursor:pointer}
     <div class="h-sub" id="hSub">광양 2고로 개수 현장 · —</div>
   </div>
   <div class="h-btns">
+    <button class="h-back" id="btnBack" title="이전 화면으로" style="display:none">← 뒤로</button>
     <button class="h-admin" id="btnAdmin" title="관리자 로그인">🔒 관리자</button>
     <button class="icon-btn" id="btnRefresh" title="새로고침">⟳</button>
     <button class="icon-btn" id="btnSettings" title="설정">⚙</button>
@@ -1195,7 +1202,7 @@ table.s-t tr[data-act]{cursor:pointer}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.5.0',
+  version : '6.6.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3505,6 +3512,7 @@ async function renderMemo(){
 /* 화면 3개: list(목록) / read(읽기 — 문서처럼 스크롤) / edit(수정) */
 let mView='list';
 function mShow(v){
+  if(v!=='list'&&v!==mView&&typeof navPush==='function') navPush({mv:v});
   mView=v;
   $('mListView').style.display=v==='list'?'':'none';
   $('mReadView').style.display=v==='read'?'':'none';
@@ -3864,7 +3872,7 @@ let editorPass=loadJSON(LS_EDITOR,'');
 const isEditor=()=>!!editorPass;
 function applyEditorUI(){
   const ed=isEditor(), b=$('btnAdmin');
-  b.textContent=ed?'✓ 관리자 로그인됨':'🔒 관리자'; b.classList.toggle('on',ed); b.title=ed?'누르면 로그아웃':'관리자 로그인';
+  b.innerHTML=ed?'✓ 관리자<br>로그인됨':'🔒 관리자'; b.classList.toggle('on',ed); b.title=ed?'누르면 로그아웃':'관리자 로그인';
   [['dUpCard','dLockNote'],['mpUpCard','mpLockNote']].forEach(([u,n])=>{ if($(u)){ $(u).style.display=ed?'':'none'; $(n).style.display=ed?'none':''; } });
   if(typeof sLoaded!=='undefined'&&sLoaded){ sRenderAll(); if($('pgGantt').classList.contains('show')) sGanttView(); }
   if(typeof dSel!=='undefined'&&$('pgDaily').classList.contains('show')) dLoad();
@@ -4848,17 +4856,61 @@ function showPage(pg){
 /* 주소 해시로 탭 전환·북마크: #today #gantt #list #look #config #daily #manpower #kakao #memo #tbm #law … */
 const PG_HASH={pgSched:'today',pgGantt:'gantt',pgDaily:'daily',pgMan:'manpower',pgInput:'input',pgKakao:'kakao',pgMemo:'memo',pgToday:'tbm',pgRecords:'records',pgInfo:'info',pgLaw:'law'};
 function setHash(){
-  const pg=[...document.querySelectorAll('.pg')].find(p=>p.classList.contains('show')); if(!pg) return;
-  const hh=pg.id==='pgGantt'?sGv:(PG_HASH[pg.id]||'');
-  if(location.hash!=='#'+hh) history.replaceState(null,'','#'+hh);
+  const h=navHash(navCurPg());
+  if(location.hash!==h) navPush(); else navUpd();
 }
+/* ===== 뒤로가기: 폰 뒤로 버튼·머리글 '← 뒤로'가 앱 안에서 이전 화면으로 =====
+ * 화면(탭·하위 탭·공정표 보기)을 바꾸거나 창(공정 수정 등)을 열 때마다 기록을 남김 → 뒤로가면 이전 화면 / 열린 창 닫기.
+ * 첫 화면에서 뒤로가면 바로 꺼지지 않고 '한 번 더 누르면 닫힙니다' 안내(2초 안에 다시 누르면 종료). */
+let navIdx=0, navSilent=false, navIgnorePop=0, navClosingByPop=false, navExitAt=0;
+const navCurPg=()=>{ const p=[...document.querySelectorAll('.pg')].find(p=>p.classList.contains('show')); return p?p.id:'pgSched'; };
+const navHash=pg=>'#'+(pg==='pgGantt'?sGv:(PG_HASH[pg]||'today'));
+function navPush(extra){
+  if(navSilent) return;
+  navIdx++; history.pushState({idx:navIdx,pg:navCurPg(),...(extra||{})},'',navHash(navCurPg())); navUpd();
+}
+const navOpenModals=()=>[...document.querySelectorAll('.modal-bg.show')];
+function navUpd(){ const b=$('btnBack'); if(!b) return; b.style.display=(navOpenModals().length||navIdx>1||navCurPg()!=='pgSched')?'':'none'; }
+function navBack(){
+  const open=navOpenModals();
+  if(open.length){ open[open.length-1].classList.remove('show'); return; } // 창 닫기(기록 정리는 감시자가)
+  if(navIdx>1) history.back(); else { showPage('pgSched'); }
+}
+window.addEventListener('popstate',e=>{
+  if(navIgnorePop>0){ navIgnorePop--; navIdx=(e.state&&e.state.idx)||navIdx; navUpd(); return; } // 창을 버튼으로 닫으며 생긴 내부 되돌림
+  const st=e.state||{idx:0};
+  const open=navOpenModals();
+  if(open.length){ navClosingByPop=true; open.forEach(m=>m.classList.remove('show')); navClosingByPop=false; navIdx=st.idx||0; navUpd(); return; }
+  document.querySelectorAll('.p-zoom').forEach(z=>z.remove());
+  if(st.guard){
+    if(Date.now()-navExitAt<2000){ history.back(); return; } // 두 번째 → 앱 종료
+    navExitAt=Date.now(); toast('뒤로 한 번 더 누르면 앱이 닫힙니다');
+    navIdx=1; history.pushState({idx:1,pg:navCurPg()},'',location.hash); navUpd(); return;
+  }
+  navIdx=st.idx||0; navSilent=true;
+  try{
+    const hh=decodeURIComponent(location.hash.slice(1));
+    if(['gantt','list','look','config'].includes(hh)){ if(navCurPg()!=='pgGantt'||sGv!==hh){ sGv=hh; showPage('pgGantt'); } }
+    else { const pg=Object.keys(PG_HASH).find(k=>PG_HASH[k]===hh)||'pgSched'; if(navCurPg()!==pg) showPage(pg); }
+    // 순시메모 읽기·수정 화면 → 한 단계 앞으로
+    if(navCurPg()==='pgMemo'&&typeof mView!=='undefined'&&mView!=='list'&&st.mv!==mView){
+      if(mView==='edit'&&st.mv==='read') $('mBack').click(); else $('mReadBack').click();
+    }
+  } finally { navSilent=false; navUpd(); }
+});
+// 모든 창(.modal-bg)이 열리고 닫히는 것을 감시해 기록과 맞춤
+const navModalObs=new MutationObserver(ms=>ms.forEach(m=>{ const el=m.target, open=el.classList.contains('show'), was=el.dataset.navOpen==='1';
+  if(open&&!was){ el.dataset.navOpen='1'; if(!navSilent){ navIdx++; history.pushState({idx:navIdx,pg:navCurPg(),modal:el.id},'',location.hash); } navUpd(); }
+  else if(!open&&was){ el.dataset.navOpen=''; if(!navClosingByPop&&history.state&&history.state.modal===el.id){ navIgnorePop++; history.back(); } navUpd(); }
+}));
+document.querySelectorAll('.modal-bg').forEach(m=>navModalObs.observe(m,{attributes:true,attributeFilter:['class']}));
+$('btnBack').onclick=navBack;
 function fromHash(){
   const hh=decodeURIComponent(location.hash.slice(1));
   if(['gantt','list','look','config'].includes(hh)){ sGv=hh; showPage('pgGantt'); return true; }
   const pg=Object.keys(PG_HASH).find(k=>PG_HASH[k]===hh); if(pg){ showPage(pg); return true; }
   return false;
 }
-window.addEventListener('hashchange',()=>fromHash());
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>{ const g=b.dataset.grp; showPage(lastPg[g]||b.dataset.pg); });
 
 // 예전 탭 버튼(.click() 호출용) → 새 화면 전환
@@ -4884,7 +4936,8 @@ if(adminPass){ $('adminPassInput').value=adminPass; }
 kShowTab();
 if(!loadJSON('tbm3_wipe_v61',false)){ inputData={}; saveJSON(LS_INPUT,inputData); overlay={hidden:{},added:{},checked:{}}; saveJSON(LS_OVERLAY,overlay); sharedData={updatedAt:null,dates:{}}; saveJSON(LS_SHARED_CACHE,sharedData); saveJSON('tbm3_wipe_v61',true); }
 applyEditorUI();
-if(!fromHash()) showPage('pgSched');
+navSilent=true; if(!fromHash()) showPage('pgSched'); navSilent=false;
+history.replaceState({idx:0,guard:true},'',location.hash||'#today'); history.pushState({idx:1,pg:navCurPg()},'',location.hash||'#today'); navIdx=1; navUpd();
 loadAll();
 </script>
 
