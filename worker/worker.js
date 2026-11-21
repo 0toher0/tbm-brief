@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.0.0',
+        version: '3.1.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -334,6 +334,9 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS sched_doc (key TEXT PRIMARY KEY, json TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 0, updated_at TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS sched_actual (id TEXT PRIMARY KEY, s TEXT, f TEXT, pct REAL, note TEXT, updated_at TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS daily_work (day TEXT PRIMARY KEY, kind TEXT, payload TEXT, analysis TEXT, updated_at TEXT)`),
+    // v3.1.0: 일일작업 되돌리기용 이전 판(교체·수정·삭제 직전 상태) · 일일 출력인원(정규/연장/철야)
+    db.prepare(`CREATE TABLE IF NOT EXISTS daily_work_hist (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, kind TEXT, payload TEXT, analysis TEXT, updated_at TEXT, reason TEXT, saved_at TEXT)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS manpower (day TEXT NOT NULL, shift TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift))`),
   ]);
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
   for (const t of ['kakao_works', 'kakao_events']) {
@@ -543,8 +546,10 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok }, ok ? 200 : 401, cors);
   }
   // 쓰기는 관리자만 (읽기는 누구나)
-  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST' };
+  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST' };
   if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) return json({ error: 'editor_required' }, 403, cors);
+  // 고치기·지우기 전용 주소는 POST만 (GET으로 우회 금지)
+  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','daily-ai'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
 
   // ---- 공정관리: 공정표 + 실적 ----
   if (sub === 'sched') {
@@ -592,6 +597,7 @@ async function handleKakao(request, env, url, cors) {
       const payload = JSON.stringify(body.payload || null), analysis = JSON.stringify(body.analysis || null);
       if (payload.length + analysis.length > 1900000) return json({ error: 'too_large' }, 400, cors);
       const prev = await db.prepare(`SELECT day FROM daily_work WHERE day=?`).bind(day).first();
+      if (prev) await dailyKeep(db, day, 'replace', now);
       await db.prepare(`INSERT INTO daily_work(day,kind,payload,analysis,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET kind=excluded.kind, payload=excluded.payload, analysis=excluded.analysis, updated_at=excluded.updated_at`)
         .bind(day, body.kind, payload, analysis, now.ts).run();
       return json({ ok: true, day, replaced: !!prev }, 200, cors);
@@ -600,12 +606,58 @@ async function handleKakao(request, env, url, cors) {
       const r = await db.prepare(`SELECT * FROM daily_work WHERE day=?`).bind(String(body.day)).first();
       return json({ item: r ? { ...r, payload: JSON.parse(r.payload), analysis: JSON.parse(r.analysis) } : null }, 200, cors);
     }
-    const r = await db.prepare(`SELECT day, kind, analysis, updated_at FROM daily_work ORDER BY day DESC LIMIT 60`).all();
-    return json({ today: now.day, items: r.results.map(x => ({ ...x, analysis: JSON.parse(x.analysis) })) }, 200, cors);
+    const r = await db.prepare(`SELECT d.day, d.kind, d.analysis, d.updated_at, (SELECT COUNT(*) FROM daily_work_hist h WHERE h.day=d.day) AS hist FROM daily_work d ORDER BY d.day DESC LIMIT 60`).all();
+    // 삭제됐지만 되돌릴 수 있는 날짜
+    const del = await db.prepare(`SELECT day, MAX(saved_at) AS saved_at FROM daily_work_hist WHERE day NOT IN (SELECT day FROM daily_work) GROUP BY day ORDER BY day DESC LIMIT 20`).all();
+    return json({ today: now.day, items: r.results.map(x => ({ ...x, analysis: JSON.parse(x.analysis) })), deleted: del.results }, 200, cors);
   }
   if (sub === 'daily-delete') {
     if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
-    await db.prepare(`DELETE FROM daily_work WHERE day=?`).bind(String(body.day || '')).run();
+    const day = String(body.day || '');
+    await dailyKeep(db, day, 'delete', now);
+    await db.prepare(`DELETE FROM daily_work WHERE day=?`).bind(day).run();
+    return json({ ok: true }, 200, cors);
+  }
+  // 분석 결과만 고치기(원본은 그대로)
+  if (sub === 'daily-edit') {
+    const day = String(body.day || ''), analysis = JSON.stringify(body.analysis || null);
+    if (!body.analysis || analysis.length > 600000) return json({ error: 'bad_payload' }, 400, cors);
+    const cur = await db.prepare(`SELECT day FROM daily_work WHERE day=?`).bind(day).first();
+    if (!cur) return json({ error: 'not_found' }, 404, cors);
+    await dailyKeep(db, day, 'edit', now);
+    await db.prepare(`UPDATE daily_work SET analysis=?, updated_at=? WHERE day=?`).bind(analysis, now.ts, day).run();
+    return json({ ok: true }, 200, cors);
+  }
+  // 되돌리기: 가장 최근 이전 판으로 복원(교체·수정·삭제 모두)
+  if (sub === 'daily-undo') {
+    const day = String(body.day || '');
+    const h = await db.prepare(`SELECT * FROM daily_work_hist WHERE day=? ORDER BY id DESC LIMIT 1`).bind(day).first();
+    if (!h) return json({ error: 'nothing_to_undo' }, 404, cors);
+    await db.batch([
+      db.prepare(`INSERT INTO daily_work(day,kind,payload,analysis,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET kind=excluded.kind, payload=excluded.payload, analysis=excluded.analysis, updated_at=excluded.updated_at`)
+        .bind(day, h.kind, h.payload, h.analysis, h.updated_at),
+      db.prepare(`DELETE FROM daily_work_hist WHERE id=?`).bind(h.id),
+    ]);
+    return json({ ok: true, restored: h.reason, from: h.updated_at }, 200, cors);
+  }
+
+  // ---- 일일 출력인원 (카톡 보고: 정규/연장/철야) — 앱이 파싱해 보냄. 날짜·근무조당 1건 ----
+  if (sub === 'manpower') {
+    if (request.method === 'POST') {
+      const day = String(body.day || ''), shift = String(body.shift || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !['정규', '연장', '철야'].includes(shift) || !body.data) return json({ error: 'bad_payload' }, 400, cors);
+      const data = JSON.stringify(body.data); if (data.length > 300000) return json({ error: 'too_large' }, 400, cors);
+      const prev = await db.prepare(`SELECT day FROM manpower WHERE day=? AND shift=?`).bind(day, shift).first();
+      await db.prepare(`INSERT INTO manpower(day,shift,data,raw,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day,shift) DO UPDATE SET data=excluded.data, raw=excluded.raw, updated_at=excluded.updated_at`)
+        .bind(day, shift, data, String(body.raw || '').slice(0, 60000), now.ts).run();
+      return json({ ok: true, replaced: !!prev }, 200, cors);
+    }
+    const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+    const r = await db.prepare(`SELECT day, shift, data, updated_at FROM manpower WHERE day BETWEEN ? AND ? ORDER BY day DESC LIMIT 600`).bind(from, to).all();
+    return json({ today: now.day, items: r.results.map(x => ({ ...x, data: JSON.parse(x.data) })) }, 200, cors);
+  }
+  if (sub === 'manpower-delete') {
+    await db.prepare(`DELETE FROM manpower WHERE day=? AND shift=?`).bind(String(body.day || ''), String(body.shift || '')).run();
     return json({ ok: true }, 200, cors);
   }
   // 이미지(또는 표 텍스트)를 AI로 읽어 금일·명일 작업 구조화
@@ -740,6 +792,12 @@ const KAKAO_WORK_STATUS = ['예정', '진행', '완료', '중단'];
 // 중복 판정용 키: 방 + 작업명(공백·기호 제거)
 const workKey = (room, title) => `${room}|${String(title || '').replace(/[\s·.,\-_/()\[\]]/g, '').toLowerCase()}`;
 const KAKAO_MAX_CHARS = 150000; // 한 번 분석에 넣는 대화 길이 상한(비용 보호). 넘으면 최근 대화 위주로 넣고 truncated 표시
+
+// 일일작업 이전 판 보관(되돌리기용) — 날짜당 최근 10개만
+async function dailyKeep(db, day, reason, now) {
+  await db.prepare(`INSERT INTO daily_work_hist(day,kind,payload,analysis,updated_at,reason,saved_at) SELECT day,kind,payload,analysis,updated_at,?,? FROM daily_work WHERE day=?`).bind(reason, now.ts, day).run();
+  await db.prepare(`DELETE FROM daily_work_hist WHERE day=? AND id NOT IN (SELECT id FROM daily_work_hist WHERE day=? ORDER BY id DESC LIMIT 10)`).bind(day, day).run();
+}
 
 // 'SD 공사 일일작업' 표(이미지 조각 또는 표 텍스트) → 금일·명일 작업, 인원표
 async function analyzeDailyWork(env, body) {
