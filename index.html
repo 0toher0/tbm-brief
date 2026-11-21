@@ -574,6 +574,15 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-gbase.ph{top:20px;height:3px}
 .s-phc .v{font-size:.62rem;font-weight:800;margin-top:2px} .s-phc .v.late{color:var(--s-crit)} .s-phc .v.early{color:var(--green)} .s-phc .v.ok{color:var(--steel)}
 .s-vt{margin-top:10px}
+.undo-bar{position:fixed;left:50%;transform:translateX(-50%) translateY(140%);bottom:calc(env(safe-area-inset-bottom,0px) + 74px);background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:.8rem;z-index:70;max-width:94%;width:max-content;transition:transform .25s;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.undo-bar.show{transform:translateX(-50%) translateY(0)}
+.undo-bar button{border:none;background:#ffd43b;color:#16202b;font-weight:800;border-radius:8px;padding:7px 10px;white-space:nowrap}
+.s-rc{display:flex;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.s-rc:first-child{border-top:none}
+.s-rc .m{flex:1;min-width:0;cursor:pointer}
+.s-rc .nm{font-weight:800;font-size:.82rem}
+.s-rc .sub{font-size:.68rem;color:var(--steel);margin-top:2px}
+.s-rc .b{display:flex;flex-direction:column;gap:4px;align-items:stretch}
 /* v6.1 */
 .de-row{border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:8px;background:#fff}
 .de-row textarea{width:100%;margin-top:6px;font-size:.8rem;resize:vertical;box-sizing:border-box}
@@ -625,6 +634,8 @@ table.s-t tr[data-act]{cursor:pointer}
     <div class="card" id="sNow"></div>
     <div class="s-sec">곧 착수 <small>기준일~3일 안</small></div>
     <div class="card" id="sSoon"></div>
+    <div class="s-sec">최근 처리한 공정 <small>잘못 눌렀으면 되돌리기 · 완료 취소 · 고치기</small></div>
+    <div class="card" id="sRecent"></div>
     <div class="s-sec">주의 <small>기준선보다 늦음 · 여유 부족</small></div>
     <div class="card" id="sWarn"></div>
     <div class="s-sec">지연 시뮬레이터 <small>저장 안 됨 · 회의용</small></div>
@@ -1075,6 +1086,7 @@ table.s-t tr[data-act]{cursor:pointer}
   <button class="tab-btn" data-pg="pgMemo" id="tabMemo" style="display:none"><span class="ic">✓</span>순시메모</button>
 </div>
 
+<div class="undo-bar" id="undoBar"></div>
 <!-- 관리자 로그인 -->
 <div class="modal-bg" id="adminModal">
   <div class="modal">
@@ -1125,7 +1137,13 @@ table.s-t tr[data-act]{cursor:pointer}
         <div><label class="f-label">진도율 %</label><input class="f-input" id="aPct" inputmode="decimal" placeholder="예: 40"></div>
         <div><label class="f-label">메모</label><input class="f-input" id="aNote"></div>
       </div>
-      <div class="f-hint">실적을 비우면 '계획대로 진행'으로 계산합니다.</div>
+      <input type="range" min="0" max="100" step="5" id="aPctR" style="width:100%;accent-color:var(--s-crit);margin-top:6px">
+      <div class="f-hint">실적을 비우면 '계획대로 진행'으로 계산합니다. 아래 저장을 눌러야 반영됩니다.</div>
+      <div class="btn-row" id="aActQuick" style="margin-top:8px">
+        <button class="btn ghost" id="aUncomplete">완료 취소</button>
+        <button class="btn ghost" id="aUndoAct">↩ 이전 상태로</button>
+        <button class="btn ghost" id="aClearAct" style="color:var(--red)">실적 지우기</button>
+      </div>
     </div>
     <div class="paste-hint" id="aCalc" style="margin-top:10px"></div>
     </div>
@@ -1177,7 +1195,7 @@ table.s-t tr[data-act]{cursor:pointer}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.4.0',
+  version : '6.5.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3897,7 +3915,7 @@ const S_SEED=[ // 사용자 제공 크리티컬 패스 (휴식 '27.2.6~2.9는 �
  ['노내 가설 해체 및 반출','2027-03-06','2027-03-07','P3'],['안전 Deck 안착 및 건조 배관 설치','2027-03-08','2027-03-11','P4'],['노체 배관 설치','2027-03-12','2027-03-14','P4'],
  ['도압관 설치','2027-03-15','2027-03-15','P4'],['Leak Test','2027-03-16','2027-03-18','P4'],['침목적','2027-03-18','2027-03-20','P4'],['충진 및 화입준비','2027-03-21','2027-03-23','P4'],
 ];
-let sPlan=null, sRev=null, sAct={}, sCalc=null, sToday=null, sLoaded=false;
+let sHist={}, sPlan=null, sRev=null, sAct={}, sCalc=null, sToday=null, sLoaded=false;
 const sDAY=86400e3, sT=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)), sISO=t=>new Date(t).toISOString().slice(0,10);
 const sDN=s=>Math.round(sT(s)/sDAY);           // 날짜 → 일 번호(UTC)
 const sWD='일월화수목금토';
@@ -4006,7 +4024,7 @@ async function sLoad(force){
   if(sLoaded&&!force) return sRenderAll();
   try{
     const r=await kApi('sched'); sToday=r.today;
-    sPlan=sMigrate(r.plan||sSeedPlan()); sRev=r.rev; sAct={}; (r.actual||[]).forEach(x=>sAct[x.id]={s:x.s,f:x.f,pct:x.pct,note:x.note});
+    sPlan=sMigrate(r.plan||sSeedPlan()); sRev=r.rev; sAct={}; (r.actual||[]).forEach(x=>sAct[x.id]={s:x.s,f:x.f,pct:x.pct,note:x.note,at:x.updated_at}); sHist=r.hist||{};
     sLoaded=true; $('sLoading').style.display='none'; $('sMain').style.display='';
     $('sPlanInfo').textContent=r.plan?`공정표 저장본 rev ${r.rev} · ${r.updated_at||''} · 기준선 ${sPlan.base?sPlan.base.at:''}`:'초기 주공정(아직 저장 전 — 공정을 고치면 서버에 저장됩니다)';
   }catch(e){ $('sLoading').textContent='공정표를 불러오지 못했습니다: '+kErr(e); return; }
@@ -4092,24 +4110,62 @@ function sHome(){
   $('simAct').innerHTML=sPlan.acts.filter(a=>C.R[a.id]&&!/^done/.test(C.R[a.id].state)).map(a=>`<option value="${a.id}">${C.R[a.id].crit?'🔴 ':''}${esc(a.name)}</option>`).join('');
   if(keep&&sA(keep)) $('simAct').value=keep;
   sSim();
+  sRecent();
   $('sMain').querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>sEdit(el.dataset.act));
   // 현장 입력: 착수·진도(손 뗄 때 저장, 100%면 완료)·완료
-  $('sMain').querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>sSetActual(b.dataset.start,{s:sd,f:'',pct:0}));
-  $('sMain').querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{ const ac=sAct[b.dataset.done]||{}; sSetActual(b.dataset.done,{s:ac.s||sDate(C.R[b.dataset.done].es),f:sd,pct:100}); });
+  $('sMain').querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>sSetActual(b.dataset.start,{s:sd,f:'',pct:0},'착수'));
+  $('sMain').querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{ const ac=sAct[b.dataset.done]||{}; sSetActual(b.dataset.done,{s:ac.s||sDate(C.R[b.dataset.done].es),f:sd,pct:100},'완료'); });
   $('sMain').querySelectorAll('[data-pct]').forEach(s=>{
     s.oninput=()=>{ s.nextElementSibling.textContent=s.value+'%'; };
     s.onchange=()=>{ const id=s.dataset.pct, v=+s.value, ac=sAct[id]||{}, st=ac.s||sDate(C.R[id].es);
       sSetActual(id, v>=100?{s:st,f:sd,pct:100}:{s:st,f:'',pct:v}); };
   });
 }
-async function sSetActual(id, patch){
+async function sSetActual(id, patch, what){
   const cur=sAct[id]||{};
   const ac={s:cur.s||'',f:cur.f||'',pct:cur.pct==null?'':cur.pct,note:cur.note||'',...patch};
-  try{ await kApi('sched-actual',{id,...ac});
-    sAct[id]={s:ac.s||null,f:ac.f||null,pct:ac.pct===''?null:+ac.pct,note:ac.note};
-    toast(ac.f?`✓ ${sA(id).name} 완료`:`${sA(id).name} ${ac.pct===''?'착수':`진도 ${ac.pct}%`}`); sRenderAll(); }
-  catch(e){ toast(kErr(e)); }
+  const label=what||(ac.f?'완료':ac.pct===''||ac.pct===0?'착수':`진도 ${ac.pct}%`);
+  try{ const r=await kApi('sched-actual',{id,...ac,what:label});
+    if(!ac.s&&!ac.f&&ac.pct===''&&!ac.note) delete sAct[id]; else sAct[id]={s:ac.s||null,f:ac.f||null,pct:ac.pct===''?null:+ac.pct,note:ac.note,at:r.at};
+    sHist[id]=(sHist[id]||0)+1;
+    sRenderAll(); sUndoBar(id,label); return true; }
+  catch(e){ toast(kErr(e)); return false; }
 }
+// 방금 처리한 것 되돌리기 띠 (12초)
+let sUndoTimer=null;
+function sUndoBar(id,label){
+  const a=sA(id); if(!a) return;
+  $('undoBar').innerHTML=`<span>${label==='완료'?'✓':'✎'} <b>${esc(a.name)}</b> ${esc(label)}</span><button id="undoBarBtn">↩ 되돌리기</button>`;
+  $('undoBar').classList.add('show');
+  $('undoBarBtn').onclick=()=>{ $('undoBar').classList.remove('show'); sUndoActual(id); };
+  clearTimeout(sUndoTimer); sUndoTimer=setTimeout(()=>$('undoBar').classList.remove('show'),12000);
+}
+async function sUndoActual(id){
+  try{ const r=await kApi('sched-actual-undo',{id});
+    if(r.restored) sAct[id]={...r.restored,at:r.restored.updated_at}; else delete sAct[id];
+    sHist[id]=Math.max(0,(sHist[id]||1)-1);
+    toast(`↩ ${sA(id).name} — ${r.undid?`'${r.undid}' 전`:'이전'} 상태로 되돌렸습니다`); sRenderAll();
+    if($('actModal').classList.contains('show')&&sEditId===id) sEdit(id);
+  }catch(e){ toast(e.message==='nothing_to_undo'?'되돌릴 이전 기록이 없습니다 — 완료 취소나 실적 지우기를 쓰세요':kErr(e)); }
+}
+// 최근 처리한 공정: 실적이 있는 공정을 최근 처리 순으로 — 다시 눌러 완료 여부·진도 수정
+function sRecent(){
+  const ed=isEditor();
+  const list=Object.keys(sAct).filter(id=>sA(id)).sort((a,b)=>String(sAct[b].at||'').localeCompare(String(sAct[a].at||''))).slice(0,10);
+  $('sRecent').innerHTML=list.length?list.map(id=>{ const a=sA(id), ac=sAct[id];
+    const st=ac.f?`<span class="s-pill ok">완료 ${sMD(ac.f)}</span>`:ac.s?`<span class="s-pill crit" style="background:#fff4e6;color:#e8590c">진행 ${ac.pct!=null?ac.pct+'%':''}</span>`:'<span class="s-pill asm">메모</span>';
+    return `<div class="s-rc"><div class="m" data-act="${id}"><div class="nm"><small class="gid">${id}</small>${esc(a.name)} ${st}</div>
+      <div class="sub">착수 ${ac.s?sMD(ac.s):'—'} · 완료 ${ac.f?sMD(ac.f):'—'}${ac.at?` · ${esc(String(ac.at).slice(5))} 처리`:''}</div></div>
+      ${ed?`<div class="b">${ac.f?`<button class="mini-btn" data-uncomplete="${id}">완료 취소</button>`:''}${sHist[id]?`<button class="mini-btn" data-undo-act="${id}">↩ 되돌리기</button>`:''}<button class="mini-btn" data-act="${id}">✎ 고치기</button></div>`:''}</div>`; }).join('')
+    :'<div class="paste-hint">아직 실적을 넣은 공정이 없습니다</div>';
+  $('sRecent').querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>sEdit(el.dataset.act));
+  $('sRecent').querySelectorAll('[data-undo-act]').forEach(b=>b.onclick=()=>sUndoActual(b.dataset.undoAct));
+  $('sRecent').querySelectorAll('[data-uncomplete]').forEach(b=>b.onclick=()=>sUncomplete(b.dataset.uncomplete));
+}
+// 완료 취소: 완료일을 지우고 진행 중으로(진도 100%였으면 진도는 비워 계획 기준으로)
+function sUncomplete(id){ const ac=sAct[id]||{}; return sSetActual(id,{f:'',pct:ac.pct>=100?'':ac.pct},'완료 취소'); }
+// 실적 지우기: 계획대로 진행으로
+function sClearActual(id){ return sSetActual(id,{s:'',f:'',pct:'',note:''},'실적 지우기'); }
 function sSim(){
   const id=$('simAct').value; if(!id){ $('simOut').textContent=''; return; }
   const n=+$('simDays').value, a=sA(id), S=sRun(sPlan,sAct,{delay:{[id]:n}}), shift=sDiff(sCalc.fin,S.fin), r=sCalc.R[id];
@@ -4320,7 +4376,9 @@ function sEdit(id){
   if(!a) sPredRow('aPreds',null);
   if(a) sPlan.acts.forEach(s=>(s.preds||[]).forEach(p=>{ if(p.id===a.id) sPredRow('aSuccs',{id:s.id,type:p.type,lag:p.lag}); }));
   const ac=(a&&sAct[a.id])||{};
-  $('aS').value=ac.s||''; $('aF').value=ac.f||''; $('aPct').value=ac.pct!=null?ac.pct:''; $('aNote').value=ac.note||'';
+  $('aS').value=ac.s||''; $('aF').value=ac.f||''; $('aPct').value=ac.pct!=null?ac.pct:''; $('aNote').value=ac.note||''; $('aPctR').value=ac.pct!=null?ac.pct:0;
+  $('aUncomplete').style.display=ac.f?'':'none'; $('aUndoAct').style.display=a&&sHist[a.id]?'':'none'; $('aClearAct').style.display=a&&sAct[a.id]?'':'none';
+  $('aUndoAct').textContent=a&&sHist[a.id]?`↩ 이전 상태로 (${sHist[a.id]})`:'↩ 이전 상태로';
   $('aActBox').style.display=a?'':'none';
   $('aDel').style.display=a&&!a.cp?'':'none';
   const r=a&&sCalc.R[a.id], b=a&&sBaseOf(a.id);
@@ -4329,6 +4387,7 @@ function sEdit(id){
   const ed=isEditor();
   $('actModal').querySelectorAll('input,select').forEach(x=>x.disabled=!ed);
   ['aAddPred','aAddSucc','aSave'].forEach(id=>$(id).style.display=ed?'':'none'); if(!ed) $('aDel').style.display='none';
+  if(!ed) ['aUncomplete','aUndoAct','aClearAct'].forEach(id=>$(id).style.display='none');
   $('actModal').querySelectorAll('.s-predrow .mini-btn').forEach(x=>x.style.display=ed?'':'none');
   if(!ed) $('aCalc').innerHTML+='<br>🔒 보기 전용 — 수정은 관리자 로그인 후';
   $('aMode').style.display=!a&&ed?'':'none'; sAddMode('one');
@@ -4364,8 +4423,9 @@ async function sSaveEdit(){
     if(old){
       const ac={s:$('aS').value,f:$('aF').value,pct:$('aPct').value,note:$('aNote').value.trim()}, prev=sAct[old.id]||{};
       if(ac.s!==(prev.s||'')||ac.f!==(prev.f||'')||String(ac.pct)!==String(prev.pct==null?'':prev.pct)||ac.note!==(prev.note||'')){
-        await kApi('sched-actual',{id:old.id,...ac});
-        if(!ac.s&&!ac.f&&ac.pct===''&&!ac.note) delete sAct[old.id]; else sAct[old.id]={s:ac.s||null,f:ac.f||null,pct:ac.pct===''?null:+ac.pct,note:ac.note};
+        const rr=await kApi('sched-actual',{id:old.id,...ac,what:'실적 수정'});
+        if(!ac.s&&!ac.f&&ac.pct===''&&!ac.note) delete sAct[old.id]; else sAct[old.id]={s:ac.s||null,f:ac.f||null,pct:ac.pct===''?null:+ac.pct,note:ac.note,at:rr.at};
+        sHist[old.id]=(sHist[old.id]||0)+1; setTimeout(()=>sUndoBar(old.id,'실적 수정'),50);
       }
     }
     closeModal('actModal'); toast(old?'저장했습니다':'공정을 추가했습니다'); sRenderAll();
@@ -4410,6 +4470,11 @@ $('cfImport').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) 
 $('aAddPred').onclick=()=>sPredRow('aPreds',null);
 $('aAddSucc').onclick=()=>sPredRow('aSuccs',null);
 $('aSave').onclick=sSaveEdit; $('aDel').onclick=sDelete;
+$('aPctR').oninput=()=>{ $('aPct').value=$('aPctR').value; };
+$('aPct').oninput=()=>{ $('aPctR').value=$('aPct').value||0; };
+$('aUncomplete').onclick=async()=>{ if(await sUncomplete(sEditId)) sEdit(sEditId); };
+$('aUndoAct').onclick=()=>sUndoActual(sEditId);
+$('aClearAct').onclick=async()=>{ if(!confirm('이 공정의 실적(착수·완료·진도)을 모두 지우고 계획대로 진행으로 계산할까요? (↩ 되돌리기 가능)')) return; if(await sClearActual(sEditId)) sEdit(sEditId); };
 
 /* ================= 📋 일일작업: 엑셀/이미지 붙여넣기 → 금일·명일 작업 분석 ================= */
 let dMode='excel', dList=[], dSel=null;

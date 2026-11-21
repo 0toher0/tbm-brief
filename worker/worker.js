@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.1.1',
+        version: '3.2.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -333,6 +333,8 @@ async function kakaoSchema(db) {
     // v3.0.0: 공정관리 — 공정표(문서 1개, rev 잠금) · 공정별 실적 · 일일작업(엑셀/이미지 원본 + 분석 결과)
     db.prepare(`CREATE TABLE IF NOT EXISTS sched_doc (key TEXT PRIMARY KEY, json TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 0, updated_at TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS sched_actual (id TEXT PRIMARY KEY, s TEXT, f TEXT, pct REAL, note TEXT, updated_at TEXT)`),
+    // v3.2.0: 실적을 바꾸기 직전 상태(되돌리기용). existed=0이면 '실적 없음' 상태였음
+    db.prepare(`CREATE TABLE IF NOT EXISTS sched_actual_hist (hid INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL, existed INTEGER NOT NULL, s TEXT, f TEXT, pct REAL, note TEXT, updated_at TEXT, saved_at TEXT, what TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS daily_work (day TEXT PRIMARY KEY, kind TEXT, payload TEXT, analysis TEXT, updated_at TEXT)`),
     // v3.1.0: 일일작업 되돌리기용 이전 판(교체·수정·삭제 직전 상태) · 일일 출력인원(정규/연장/철야)
     db.prepare(`CREATE TABLE IF NOT EXISTS daily_work_hist (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, kind TEXT, payload TEXT, analysis TEXT, updated_at TEXT, reason TEXT, saved_at TEXT)`),
@@ -546,10 +548,10 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok }, ok ? 200 : 401, cors);
   }
   // 쓰기는 관리자만 (읽기는 누구나)
-  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST' };
+  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST' };
   if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) return json({ error: 'editor_required' }, 403, cors);
   // 고치기·지우기 전용 주소는 POST만 (GET으로 우회 금지)
-  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','daily-ai'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','sched-actual-undo','daily-ai'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
 
   // ---- 공정관리: 공정표 + 실적 ----
   if (sub === 'sched') {
@@ -568,17 +570,23 @@ async function handleKakao(request, env, url, cors) {
         .bind(json0, rev, now.ts).run();
       return json({ ok: true, rev }, 200, cors);
     }
-    const [doc, act] = await db.batch([
+    const [doc, act, hist] = await db.batch([
       db.prepare(`SELECT * FROM sched_doc WHERE key='plan'`),
       db.prepare(`SELECT * FROM sched_actual`),
+      db.prepare(`SELECT id, COUNT(*) AS n FROM sched_actual_hist GROUP BY id`),
     ]);
     const d = doc.results[0];
-    return json({ today: now.day, plan: d ? JSON.parse(d.json) : null, rev: d ? d.rev : null, updated_at: d ? d.updated_at : null, actual: act.results }, 200, cors);
+    return json({ today: now.day, plan: d ? JSON.parse(d.json) : null, rev: d ? d.rev : null, updated_at: d ? d.updated_at : null, actual: act.results, hist: Object.fromEntries(hist.results.map(x => [x.id, x.n])) }, 200, cors);
   }
   if (sub === 'sched-actual') {
     if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
     const id = String(body.id || ''); if (!id) return json({ error: 'bad_payload' }, 400, cors);
     const dt = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null);
+    // 바꾸기 전 상태를 이력에 남김(되돌리기) — 공정당 최근 20개
+    const before = await db.prepare(`SELECT * FROM sched_actual WHERE id=?`).bind(id).first();
+    await db.prepare(`INSERT INTO sched_actual_hist(id,existed,s,f,pct,note,updated_at,saved_at,what) VALUES(?,?,?,?,?,?,?,?,?)`)
+      .bind(id, before ? 1 : 0, before ? before.s : null, before ? before.f : null, before ? before.pct : null, before ? before.note : null, before ? before.updated_at : null, now.ts, String(body.what || '').slice(0, 40)).run();
+    await db.prepare(`DELETE FROM sched_actual_hist WHERE id=? AND hid NOT IN (SELECT hid FROM sched_actual_hist WHERE id=? ORDER BY hid DESC LIMIT 20)`).bind(id, id).run();
     if (!body.s && !body.f && (body.pct == null || body.pct === '') && !body.note) {
       await db.prepare(`DELETE FROM sched_actual WHERE id=?`).bind(id).run();
       return json({ ok: true, cleared: true }, 200, cors);
@@ -587,6 +595,19 @@ async function handleKakao(request, env, url, cors) {
     await db.prepare(`INSERT INTO sched_actual(id,s,f,pct,note,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET s=excluded.s, f=excluded.f, pct=excluded.pct, note=excluded.note, updated_at=excluded.updated_at`)
       .bind(id, dt(body.s), dt(body.f), pct, String(body.note || '').slice(0, 500), now.ts).run();
     return json({ ok: true, at: now.ts }, 200, cors);
+  }
+  // 실적 되돌리기: 그 공정의 가장 최근 변경 직전 상태로
+  if (sub === 'sched-actual-undo') {
+    const id = String(body.id || '');
+    const hh = await db.prepare(`SELECT * FROM sched_actual_hist WHERE id=? ORDER BY hid DESC LIMIT 1`).bind(id).first();
+    if (!hh) return json({ error: 'nothing_to_undo' }, 404, cors);
+    await db.batch([
+      hh.existed
+        ? db.prepare(`INSERT INTO sched_actual(id,s,f,pct,note,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET s=excluded.s, f=excluded.f, pct=excluded.pct, note=excluded.note, updated_at=excluded.updated_at`).bind(id, hh.s, hh.f, hh.pct, hh.note, hh.updated_at)
+        : db.prepare(`DELETE FROM sched_actual WHERE id=?`).bind(id),
+      db.prepare(`DELETE FROM sched_actual_hist WHERE hid=?`).bind(hh.hid),
+    ]);
+    return json({ ok: true, id, restored: hh.existed ? { s: hh.s, f: hh.f, pct: hh.pct, note: hh.note, updated_at: hh.updated_at } : null, undid: hh.what || '' }, 200, cors);
   }
 
   // ---- 일일작업: 엑셀 표/이미지 원본 + 분석 결과 (날짜당 1건, 다시 올리면 교체) ----
