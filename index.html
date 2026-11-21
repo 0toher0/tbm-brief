@@ -279,6 +279,19 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
 .lg-ref{font-size:.7rem;font-weight:700;text-decoration:none;color:var(--ink2);background:#f0f1f2;border-radius:6px;padding:4px 8px}
 .lg-ref.law{color:#fff;background:var(--posco)}
 .lg-ref.none{color:var(--steel);background:#f6f7f7}
+.lg-sub{font-size:.72rem;font-weight:800;color:var(--ink);margin:9px 0 3px}
+.lg-list{margin:0;padding-left:16px;font-size:.76rem;color:var(--ink2);line-height:1.55}
+.lg-list li{margin:3px 0}
+.lg-list.site li::marker{color:var(--posco)}
+.lg-mref{font-size:.64rem;font-weight:700;color:var(--posco);text-decoration:none;white-space:nowrap;background:#e8f0fb;border-radius:4px;padding:0 4px}
+.lg-how{background:#fff8e6;border:1px solid #ffe08a;border-radius:8px;padding:4px 10px 6px;margin-top:8px}
+.lg-how ol{margin:0;padding-left:18px;font-size:.77rem;color:var(--ink);line-height:1.6}
+.lg-how li{margin:4px 0}
+.lg-jump{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.lg-gbox{margin-bottom:8px}
+.lg-gbox>summary{cursor:pointer;font-size:.84rem;font-weight:800;color:var(--ink);padding:8px 4px;list-style:none;border-bottom:2px solid var(--ink);margin-bottom:8px;scroll-margin-top:70px}
+.lg-gbox>summary::before{content:'▸ ';color:var(--posco)} .lg-gbox[open]>summary::before{content:'▾ '}
+.lg-gbox>summary small{display:block;font-size:.64rem;font-weight:600;color:var(--steel);margin-top:2px;line-height:1.4}
 .lg-group{font-size:.78rem;font-weight:800;color:var(--ink);margin:14px 2px 6px}
 .lg-law{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:.82rem}
 .lg-law:last-child{border-bottom:none}
@@ -580,6 +593,33 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-gbase.ph{top:20px;height:3px}
 .s-phc .v{font-size:.62rem;font-weight:800;margin-top:2px} .s-phc .v.late{color:var(--s-crit)} .s-phc .v.early{color:var(--green)} .s-phc .v.ok{color:var(--steel)}
 .s-vt{margin-top:10px}
+.s-vrow{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-top:10px}
+.s-vrow>.s-vt{flex:0 1 230px;width:auto;margin-top:0}
+.s-pimg{flex:1 1 280px;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+.pimg-h{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.pimg-h b{font-size:.8rem} .pimg-h small{font-family:var(--num);font-size:.68rem;color:var(--steel)}
+.pimg-view{margin-top:6px;background:#f6f7f7;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;position:relative}
+.pimg-view img{max-width:100%;max-height:420px;display:block}
+.pimg-view .ph{font-size:.74rem;color:var(--steel);padding:30px 10px;text-align:center;line-height:1.6}
+.pimg-tag{position:absolute;left:6px;top:6px;background:rgba(15,18,22,.72);color:#fff;font-family:var(--num);font-size:.7rem;font-weight:800;border-radius:6px;padding:2px 7px}
+.pimg-ctl{display:flex;align-items:center;gap:6px;margin-top:7px}
+.pimg-ctl input[type=range]{flex:1;min-width:60px}
+.pimg-ctl .cnt{font-family:var(--num);font-size:.66rem;color:var(--steel);white-space:nowrap}
+.pimg-days{display:flex;gap:4px;overflow-x:auto;margin-top:6px;padding-bottom:2px}
+.pimg-days button{flex:none;font-family:var(--num);font-size:.62rem;border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 6px;cursor:pointer}
+.pimg-days button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pimg-note{font-size:.7rem;color:var(--ink2);margin-top:5px}
+.pimg-adm{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pimg-adm input[type=date]{font-family:var(--num);font-size:.74rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px}
+.pimg-adm input[type=text]{flex:1 1 120px;font-size:.74rem;padding:4px 6px;border:1px solid var(--line);border-radius:6px;min-width:0}
+.pimg-zone{flex:1 1 100%;border:2px dashed #ffd43b;background:#fff9db;border-radius:8px;padding:9px;font-size:.72rem;color:#7a5b00;text-align:center;outline:none;min-height:20px}
+.pimg-zone:focus{border-color:var(--posco);background:#e8f0fb;color:var(--posco)}
+.pimg-bg{align-items:center;justify-content:center;background:rgba(10,12,14,.92)}
+.pimg-full{width:100%;height:100%;display:flex;flex-direction:column;padding:10px;box-sizing:border-box}
+.pimg-fh{display:flex;justify-content:space-between;align-items:center;color:#fff;font-family:var(--num)}
+.pimg-fimg{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto}
+.pimg-fimg img{max-width:100%;max-height:100%}
+.pimg-full .pimg-ctl{color:#fff} .pimg-full .pimg-ctl .cnt{color:#ced4da}
 .undo-bar{position:fixed;left:50%;transform:translateX(-50%) translateY(140%);bottom:calc(env(safe-area-inset-bottom,0px) + 74px);background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:.8rem;z-index:70;max-width:94%;width:max-content;transition:transform .25s;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 .undo-bar.show{transform:translateX(-50%) translateY(0)}
 .undo-bar button{border:none;background:#ffd43b;color:#16202b;font-weight:800;border-radius:8px;padding:7px 10px;white-space:nowrap}
@@ -1140,6 +1180,13 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 </div>
 
 <!-- 공정 추가·수정 -->
+<div class="modal-bg pimg-bg" id="pimgModal">
+  <div class="pimg-full">
+    <div class="pimg-fh"><b id="pimgFT"></b><button class="mini-btn" id="pimgFX">✕ 닫기</button></div>
+    <div class="pimg-fimg"><img id="pimgFI" alt="고로 진행률"></div>
+    <div class="pimg-ctl" id="pimgFC"></div>
+  </div>
+</div>
 <div class="modal-bg" id="actModal">
   <div class="modal">
     <h2 id="aTitle">공정</h2>
@@ -1233,7 +1280,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.7.1',
+  version : '6.9.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -2550,6 +2597,14 @@ function ensureReferenceData(){
   }
   return referenceDataPromise;
 }
+function lgKeyView(L){
+  const groups=[]; (L.key||[]).forEach(k=>{ const g=k.group||'기타'; let G=groups.find(x=>x.g===g); if(!G) groups.push(G={g,items:[]}); G.items.push(k); });
+  return `<div class="lg-intro">현장에서 가장 자주 쓰는 안전기준을 <b>법 기준 → 고로 개수 현장 적용</b> 순서로 정리했습니다. <b>⚖</b>를 누르면 법제처 현행 조문이 열립니다.${L.keyUpdated?` (조문 확인 ${esc(L.keyUpdated)})`:''}</div>
+    <div class="lg-jump">${groups.map((G,i)=>`<button class="dchip" data-lgj="${i}">${esc(G.g)} ${G.items.length}</button>`).join('')}</div>
+    ${groups.map((G,i)=>`<details class="lg-gbox" id="lgg-${i}" ${i===0?'open':''}><summary>${esc(G.g)} <small>${G.items.map(k=>esc(k.title)).join(' · ')}</small></summary>${G.items.map(lgKeyCard).join('')}</details>`).join('')}`;
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-lgj]'); if(!b) return;
+  const d=document.querySelectorAll('#lgg-'+b.dataset.lgj); const el=[...d].find(x=>x.offsetParent)||d[0]; if(!el) return; el.open=true; el.scrollIntoView({behavior:'smooth',block:'start'}); });
 /* ---- 법령정리(data/legal.json): 핵심 기준·법정 배치인원·최신 개정·전체 법령 링크 ---- */
 let LEGAL=null, legalPromise=null, infoView='risk', legalAdmin=null;
 function ensureLegal(){
@@ -2560,15 +2615,19 @@ function ensureLegal(){
 const lgRefs=refs=>(refs||[]).map(r=>r.url
   ? `<a class="lg-ref ${/law\.go\.kr/.test(r.url)?'law':''}" href="${esc(r.url)}" target="_blank" rel="noopener">${/law\.go\.kr/.test(r.url)?'⚖ ':''}${esc(r.label)} ↗</a>`
   : `<span class="lg-ref none">${esc(r.label)}</span>`).join('');
-const lgKeyCard=k=>`<div class="lg-card">
+const lgRefMini=r=>r&&r.url?` <a class="lg-mref" href="${esc(r.url)}" target="_blank" rel="noopener">⚖ ${esc(r.label)}</a>`:'';
+const lgKeyCard=k=>`<div class="lg-card" id="lgk-${esc(k.title).replace(/[^\w가-힣]/g,'')}">
     <div class="lg-h">${esc(k.title)}${k.when?`<span class="lg-when">${esc(k.when)}</span>`:''}</div>
     <div class="lg-duty">${esc(k.duty)}</div>
+    ${(k.detail||[]).length?`<div class="lg-sub">📜 법 기준</div><ul class="lg-list">${k.detail.map(d=>`<li>${esc(d.t)}${lgRefMini(d.ref)}</li>`).join('')}</ul>`:''}
+    ${k.how?`<div class="lg-how"><div class="lg-sub">🪢 ${esc(k.how.title)}</div><ol>${k.how.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>`:''}
+    ${(k.site||[]).length?`<div class="lg-sub">🏭 고로 개수 현장 적용</div><ul class="lg-list site">${k.site.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
     <div class="lg-refs">${lgRefs(k.refs)}</div>
     ${k.note?`<div class="lg-note">${esc(k.note)}</div>`:''}
   </div>`;
 function infoViewHtml(v){
   const L=LEGAL||{key:[],staff:[],updates:[],laws:[]};
-  if(v==='key') return `<div class="lg-intro">현장에서 가장 자주 쓰는 안전기준과 법적 근거입니다. <b>⚖ 링크</b>를 누르면 법제처 현행 조문이 바로 열립니다.</div>${L.key.map(lgKeyCard).join('')}`;
+  if(v==='key') return lgKeyView(L);
   if(v==='staff') return `<div class="lg-intro">작업별로 반드시 있어야 하는 사람과 근거입니다.</div>${L.staff.map(s=>`<div class="lg-card">
       <div class="lg-h">${esc(s.title)}${s.check?'<span class="lg-warn">⚠ 원문 확인 필요</span>':''}</div>
       <div class="lg-duty">${esc(s.req)}</div>${s.note?`<div class="lg-note">${esc(s.note)}</div>`:''}
@@ -4098,6 +4157,116 @@ function sPhaseInfo(){
     const df=bf?sDiff(bf,sDate(ef)):null, ds=bs?sDiff(bs,sDate(es)):null;
     return {p,es,ef,pct:Math.round(done/tot*100),st,bs,bf,ds,df}; }).filter(Boolean);
 }
+/* ===== 고로 진행률 그림 (PPT 캡처를 날짜별 1장 저장 → 추이 재생) ===== */
+let pimgList=null, pimgIdx=-1, pimgCache={}, pimgTimer=null, pimgLoading=false;
+const pimgToday=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+async function pimgLoad(keepDay){
+  if(pimgLoading) return; pimgLoading=true;
+  try{ const d=await kApi('progress-img'); pimgList=d.items||[];
+    const i=keepDay?pimgList.findIndex(x=>x.day===keepDay):-1; pimgIdx=i>=0?i:pimgList.length-1;
+  }catch(e){ pimgList=pimgList||[]; console.warn('progress-img',e.message); }
+  pimgLoading=false; pimgRender();
+}
+async function pimgData(day){
+  if(pimgCache[day]) return pimgCache[day];
+  const d=await kApi('progress-img?day='+encodeURIComponent(day)); if(!d.item) return null;
+  return pimgCache[day]=d.item.data;
+}
+const pimgWd=s=>'일월화수목금토'[new Date(s+'T00:00:00Z').getUTCDay()];
+const pimgLabel=s=>`${dPlus(s)} · ${+s.slice(5,7)}/${+s.slice(8)}(${pimgWd(s)})`;
+function pimgCtl(){
+  const n=pimgList.length; if(n<1) return '';
+  return `<button class="mini-btn" data-pi="prev" ${pimgIdx<=0?'disabled':''}>◀</button>
+    <button class="mini-btn" data-pi="play">${pimgTimer?'⏸ 멈춤':'▶ 추이 재생'}</button>
+    <input type="range" min="0" max="${n-1}" value="${pimgIdx}" data-pi="range" ${n<2?'disabled':''}>
+    <button class="mini-btn" data-pi="next" ${pimgIdx>=n-1?'disabled':''}>▶</button><span class="cnt">${pimgIdx+1}/${n}</span>`;
+}
+function pimgBind(box){
+  box.querySelectorAll('[data-pi]').forEach(el=>{ const k=el.dataset.pi;
+    if(k==='range') el.oninput=()=>{ pimgStop(); pimgGo(+el.value); };
+    else el.onclick=()=>{ if(k==='prev'){ pimgStop(); pimgGo(pimgIdx-1); } else if(k==='next'){ pimgStop(); pimgGo(pimgIdx+1); } else if(k==='play') pimgPlay(); };
+  });
+}
+function pimgStop(){ if(pimgTimer){ clearInterval(pimgTimer); pimgTimer=null; pimgRender(); } }
+async function pimgPlay(){
+  if(pimgTimer){ pimgStop(); return; }
+  const n=pimgList.length; if(n<2) return;
+  toast('그림을 불러오는 중…');
+  for(const x of pimgList){ try{ await pimgData(x.day); }catch(e){} } // 끊김 없이 넘기려고 미리 받기
+  if(pimgIdx>=n-1) pimgIdx=0;
+  pimgTimer=setInterval(()=>{ if(pimgIdx>=pimgList.length-1){ pimgStop(); return; } pimgGo(pimgIdx+1); },1100);
+  pimgGo(pimgIdx);
+}
+function pimgGo(i){ if(!pimgList||!pimgList.length) return; pimgIdx=Math.max(0,Math.min(pimgList.length-1,i)); pimgRender(); }
+async function pimgShow(){
+  // 현재 장면의 그림을 화면(카드·전체화면)에 넣기
+  const x=pimgList&&pimgList[pimgIdx]; if(!x) return;
+  let src=null; try{ src=await pimgData(x.day); }catch(e){}
+  if(!pimgList[pimgIdx]||pimgList[pimgIdx].day!==x.day) return; // 그사이 다른 날로 넘어감
+  const im=$('pimgImg'); if(im&&src){ im.src=src; im.style.visibility=''; }
+  if($('pimgModal').classList.contains('show')&&src){ $('pimgFI').src=src; }
+}
+function pimgRender(){
+  const box=$('sPimg'); if(!box) return;
+  const ed=isEditor();
+  if(pimgList===null){ box.innerHTML='<div class="pimg-h"><b>📸 고로 진행률</b></div><div class="pimg-view"><div class="ph">불러오는 중…</div></div>'; pimgLoad(); return; }
+  const n=pimgList.length, x=pimgList[pimgIdx];
+  const adm=ed?`<div class="pimg-adm">
+      <input type="date" id="pimgDay" value="${box.dataset.day||pimgToday()}"><input type="text" id="pimgNote" placeholder="메모(선택) 예: 철피 해체 60%" value="${esc(box.dataset.note||'')}">
+      <label class="mini-btn" style="cursor:pointer">🖼 파일 선택<input type="file" accept="image/*" id="pimgFile" hidden></label>
+      ${x?`<button class="mini-btn" id="pimgDel" style="color:var(--red)">이 날짜 그림 삭제</button>`:''}
+      <div class="pimg-zone" id="pimgZone" contenteditable="true" spellcheck="false">여기를 누르고 <b>Ctrl+V</b> — PPT에서 복사한 그림을 위 날짜로 저장</div>
+    </div>`:'';
+  box.innerHTML=`<div class="pimg-h"><b>📸 고로 진행률</b>${x?`<small>${esc(pimgLabel(x.day))}</small>`:''}</div>
+    <div class="pimg-view" id="pimgView">${x?`<img id="pimgImg" alt="고로 진행률 ${esc(x.day)}" style="visibility:hidden"><span class="pimg-tag">${esc(dPlus(x.day))}</span>`:`<div class="ph">${ed?'아직 그림이 없습니다.<br>아래 노란 칸에 PPT 그림을 붙여넣으세요.':'아직 등록된 진행률 그림이 없습니다.'}</div>`}</div>
+    ${x&&x.note?`<div class="pimg-note">${esc(x.note)}</div>`:''}
+    ${n?`<div class="pimg-ctl">${pimgCtl()}</div>`:''}
+    ${n>1?`<div class="pimg-days">${pimgList.map((y,i)=>`<button class="${i===pimgIdx?'on':''}" data-pd="${i}">${esc(dPlus(y.day))}</button>`).join('')}</div>`:''}
+    ${adm}`;
+  pimgBind(box);
+  box.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{ pimgStop(); pimgGo(+b.dataset.pd); });
+  const on=box.querySelector('.pimg-days .on'); if(on) on.scrollIntoView({block:'nearest',inline:'center'});
+  if(x) $('pimgView').onclick=pimgOpenFull;
+  if(ed){
+    $('pimgDay').onchange=e=>{ box.dataset.day=e.target.value; };
+    $('pimgNote').oninput=e=>{ box.dataset.note=e.target.value; };
+    $('pimgFile').onchange=async e=>{ const f=e.target.files&&e.target.files[0]; if(f) await pimgSave(await mFileToDataUrl(f), f.type); e.target.value=''; };
+    const z=$('pimgZone');
+    z.addEventListener('paste',async e=>{ e.preventDefault();
+      const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(i=>/^image\//.test(i.type));
+      if(!it){ toast('클립보드에 그림이 없습니다 — PPT에서 그림을 선택해 Ctrl+C 하세요'); return; }
+      await pimgSave(await mFileToDataUrl(it.getAsFile()), it.type); });
+    z.addEventListener('beforeinput',e=>e.preventDefault()); // 글자 입력 막기
+    if($('pimgDel')) $('pimgDel').onclick=async()=>{ const d=x.day;
+      if(!confirm(`${pimgLabel(d)} 진행률 그림을 삭제할까요? (되돌릴 수 없습니다 — 다시 붙여넣으면 복구)`)) return;
+      try{ await kApi('progress-img-delete',{day:d}); delete pimgCache[d]; toast('삭제했습니다'); await pimgLoad(); }catch(e){ toast(kErr(e)); } };
+  }
+  if(x) pimgShow();
+  if($('pimgModal').classList.contains('show')) pimgFullRender();
+}
+async function pimgSave(dataUrl, mime){
+  const box=$('sPimg'), day=$('pimgDay').value, note=$('pimgNote').value.trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(day)){ toast('날짜를 고르세요'); return; }
+  if(pimgList.some(y=>y.day===day)&&!confirm(`${pimgLabel(day)}에 이미 그림이 있습니다. 바꿀까요?`)) return;
+  try{
+    const s=await mShrinkImage(dataUrl, mime||'image/png');
+    toast('저장 중…');
+    const r=await kApi('progress-img',{day,data:s.data,note,w:s.w,h:s.h});
+    pimgCache[day]=s.data; box.dataset.note='';
+    toast(`${pimgLabel(day)} 그림 ${r.replaced?'교체':'저장'} 완료`);
+    await pimgLoad(day);
+  }catch(e){ toast(e.message==='too_large'?'그림이 너무 큽니다 — 잘라서 다시 붙여넣어 주세요':kErr(e)); }
+}
+function pimgOpenFull(){ $('pimgModal').classList.add('show'); pimgFullRender(); }
+function pimgFullRender(){
+  const x=pimgList&&pimgList[pimgIdx]; if(!x) return;
+  $('pimgFT').textContent=pimgLabel(x.day)+(x.note?' · '+x.note:'');
+  if(pimgCache[x.day]) $('pimgFI').src=pimgCache[x.day];
+  $('pimgFC').innerHTML=pimgCtl(); pimgBind($('pimgFC'));
+}
+$('pimgFX').onclick=()=>{ pimgStop(); $('pimgModal').classList.remove('show'); };
+$('pimgModal').addEventListener('click',e=>{ if(e.target.id==='pimgModal'||e.target.classList.contains('pimg-fimg')){ pimgStop(); $('pimgModal').classList.remove('show'); } });
+
 function sHome(){
   const C=sCalc, fire=C.fin, base=sPlan.base&&sPlan.base.fire||fire, sd=sSD();
   const late=sDiff(base,fire), dday=sDiff(sd,fire);
@@ -4116,8 +4285,9 @@ function sHome(){
   $('sStripLab').innerHTML=`<span>착공 ${sMD(sPlan.start)}</span><span>${dPlus(sd)} · ${Math.round(P(sDN(sd)))}% 경과</span><span>화입 ${sMD(fire)}</span>`;
   $('sPhCards').innerHTML=ph.map(x=>`<div class="s-phc st-${x.st}"><div class="n">${esc(x.p.name)}</div><div class="d">${sMD(sDate(x.es))}~${sMD(sDate(x.ef))}</div>
     <div class="s">${x.st==='done'?'완료':x.st==='prog'?`진행 중 ${x.pct}%`:'예정'}</div>${x.df!=null?`<div class="v ${x.df>0?'late':x.df<0?'early':'ok'}">${x.df>0?`▲${x.df}일 늦음`:x.df<0?`▼${-x.df}일 빠름`:'기준대로'}</div>`:''}</div>`).join('')+
-    `<table class="s-t s-vt"><tr><th>단계</th><th class="s-num">기준 완료</th><th class="s-num">예상 완료</th><th class="s-num">차이</th></tr>${ph.map(x=>`<tr><td><b>${esc(x.p.name)}</b></td><td class="s-num">${x.bf?sMD(x.bf):'—'}</td><td class="s-num">${sMD(sDate(x.ef))}</td><td class="s-num">${x.df==null?'—':`<span class="s-var ${x.df>0?'late':x.df<0?'early':'ok'}">${x.df>0?`▲${x.df}일`:x.df<0?`▼${-x.df}일`:'±0'}</span>`}</td></tr>`).join('')}
-    <tr style="background:#f7f8f9"><td><b>화입</b></td><td class="s-num">${sMD(base)}</td><td class="s-num">${sMD(fire)}</td><td class="s-num"><span class="s-var ${late>0?'late':late<0?'early':'ok'}">${late>0?`▲${late}일`:late<0?`▼${-late}일`:'±0'}</span></td></tr></table>`;
+    `<div class="s-vrow"><table class="s-t s-vt"><tr><th>단계</th><th class="s-num">기준 완료</th><th class="s-num">예상 완료</th><th class="s-num">차이</th></tr>${ph.map(x=>`<tr><td><b>${esc(x.p.name)}</b></td><td class="s-num">${x.bf?sMD(x.bf):'—'}</td><td class="s-num">${sMD(sDate(x.ef))}</td><td class="s-num">${x.df==null?'—':`<span class="s-var ${x.df>0?'late':x.df<0?'early':'ok'}">${x.df>0?`▲${x.df}일`:x.df<0?`▼${-x.df}일`:'±0'}</span>`}</td></tr>`).join('')}
+    <tr style="background:#f7f8f9"><td><b>화입</b></td><td class="s-num">${sMD(base)}</td><td class="s-num">${sMD(fire)}</td><td class="s-num"><span class="s-var ${late>0?'late':late<0?'early':'ok'}">${late>0?`▲${late}일`:late<0?`▼${-late}일`:'±0'}</span></td></tr></table><div class="s-pimg" id="sPimg"></div></div>`;
+  pimgRender();
   const t0=C.wi(sd), ed=isEditor();
   const ctl=(a,r)=>{ if(!ed) return '';
     const ac=sAct[a.id]||{}, pct=ac.pct!=null?ac.pct:(r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0);
