@@ -431,3 +431,4 @@ const APP = {
 ## 30. 고로 진행률 그림 (앱 v6.9.0 / Worker v3.3.0, 2026-11-21)
 - D1 `progress_img(day PK, data, note, w, h, updated_at)` — 날짜당 1장. `/kakao/progress-img` GET 목록(그림 제외)·GET ?day= 한 장·POST 저장(관리자), `/kakao/progress-img-delete`(관리자·POST만).
 - 앱: 공정 첫 화면 단계별 표 오른쪽(좁으면 아래) `#sPimg`. 관리자는 날짜·메모 + 노란 칸에 Ctrl+V(PPT 그림)/파일 선택, 같은 날짜는 교체 확인, 삭제. 누구나 ◀ ▶·슬라이더·D+n 칩·▶ 추이 재생(1.1초 간격, 미리 받기)·눌러서 전체화면(`#pimgModal`, 뒤로가기로 닫힘). 그림은 `mShrinkImage`로 1.3MB 이하.
+- v6.9.1 (2026-11-21): PPT 그림이 안 붙던 문제 — Office 복사는 그림 파일 없이 RTF(`\pngblip`/`\jpegblip` 16진수)·HTML(깨진 file:// img)만 주는 경우가 있음. `pimgOnPaste`가 파일 → HTML data: img → RTF 그림(`pimgRtfImage`) → `navigator.clipboard.read()` 순으로 찾고, 실패 시 클립보드 형식을 알림에 표시. '📋 클립보드 그림 붙이기' 버튼, 관리자는 공정 화면 아무 데서나 Ctrl+V(입력칸 제외).

@@ -1280,7 +1280,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.9.0',
+  version : '6.9.1',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4213,9 +4213,9 @@ function pimgRender(){
   const n=pimgList.length, x=pimgList[pimgIdx];
   const adm=ed?`<div class="pimg-adm">
       <input type="date" id="pimgDay" value="${box.dataset.day||pimgToday()}"><input type="text" id="pimgNote" placeholder="메모(선택) 예: 철피 해체 60%" value="${esc(box.dataset.note||'')}">
-      <label class="mini-btn" style="cursor:pointer">🖼 파일 선택<input type="file" accept="image/*" id="pimgFile" hidden></label>
+      <button class="mini-btn" id="pimgClip">📋 클립보드 그림 붙이기</button><label class="mini-btn" style="cursor:pointer">🖼 파일 선택<input type="file" accept="image/*" id="pimgFile" hidden></label>
       ${x?`<button class="mini-btn" id="pimgDel" style="color:var(--red)">이 날짜 그림 삭제</button>`:''}
-      <div class="pimg-zone" id="pimgZone" contenteditable="true" spellcheck="false">여기를 누르고 <b>Ctrl+V</b> — PPT에서 복사한 그림을 위 날짜로 저장</div>
+      <div class="pimg-zone" id="pimgZone" contenteditable="true" spellcheck="false">여기를 누르고 <b>Ctrl+V</b> (공정 화면 아무 데서나 Ctrl+V 해도 됨) — PPT에서 복사한 그림을 위 날짜로 저장</div>
     </div>`:'';
   box.innerHTML=`<div class="pimg-h"><b>📸 고로 진행률</b>${x?`<small>${esc(pimgLabel(x.day))}</small>`:''}</div>
     <div class="pimg-view" id="pimgView">${x?`<img id="pimgImg" alt="고로 진행률 ${esc(x.day)}" style="visibility:hidden"><span class="pimg-tag">${esc(dPlus(x.day))}</span>`:`<div class="ph">${ed?'아직 그림이 없습니다.<br>아래 노란 칸에 PPT 그림을 붙여넣으세요.':'아직 등록된 진행률 그림이 없습니다.'}</div>`}</div>
@@ -4232,11 +4232,9 @@ function pimgRender(){
     $('pimgNote').oninput=e=>{ box.dataset.note=e.target.value; };
     $('pimgFile').onchange=async e=>{ const f=e.target.files&&e.target.files[0]; if(f) await pimgSave(await mFileToDataUrl(f), f.type); e.target.value=''; };
     const z=$('pimgZone');
-    z.addEventListener('paste',async e=>{ e.preventDefault();
-      const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(i=>/^image\//.test(i.type));
-      if(!it){ toast('클립보드에 그림이 없습니다 — PPT에서 그림을 선택해 Ctrl+C 하세요'); return; }
-      await pimgSave(await mFileToDataUrl(it.getAsFile()), it.type); });
+    z.addEventListener('paste',pimgOnPaste);
     z.addEventListener('beforeinput',e=>e.preventDefault()); // 글자 입력 막기
+    $('pimgClip').onclick=pimgFromClipboard;
     if($('pimgDel')) $('pimgDel').onclick=async()=>{ const d=x.day;
       if(!confirm(`${pimgLabel(d)} 진행률 그림을 삭제할까요? (되돌릴 수 없습니다 — 다시 붙여넣으면 복구)`)) return;
       try{ await kApi('progress-img-delete',{day:d}); delete pimgCache[d]; toast('삭제했습니다'); await pimgLoad(); }catch(e){ toast(kErr(e)); } };
@@ -4244,6 +4242,56 @@ function pimgRender(){
   if(x) pimgShow();
   if($('pimgModal').classList.contains('show')) pimgFullRender();
 }
+/* 붙여넣기: PPT·워드는 그림을 파일이 아니라 RTF(16진수 그림)·HTML로만 주는 경우가 많아 여러 경로로 찾는다 */
+function pimgRtfImage(rtf){
+  // {\pict ... \pngblip|\jpegblip ... 16진수} 중 가장 큰 것
+  let best=null; const re=/\\(pngblip|jpegblip)[^{}]*?([0-9a-fA-F\s]{200,})/g; let m;
+  while((m=re.exec(rtf))){ const hex=m[2].replace(/\s+/g,''); if(!best||hex.length>best.hex.length) best={hex,mime:m[1]==='pngblip'?'image/png':'image/jpeg'}; }
+  if(!best) return null;
+  const n=best.hex.length>>1, u=new Uint8Array(n); for(let i=0;i<n;i++) u[i]=parseInt(best.hex.substr(i*2,2),16);
+  let s=''; for(let i=0;i<n;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));
+  return {data:`data:${best.mime};base64,${btoa(s)}`, mime:best.mime};
+}
+async function pimgClipRead(){
+  // 비동기 클립보드 API: 운영체제 클립보드의 그림(비트맵)을 PNG로 받음
+  if(!navigator.clipboard||!navigator.clipboard.read) return null;
+  const items=await navigator.clipboard.read();
+  for(const it of items){ const t=it.types.find(x=>/^image\//.test(x)); if(t){ const b=await it.getType(t); return {data:await mFileToDataUrl(b), mime:t}; } }
+  return {types:items.flatMap(i=>i.types)};
+}
+async function pimgOnPaste(e){
+  if(e.defaultPrevented) return;
+  e.preventDefault(); e.stopPropagation();
+  const cd=e.clipboardData, types=cd?[...cd.types]:[];
+  let file=null;
+  if(cd){ for(const it of [...(cd.items||[])]) if(it.kind==='file'&&/^image\//.test(it.type)){ file=it.getAsFile(); break; }
+    if(!file&&cd.files&&cd.files.length&&/^image\//.test(cd.files[0].type)) file=cd.files[0]; }
+  const html=cd?cd.getData('text/html')||'':'', rtf=cd?cd.getData('text/rtf')||'':'';
+  try{
+    if(file) return await pimgSave(await mFileToDataUrl(file), file.type);
+    const di=html.match(/<img[^>]+src=["'](data:image\/[^"']+)["']/i); if(di) return await pimgSave(di[1], di[1].slice(5,di[1].indexOf(';')));
+    const r=rtf&&pimgRtfImage(rtf); if(r) return await pimgSave(r.data, r.mime);
+    let c=null; try{ c=await pimgClipRead(); }catch(err){}
+    if(c&&c.data) return await pimgSave(c.data, c.mime);
+    toast(`그림을 찾지 못했습니다 (클립보드: ${types.join(', ')||'비어 있음'}) — PPT에서 그림을 선택해 Ctrl+C, 안 되면 '📋 클립보드 그림 붙이기'나 Win+Shift+S 캡처 후 붙여 주세요`);
+    console.warn('pimg paste types',types,(c&&c.types)||'');
+  }catch(err){ toast(err.message==='too_large'?'그림이 너무 큽니다':kErr(err)); }
+}
+async function pimgFromClipboard(){
+  try{ const c=await pimgClipRead();
+    if(c&&c.data) return await pimgSave(c.data, c.mime);
+    toast(c?`클립보드에 그림이 없습니다 (${(c.types||[]).join(', ')||'비어 있음'})`:'이 브라우저는 클립보드 읽기를 지원하지 않습니다 — Ctrl+V를 쓰세요');
+  }catch(err){ toast('클립보드 읽기가 막혔습니다 — 주소창 왼쪽 자물쇠에서 클립보드 허용 후 다시 눌러 주세요'); }
+}
+// 관리자가 공정 첫 화면에서 입력칸 밖에 Ctrl+V 해도 진행률 그림으로 받기
+document.addEventListener('paste',e=>{
+  if(!isEditor()||!$('sPimg')||!$('pimgZone')) return;
+  const pg=$('sPimg').closest('.pg'); if(pg&&!pg.classList.contains('show')) return;
+  if($('sPimg').offsetParent===null) return;
+  const t=e.target; if(t&&t.closest&&(t.closest('input,textarea,[contenteditable="true"]')&&!t.closest('#pimgZone'))) return;
+  if(t&&t.closest&&t.closest('#pimgZone')) return; // 칸 안은 칸 처리기가 받음
+  pimgOnPaste(e);
+});
 async function pimgSave(dataUrl, mime){
   const box=$('sPimg'), day=$('pimgDay').value, note=$('pimgNote').value.trim();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(day)){ toast('날짜를 고르세요'); return; }
