@@ -561,6 +561,19 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-gb.done{background:#adb5bd}
 .s-gb .pf{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.28)}
 .s-gb span{position:relative;font-size:.56rem;font-weight:800;color:#fff;padding-left:4px;white-space:nowrap;line-height:10px}
+.s-bk{border:1px solid var(--line);border-left:4px solid var(--s-norm);border-radius:9px;padding:7px 9px;margin-top:6px;background:#fff}
+.s-bk.crit{border-left-color:var(--s-crit)}
+.s-bk .t{font-weight:800;font-size:.8rem}
+.s-bk .sub{font-size:.7rem;color:var(--ink2);margin-top:3px;line-height:1.5}
+.s-var{display:inline-block;font-size:.62rem;font-weight:800;border-radius:4px;padding:1px 5px;white-space:nowrap;vertical-align:1px}
+.s-var.late{background:#ffe3e3;color:var(--s-crit)} .s-var.early{background:#d3f9d8;color:var(--green)} .s-var.ok{background:#f1f3f5;color:var(--steel)}
+.s-vs{font-size:.6rem;font-weight:800;margin-left:4px} .s-vs.late{color:var(--s-crit)} .s-vs.early{color:var(--green)} .s-vs.ok{color:var(--steel)}
+.s-vtag{position:absolute;top:6px;font-size:.58rem;font-weight:800;white-space:nowrap;z-index:1}
+.s-vtag.late{color:var(--s-crit)} .s-vtag.early{color:var(--green)}
+.s-gbase{background:#868e96!important;opacity:.7}
+.s-gbase.ph{top:20px;height:3px}
+.s-phc .v{font-size:.62rem;font-weight:800;margin-top:2px} .s-phc .v.late{color:var(--s-crit)} .s-phc .v.early{color:var(--green)} .s-phc .v.ok{color:var(--steel)}
+.s-vt{margin-top:10px}
 /* v6.1 */
 .de-row{border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:8px;background:#fff}
 .de-row textarea{width:100%;margin-top:6px;font-size:.8rem;resize:vertical;box-sizing:border-box}
@@ -638,7 +651,7 @@ table.s-t tr[data-act]{cursor:pointer}
       <div class="s-zoom" id="gZoom"><button data-z="8">좁게</button><button data-z="14" class="on">보통</button><button data-z="24">넓게</button></div>
       <label class="s-crittog"><input type="checkbox" id="gCritOnly"> 주공정만</label>
     </div>
-    <div class="s-legend"><span><i style="background:var(--s-crit)"></i>크리티컬 패스</span><span><i style="background:var(--s-norm)"></i>그 외(여유 있음)</span><span><i style="background:#adb5bd"></i>완료</span><span><i style="background:#adb5bd;height:3px"></i>기준선</span><span><i style="background:var(--red);width:2px"></i>기준일</span><span><i style="background:repeating-linear-gradient(135deg,#ced4da 0 3px,#fff 3px 6px)"></i>휴일</span></div>
+    <div class="s-legend"><span><i style="background:var(--s-crit)"></i>크리티컬 패스</span><span><i style="background:var(--s-norm)"></i>그 외(여유 있음)</span><span><i style="background:#adb5bd"></i>완료</span><span><i style="background:#868e96;height:3px"></i>기준(고정)</span><span><b style="color:var(--s-crit)">▲n</b> 늦음 · <b style="color:var(--green)">▼n</b> 빠름</span><span><i style="background:var(--red);width:2px"></i>기준일</span><span><i style="background:repeating-linear-gradient(135deg,#ced4da 0 3px,#fff 3px 6px)"></i>휴일</span></div>
     <div class="s-gwrap" id="gWrap"><div class="s-ginner" id="gant"></div></div>
     <div class="paste-hint" style="margin-top:6px">단계 이름을 누르면 접고 펼칩니다. 공정을 누르면 기간·선후행·실적을 고칩니다.</div>
   </div>
@@ -658,15 +671,15 @@ table.s-t tr[data-act]{cursor:pointer}
     <div class="card">
       <div class="sec-t" style="margin-bottom:4px">여러 공정 붙여넣기 <small style="font-weight:500;color:var(--steel)">엑셀에서 4~5개 열 복사</small></div>
       <div class="paste-hint">열 순서: <b>공정명 · 기간(일) · 선행 공정 · 단계(1~4 또는 이름) · Class(선택)</b>. 직접 칠 때는 <b>|</b>로 구분해도 됩니다.<br>
-        선행 표기: <code>C05</code>(끝나면 시작) · <code>C05SS</code>(같이 시작) · <code>C05+2</code>(2일 뒤) · <code>C05FF-1</code> · 여러 개는 쉼표. 공정 ID는 '단계별 목록'에서 확인하세요.</div>
-      <textarea class="f-input" id="cfBulk" rows="5" placeholder="출선구 머드건 교체	5	C20	2&#10;송풍지관 조립	3	C15SS+2, C16	2"></textarea>
+        선행 쓰는 법: <code>C05</code> = C05 끝나면 시작 · <code>C05 같이시작</code> · <code>C05 같이끝</code> · <code>C05 2일뒤</code> · <code>C05 1일당겨서</code> · 여러 개는 쉼표. (예전 표기 C05SS+2도 됩니다) 공정 ID는 '단계별 목록'에서 확인하세요.</div>
+      <textarea class="f-input" id="cfBulk" rows="5" placeholder="출선구 머드건 교체	5	C20	2&#10;송풍지관 조립	3	C15 같이시작 2일뒤, C16	2"></textarea>
       <div id="cfBulkPrev" style="margin-top:8px"></div>
       <div class="btn-row cf-ed"><button class="btn primary" id="cfBulkAdd" disabled>추가</button></div>
     </div>
     <div class="card">
       <div class="sec-t" style="margin-bottom:4px">기준선 · 백업</div>
       <div class="paste-hint" id="sPlanInfo"></div>
-      <div class="btn-row"><button class="btn ghost cf-ed" id="sBaseBtn">기준선 저장</button><button class="btn ghost" id="cfExport">백업 내려받기</button>
+      <div class="btn-row"><button class="btn ghost cf-ed" id="sBaseBtn">추가 공정 기준 다시 잡기</button><button class="btn ghost" id="cfExport">백업 내려받기</button>
         <label class="btn ghost cf-ed" style="text-align:center">백업 불러오기<input type="file" id="cfImport" accept=".json,application/json" hidden></label></div>
     </div>
   </div>
@@ -1081,13 +1094,24 @@ table.s-t tr[data-act]{cursor:pointer}
   <div class="modal">
     <h2 id="aTitle">공정</h2>
     <div class="desc" id="aDesc"></div>
+    <div class="k-seg m-mode" id="aMode" style="display:none"><button class="on" data-am="one">✎ 한 개씩 입력</button><button data-am="many">📋 여러 개 붙여넣기</button></div>
+    <div id="aManyBox" style="display:none">
+      <div class="paste-hint">엑셀에서 여러 줄을 복사해 붙이면 줄마다 공정을 판별해 아래에 보여줍니다.<br>
+        <b>열 순서</b>: 공정명 · 기간(일) · 선행 공정 · 단계(1~4 또는 이름, 비우면 선행 공정 단계) · Class(선택)<br>
+        <b>선행 쓰는 법</b>: <code>C05</code> = C05 끝나면 시작 · <code>C05 같이시작</code> · <code>C05 같이끝</code> · <code>C05 2일뒤</code> · <code>C05 1일당겨서</code> · 여러 개는 쉼표(,)<br>
+        엑셀이 아니면 <code>출선구 머드건 교체 5일 C20</code>처럼 한 줄에 써도 됩니다. 공정 ID는 공정표 '단계별 목록'에 있습니다.</div>
+      <textarea class="f-input" id="aBulk" rows="6" placeholder="출선구 머드건 교체	5	C20	2&#10;송풍지관 조립	3	C15 같이시작 2일뒤, C16&#10;MCR Panel 교체 20일 C05"></textarea>
+      <div id="aBulkPrev" style="margin-top:8px"></div>
+      <div class="btn-row"><button class="btn primary" id="aBulkAdd" disabled>추가</button></div>
+    </div>
+    <div id="aOneBox">
     <label class="f-label">공정명</label><input class="f-input" id="aName">
     <div class="f-two">
       <div><label class="f-label">기간 (작업일)</label><input class="f-input" id="aDur" inputmode="numeric"></div>
       <div><label class="f-label">단계</label><select class="f-input" id="aPhase"></select></div>
     </div>
     <label class="f-label">설비 Class</label><select class="f-input" id="aCls"></select>
-    <label class="f-label">선행 공정 <small style="font-weight:500;color:var(--steel)">FS=끝나면 시작 · SS=같이 시작 · FF=같이 끝 · Lag=간격(일)</small></label>
+    <label class="f-label">선행 공정 <small style="font-weight:500;color:var(--steel)">고른 공정과의 관계: 끝나면 시작 · 같이 시작 · 같이 끝남 / 간격(±일): 2 = 2일 뒤, -1 = 1일 당겨서</small></label>
     <div id="aPreds"></div><button class="mini-btn" id="aAddPred" style="margin-top:6px">＋ 선행 추가</button>
     <label class="f-label">후행 공정 <small style="font-weight:500;color:var(--steel)">이 공정이 끝나야 시작할 수 있는 공정 — 화입일 영향 계산에 필요</small></label>
     <div id="aSuccs"></div><button class="mini-btn" id="aAddSucc" style="margin-top:6px">＋ 후행 추가</button>
@@ -1104,6 +1128,7 @@ table.s-t tr[data-act]{cursor:pointer}
       <div class="f-hint">실적을 비우면 '계획대로 진행'으로 계산합니다.</div>
     </div>
     <div class="paste-hint" id="aCalc" style="margin-top:10px"></div>
+    </div>
     <div class="btn-row">
       <button class="btn ghost" id="aDel" style="color:var(--red);flex:.6">삭제</button>
       <button class="btn ghost" onclick="closeModal('actModal')">닫기</button>
@@ -1152,7 +1177,7 @@ table.s-t tr[data-act]{cursor:pointer}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.2.0',
+  version : '6.4.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3852,6 +3877,10 @@ $('admPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doAdminLogin();
  *           실적 없는 공정은 계획대로 진행된 것으로 가정(사용자 결정 2026-11-21).
  * 기준일(statusDate): 설정에서 지정, 비우면 오늘. 기준선은 공정별 날짜(문자열)로 저장.
  * 저장: Worker /kakao/sched (D1 sched_doc · sched_actual). 서버에 없으면 주공정 초기값. */
+// 선후행 관계를 한글로: FS=끝나면 시작 · SS=같이 시작 · FF=같이 끝남, 간격 +n=n일 뒤 · -n=n일 당겨서
+const S_REL={FS:'끝나면 시작',SS:'같이 시작',FF:'같이 끝남'};
+const sLagTxt=l=>{ l=+l||0; return l>0?`${l}일 뒤`:l<0?`${-l}일 당겨서`:''; };
+const sRelTxt=p=>{ const l=+p.lag||0; if((p.type||'FS')==='FS'&&l===-1) return '끝나는 날 바로 시작'; return (S_REL[p.type]||S_REL.FS)+(l?` · ${sLagTxt(l)}`:''); };
 const S_PHASES=[{id:'P1',name:'해체',short:'해체'},{id:'P2',name:'본체 설치',short:'본체'},{id:'P3',name:'연와 축조',short:'연와'},{id:'P4',name:'배관·화입준비',short:'화입준비'}];
 const S_SEED=[ // 사용자 제공 크리티컬 패스 (휴식 '27.2.6~2.9는 휴일, Carbon 축조는 하나로)
  ['노저출선','2026-11-12','2026-11-12','P1'],['주수냉각','2026-11-13','2026-11-14','P1'],['주수냉각 배관 및 송풍지관 철거','2026-11-15','2026-11-16','P1'],
@@ -3905,6 +3934,10 @@ function sMigrate(plan){
   if(!plan.seq) plan.seq=500;
   if(plan.statusDate==null) plan.statusDate='';
   if(plan.base&&plan.base.dates){ const {cal}=sCal(plan); Object.keys(plan.base.dates).forEach(k=>{ const v=plan.base.dates[k]; if(typeof v[0]==='number') plan.base.dates[k]=[cal[v[0]],cal[v[1]]]; }); }
+  // 크리티컬 패스 40개는 사용자가 준 날짜가 '고정 기준'(사용자 결정 2026-11-21) — 저장본과 상관없이 항상 이 날짜
+  plan.base=plan.base||{at:'2026-11-12',dates:{}}; plan.base.dates=plan.base.dates||{};
+  S_SEED.forEach((c,i)=>{ const id='C'+String(i+1).padStart(2,'0'); if(plan.acts.some(a=>a.id===id)) plan.base.dates[id]=[c[1],c[2]]; });
+  plan.base.fire=S_SEED[S_SEED.length-1][2]; plan.base.fixed=true;
   return plan;
 }
 // 기준선: 지정 공정의 계산 날짜를 저장(새 공정은 추가하자마자 '지연'으로 뜨지 않게)
@@ -3955,6 +3988,18 @@ function sRun(plan, actual, opt={}){
 }
 const sA=id=>sPlan.acts.find(a=>a.id===id);
 const sDate=i=>sCalc.cal[i];
+// 기준 대비: {ds 착수 차이, df 완료 차이} — 날짜 차이(달력일), +면 늦음 -면 빠름
+function sVar(id){
+  const b=sPlan.base&&sPlan.base.dates&&sPlan.base.dates[id], r=sCalc.R[id]; if(!b||!r) return null;
+  return {ds:sDiff(b[0],sDate(r.es)), df:sDiff(b[1],sDate(r.ef)), bs:b[0], bf:b[1]};
+}
+// 표시: 큰 칩(카드·목록) / 작은 글씨(간트)
+function sVarChip(v, done){
+  if(!v) return '';
+  const d=v.df, pre=done?'완료 ':'';
+  return d>0?`<span class="s-var late">▲ ${pre}${d}일 늦음</span>`:d<0?`<span class="s-var early">▼ ${pre}${-d}일 빠름</span>`:`<span class="s-var ok">${done?'완료 ':''}기준대로</span>`;
+}
+const sVarShort=d=>d>0?`▲${d}`:d<0?`▼${-d}`:'±0';
 const sBaseOf=id=>{ const b=sPlan.base&&sPlan.base.dates&&sPlan.base.dates[id]; return b?[sCalc.wi(b[0]),sCalc.wiF(b[1])]:null; };
 
 async function sLoad(force){
@@ -3990,7 +4035,10 @@ function sPhaseInfo(){
     const done=as.reduce((s,a)=>{ const r=C.R[a.id], ac=sAct[a.id];
       if(/^done/.test(r.state)) return s+r.dur; if(r.state==='run') return s+(ac&&ac.pct!=null?r.dur*ac.pct/100:r.dur-r.rem); if(r.state==='run*') return s+(r.dur-r.rem); return s; },0);
     const st=as.every(a=>/^done/.test(C.R[a.id].state))?'done':sd>=es?'prog':'todo';
-    return {p,es,ef,pct:Math.round(done/tot*100),st}; }).filter(Boolean);
+    const bb=as.map(a=>sPlan.base&&sPlan.base.dates&&sPlan.base.dates[a.id]).filter(Boolean);
+    const bs=bb.length?bb.map(b=>b[0]).sort()[0]:null, bf=bb.length?bb.map(b=>b[1]).sort().pop():null;
+    const df=bf?sDiff(bf,sDate(ef)):null, ds=bs?sDiff(bs,sDate(es)):null;
+    return {p,es,ef,pct:Math.round(done/tot*100),st,bs,bf,ds,df}; }).filter(Boolean);
 }
 function sHome(){
   const C=sCalc, fire=C.fin, base=sPlan.base&&sPlan.base.fire||fire, sd=sSD();
@@ -4009,14 +4057,16 @@ function sHome(){
     `<div class="mk" style="left:${P(sDN(sd))}%"><b>${sMD(sd)}</b></div>`;
   $('sStripLab').innerHTML=`<span>착공 ${sMD(sPlan.start)}</span><span>${dPlus(sd)} · ${Math.round(P(sDN(sd)))}% 경과</span><span>화입 ${sMD(fire)}</span>`;
   $('sPhCards').innerHTML=ph.map(x=>`<div class="s-phc st-${x.st}"><div class="n">${esc(x.p.name)}</div><div class="d">${sMD(sDate(x.es))}~${sMD(sDate(x.ef))}</div>
-    <div class="s">${x.st==='done'?'완료':x.st==='prog'?`진행 중 ${x.pct}%`:'예정'}</div></div>`).join('');
+    <div class="s">${x.st==='done'?'완료':x.st==='prog'?`진행 중 ${x.pct}%`:'예정'}</div>${x.df!=null?`<div class="v ${x.df>0?'late':x.df<0?'early':'ok'}">${x.df>0?`▲${x.df}일 늦음`:x.df<0?`▼${-x.df}일 빠름`:'기준대로'}</div>`:''}</div>`).join('')+
+    `<table class="s-t s-vt"><tr><th>단계</th><th class="s-num">기준 완료</th><th class="s-num">예상 완료</th><th class="s-num">차이</th></tr>${ph.map(x=>`<tr><td><b>${esc(x.p.name)}</b></td><td class="s-num">${x.bf?sMD(x.bf):'—'}</td><td class="s-num">${sMD(sDate(x.ef))}</td><td class="s-num">${x.df==null?'—':`<span class="s-var ${x.df>0?'late':x.df<0?'early':'ok'}">${x.df>0?`▲${x.df}일`:x.df<0?`▼${-x.df}일`:'±0'}</span>`}</td></tr>`).join('')}
+    <tr style="background:#f7f8f9"><td><b>화입</b></td><td class="s-num">${sMD(base)}</td><td class="s-num">${sMD(fire)}</td><td class="s-num"><span class="s-var ${late>0?'late':late<0?'early':'ok'}">${late>0?`▲${late}일`:late<0?`▼${-late}일`:'±0'}</span></td></tr></table>`;
   const t0=C.wi(sd), ed=isEditor();
   const ctl=(a,r)=>{ if(!ed) return '';
     const ac=sAct[a.id]||{}, pct=ac.pct!=null?ac.pct:(r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0);
     if(r.state==='plan') return `<div class="s-ctl"><button class="mini-btn" data-start="${a.id}">▶ 착수 처리</button></div>`;
     return `<div class="s-ctl"><input type="range" min="0" max="100" step="5" value="${pct}" data-pct="${a.id}"><b class="pv">${pct}%</b>${r.state==='run*'?`<button class="mini-btn" data-start="${a.id}">▶ 착수</button>`:''}<button class="mini-btn" data-done="${a.id}">✓ 완료 처리</button></div>`; };
-  const row=(a,extra,body)=>{ const r=C.R[a.id];
-    return `<div class="s-act"><div class="d" data-act="${a.id}">${sMD(sDate(r.es))}~${sMD(sDate(r.ef))}${extra?`<br>${extra}`:''}</div><div class="m"><div class="nm" data-act="${a.id}">${r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}일</span>`}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}${esc(a.name)}</div>${body||''}${ctl(a,r)}</div></div>`; };
+  const row=(a,extra,body)=>{ const r=C.R[a.id], v=sVar(a.id);
+    return `<div class="s-act"><div class="d" data-act="${a.id}">${sMD(sDate(r.es))}~${sMD(sDate(r.ef))}${extra?`<br>${extra}`:''}${v?`<br><span style="color:#adb5bd">기준 ${sMD(v.bs)}~${sMD(v.bf)}</span>`:''}</div><div class="m"><div class="nm" data-act="${a.id}">${r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}일</span>`}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}${esc(a.name)} ${sVarChip(v)}</div>${body||''}${ctl(a,r)}</div></div>`; };
   const run=sPlan.acts.filter(a=>{ const r=C.R[a.id]; return r&&(r.state==='run'||r.state==='run*'); });
   $('sNowHint').textContent=ed?'착수·진도·완료를 여기서 바로 입력':'공정을 누르면 상세';
   $('sNow').innerHTML=run.length?run.map(a=>{ const r=C.R[a.id], ac=sAct[a.id], day=t0-r.es+1;
@@ -4026,7 +4076,7 @@ function sHome(){
     :'<div class="paste-hint">진행 중인 공정이 없습니다</div>';
   const soon=sPlan.acts.filter(a=>{ const r=C.R[a.id]; return r&&r.state==='plan'&&r.es>=t0&&r.es<=t0+3; });
   $('sSoon').innerHTML=soon.length?soon.map(a=>{ const r=C.R[a.id];
-    return row(a,r.es===t0?'오늘 착수':`${r.es-t0}일 후 착수`,`<div class="sub">${r.dur}일 · 선행: ${(a.preds||[]).map(p=>sA(p.id)?esc(sA(p.id).name)+(p.type!=='FS'||+p.lag?` (${p.type}${+p.lag>0?'+':''}${+p.lag||''})`:''):'').filter(Boolean).join(', ')||'없음'}</div>`); }).join('')
+    return row(a,r.es===t0?'오늘 착수':`${r.es-t0}일 후 착수`,`<div class="sub">${r.dur}일 · 선행: ${(a.preds||[]).map(p=>sA(p.id)?esc(sA(p.id).name)+(p.type!=='FS'||+p.lag?` (${sRelTxt(p)})`:''):'').filter(Boolean).join(', ')||'없음'}</div>`); }).join('')
     :'<div class="paste-hint">3일 안에 착수할 공정이 없습니다</div>';
   const w=[], lateList=[];
   sPlan.acts.forEach(a=>{ const r=C.R[a.id], b=sBaseOf(a.id); if(!r||!b||/^done/.test(r.state)) return;
@@ -4098,16 +4148,18 @@ function sGantt(){
   S_PHASES.forEach(p=>{
     let as=sPlan.acts.filter(a=>a.phase===p.id&&C.R[a.id]); if(!as.length) return;
     const es=Math.min(...as.map(a=>C.R[a.id].es)), ef=Math.max(...as.map(a=>C.R[a.id].ef));
-    rows+=`<div class="s-gr ph"><div class="s-gl" data-ph="${p.id}">${sCollapsed[p.id]?'▸':'▾'} ${p.name} <small>${sMD(sDate(es))}~${sMD(sDate(ef))}</small></div><div class="s-gt" style="width:${W}px"><div class="s-gb ph" style="left:${xs(sDate(es))}px;width:${xs(sDate(ef))-xs(sDate(es))+dw}px"></div></div></div>`;
+    const phx=sPhaseInfo().find(q=>q.p.id===p.id)||{};
+    rows+=`<div class="s-gr ph"><div class="s-gl" data-ph="${p.id}">${sCollapsed[p.id]?'▸':'▾'} ${p.name} ${phx.df!=null?`<span class="s-vs ${phx.df>0?'late':phx.df<0?'early':'ok'}">${sVarShort(phx.df)}</span>`:''}</div><div class="s-gt" style="width:${W}px">${phx.bs?`<div class="s-gbase ph" style="left:${xs(phx.bs)}px;width:${xs(phx.bf)-xs(phx.bs)+dw}px"></div>`:''}<div class="s-gb ph" style="left:${xs(sDate(es))}px;width:${xs(sDate(ef))-xs(sDate(es))+dw}px"></div>${phx.df?`<span class="s-vtag ${phx.df>0?'late':'early'}" style="left:${xs(sDate(ef))+dw+3}px">${phx.df>0?`▲${phx.df}일 늦음`:`▼${-phx.df}일 빠름`}</span>`:''}</div></div>`;
     if(sCollapsed[p.id]) return;
     if(sCritOnly) as=as.filter(a=>C.R[a.id].crit||C.R[a.id].critPast);
-    as.sort((a,b)=>C.R[a.id].es-C.R[b.id].es||(b.cp-a.cp)).forEach(a=>{ const r=C.R[a.id], b=sBaseOf(a.id), ac=sAct[a.id];
+    as.sort((a,b)=>C.R[a.id].es-C.R[b.id].es||(b.cp-a.cp)).forEach(a=>{ const r=C.R[a.id], b=sBaseOf(a.id), ac=sAct[a.id], vv=sVar(a.id);
       const isCrit=r.crit||r.critPast, done=/^done/.test(r.state);
       const L=xs(sDate(r.es)), Wd=xs(sDate(r.ef))-L+dw;
       const pct=done?100:r.state==='run'&&ac&&ac.pct!=null?ac.pct:r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0;
       rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)}"><small class="gid">${a.id}</small>${esc(a.name)}</div><div class="s-gt" style="width:${W}px">
         ${b?`<div class="s-gbase" style="left:${xs(sDate(b[0]))}px;width:${xs(sDate(b[1]))-xs(sDate(b[0]))+dw}px"></div>`:''}
-        <div class="s-gb ${done?'done':isCrit?'crit':''}" style="left:${L}px;width:${Wd}px" title="${esc(a.name)} ${sMD(sDate(r.es))}~${sMD(sDate(r.ef))} · 여유 ${r.tf}"><i class="pf" style="width:${pct}%"></i>${Wd>=30?`<span>${a.dur}일</span>`:''}</div></div></div>`; });
+        <div class="s-gb ${done?'done':isCrit?'crit':''}" style="left:${L}px;width:${Wd}px" title="${esc(a.name)} ${sMD(sDate(r.es))}~${sMD(sDate(r.ef))} · 여유 ${r.tf}"><i class="pf" style="width:${pct}%"></i>${Wd>=30?`<span>${a.dur}일</span>`:''}</div>
+        ${vv&&vv.df?`<span class="s-vtag ${vv.df>0?'late':'early'}" style="left:${L+Wd+3}px">${sVarShort(vv.df)}</span>`:''}</div></div>`; });
   });
   $('gant').style.width=(LW+W)+'px';
   $('gant').innerHTML=`<div class="s-gov">${ov}</div><div class="s-gh"><div class="s-gl corner">공정</div><div class="s-gt" style="width:${W}px"><div class="gm">${months}</div><div class="gd">${days}</div></div></div>${rows}`;
@@ -4119,12 +4171,15 @@ function sList(){
   const C=sCalc;
   $('gvList').innerHTML=S_PHASES.map(p=>{
     const as=sPlan.acts.filter(a=>a.phase===p.id&&C.R[a.id]).sort((a,b)=>C.R[a.id].es-C.R[b.id].es); if(!as.length) return '';
-    return `<details class="s-phase" open><summary><span>${p.name} <small style="color:var(--steel)">${as.length}개</small></span><span style="font-family:var(--num);font-size:.74rem;color:var(--steel)">${sMD(sDate(Math.min(...as.map(a=>C.R[a.id].es))))}~${sMD(sDate(Math.max(...as.map(a=>C.R[a.id].ef))))}</span></summary>
-      <div class="body"><table class="s-t"><tr><th>ID · 공정</th><th class="s-num">기간</th><th class="s-num">예상</th><th class="s-num">여유</th></tr>
-      ${as.map(a=>{ const r=C.R[a.id], col=/^done/.test(r.state)?'var(--steel)':r.crit?'var(--s-crit)':'var(--s-norm)';
+    const phx=sPhaseInfo().find(q=>q.p.id===p.id)||{};
+    return `<details class="s-phase" open><summary><span>${p.name} <small style="color:var(--steel)">${as.length}개</small> ${phx.df!=null?`<span class="s-var ${phx.df>0?'late':phx.df<0?'early':'ok'}">${phx.df>0?`▲${phx.df}일 늦음`:phx.df<0?`▼${-phx.df}일 빠름`:'기준대로'}</span>`:''}</span><span style="font-family:var(--num);font-size:.74rem;color:var(--steel)">${sMD(sDate(Math.min(...as.map(a=>C.R[a.id].es))))}~${sMD(sDate(Math.max(...as.map(a=>C.R[a.id].ef))))}</span></summary>
+      <div class="body"><table class="s-t"><tr><th>ID · 공정</th><th class="s-num">기준</th><th class="s-num">예상</th><th class="s-num">차이</th><th class="s-num">여유</th></tr>
+      ${as.map(a=>{ const r=C.R[a.id], vv=sVar(a.id), col=/^done/.test(r.state)?'var(--steel)':r.crit?'var(--s-crit)':'var(--s-norm)';
         return `<tr data-act="${a.id}"><td><small class="gid">${a.id}</small>${sStateLabel(r)}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}<b style="color:${r.crit||r.critPast?'var(--s-crit)':'var(--ink)'}">${esc(a.name)}</b>
-          <div style="font-size:.64rem;color:var(--steel)">${(a.preds||[]).map(x=>sA(x.id)?`← ${x.id} ${esc(sA(x.id).name.slice(0,10))} ${x.type}${+x.lag?(+x.lag>0?'+':'')+x.lag:''}`:'').filter(Boolean).join(' · ')||'시작'}</div></td>
-          <td class="s-num">${a.dur}일</td><td class="s-num">${sMD(sDate(r.es))}<br>~${sMD(sDate(r.ef))}</td><td class="s-num" style="color:${col};font-weight:800">${/^done/.test(r.state)?'—':r.tf}</td></tr>`; }).join('')}
+          <div style="font-size:.64rem;color:var(--steel)">${(a.preds||[]).map(x=>sA(x.id)?`← ${x.id} ${esc(sA(x.id).name.slice(0,10))} <b>${sRelTxt(x)}</b>`:'').filter(Boolean).join(' · ')||'시작'}</div></td>
+          <td class="s-num" style="color:var(--steel)">${vv?`${sMD(vv.bs)}<br>~${sMD(vv.bf)}`:'—'}</td><td class="s-num">${sMD(sDate(r.es))}<br>~${sMD(sDate(r.ef))}<div style="font-size:.6rem;color:var(--steel)">${a.dur}일</div></td>
+          <td class="s-num">${vv?`<span class="s-var ${vv.df>0?'late':vv.df<0?'early':'ok'}">${sVarShort(vv.df)}</span>${vv.ds!==vv.df?`<div style="font-size:.6rem;color:var(--steel)">착수 ${sVarShort(vv.ds)}</div>`:''}`:'—'}</td>
+          <td class="s-num" style="color:${col};font-weight:800">${/^done/.test(r.state)?'—':r.tf}</td></tr>`; }).join('')}
       </table></div></details>`; }).join('');
   $('gvList').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
 }
@@ -4143,7 +4198,7 @@ function sConfig(){
   $('cfStart').value=sPlan.start; $('cfStatus').value=sPlan.statusDate||''; $('cfHol').value=(sPlan.holidays||[]).join('\n');
   ['cfStart','cfStatus','cfHol','cfBulk'].forEach(id=>$(id).disabled=!ed);
   document.querySelectorAll('#gvConf .cf-ed').forEach(x=>x.style.display=ed?'':'none');
-  sBulkPreview();
+  sBulkPreview('cfBulk','cfBulkPrev','cfBulkAdd');
 }
 async function sSaveConfig(){
   const st=$('cfStart').value, sd=$('cfStatus').value, hol=$('cfHol').value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -4154,50 +4209,79 @@ async function sSaveConfig(){
   if(!(await sSavePlan())){ sPlan=JSON.parse(snap); return; }
   toast('설정을 저장했습니다'); sRenderAll(); sConfig();
 }
-const sPhaseFrom=v=>{ v=String(v||'').trim(); if(/^[1-4]$/.test(v)) return 'P'+v; if(/^P[1-4]$/i.test(v)) return v.toUpperCase(); const p=S_PHASES.find(p=>p.name===v||p.short===v||v.includes(p.short)); return p?p.id:'P1'; };
+const sPhaseFrom=v=>{ v=String(v||'').trim(); if(!v) return ''; if(/^[1-4]$/.test(v)) return 'P'+v; if(/^P[1-4]$/i.test(v)) return v.toUpperCase(); const p=S_PHASES.find(p=>p.name===v||p.short===v||v.includes(p.short)); return p?p.id:''; };
+/* 선행 한 개 읽기 — 영문(C05SS+2)·한글(C05 같이시작 2일 뒤) 모두
+ *  관계: (없음)/끝나면/완료후 = 끝나면 시작 · 같이시작/동시착수 = 같이 시작 · 같이끝/동시완료 = 같이 끝남 · FS/SS/FF
+ *  간격: +2 / 2일 뒤 / 2일 후 = 2일 뒤 · -1 / 1일 당겨서 / 1일 겹쳐 = 1일 당겨서 */
+function sParsePred(tok, idMap){
+  const raw=String(tok).trim();
+  const m=raw.match(/^([A-Za-z]+)(\d+)(.*)$/); if(!m) return {err:`'${tok}' — 공정 ID(예: C05)로 시작해야 합니다`};
+  // 'C25 1일당겨서'를 띄어 쓰지 않아 'C251일…'이 돼도 실제 있는 ID 중 가장 긴 것으로 자름
+  let id=null, rest='';
+  for(let k=m[2].length;k>=1;k--){ const cand=idMap[(m[1]+m[2].slice(0,k)).toUpperCase()]; if(cand){ id=cand; rest=m[2].slice(k)+m[3]; break; } }
+  if(!id){ const pad=idMap[(m[1]+m[2].padStart(2,'0')).toUpperCase()]; if(pad){ id=pad; rest=m[3]; } } // C5 → C05
+  if(!id) return {err:`선행 공정 ${m[1]}${m[2]}을(를) 찾을 수 없습니다`};
+  rest=rest.replace(/\s+/g,''); let type='FS', lag=0;
+  const rel=[[/^(FS|끝나면시작|끝나면|끝난뒤|끝난후|완료후|종료후)/i,'FS'],[/^(SS|같이시작|동시시작|동시착수|함께시작|같이착수)/i,'SS'],[/^(FF|같이끝남|같이끝|동시완료|동시종료|함께끝)/i,'FF']];
+  for(const [re,ty] of rel){ const x=rest.match(re); if(x){ type=ty; rest=rest.slice(x[0].length); break; } }
+  const lm=rest.match(/^([+-])?(\d+)(일)?(뒤|후|늦게|당겨서|당김|앞당겨|겹쳐|겹침|먼저|전)?$/);
+  if(lm){ lag=+lm[2]; if(lm[1]==='-'||/당겨|당김|겹|먼저|전/.test(lm[4]||'')) lag=-lag; rest=''; }
+  if(rest) return {err:`'${tok}'의 '${rest}'를 읽을 수 없습니다`};
+  return {p:{id,type,lag}};
+}
+// 줄마다: 공정명 · 기간 · 선행(쉼표로 여러 개) · 단계(1~4 또는 이름) · Class — 탭 또는 | 구분. 탭이 없으면 "공정명 5일 C05, C06" 형태도 읽음
 function sBulkParse(text){
-  const lines=text.replace(/\r/g,'').split('\n');
+  const lines=String(text).replace(/\r/g,'').split('\n');
   const idMap={}; sPlan.acts.forEach(a=>idMap[a.id.toUpperCase()]=a.id);
   let seq=sPlan.seq||500; const rows=[], errs=[];
   lines.forEach((line,i)=>{
     if(!line.trim()) return;
-    const c=line.split(/\t|\|/).map(s=>s.trim());
+    let c=line.split(/\t|\|/).map(s=>s.trim());
+    if(c.length<2){ const m=line.trim().match(/^(.+?)\s+(\d+)\s*일?(?:\s+(.*))?$/); if(m) c=[m[1],m[2],m[3]||'']; }
     if(/^공정명?$/.test(c[0])||/^기간/.test(c[1]||'')) return; // 머리글 줄
     const name=c[0], dur=parseInt(c[1],10);
     if(!name){ errs.push(`${i+1}행: 공정명이 없습니다`); return; }
-    if(!(dur>=1)){ errs.push(`${i+1}행: 기간 '${c[1]||''}'이 숫자가 아닙니다`); return; }
+    if(!(dur>=1)){ errs.push(`${i+1}행 '${name}': 기간 '${c[1]||''}'이 숫자가 아닙니다`); return; }
     const preds=[];
-    for(const tok of (c[2]||'').split(/[,\s]+/).filter(Boolean)){
-      const m=tok.match(/^([A-Za-z]+\d+)(FS|SS|FF)?([+-]\d+)?$/i);
-      if(!m){ errs.push(`${i+1}행: 선행 표기 '${tok}'를 읽을 수 없습니다`); return; }
-      const id=idMap[m[1].toUpperCase()];
-      if(!id){ errs.push(`${i+1}행: 선행 공정 ${m[1]}을(를) 찾을 수 없습니다`); return; }
-      preds.push({id,type:(m[2]||'FS').toUpperCase(),lag:m[3]?parseInt(m[3],10):0});
+    for(const tok of String(c[2]||'').split(/[,;、]+/).map(s=>s.trim()).filter(Boolean)){
+      const r=sParsePred(tok,idMap); if(r.err){ errs.push(`${i+1}행 '${name}': ${r.err}`); return; } preds.push(r.p);
     }
     const id='A'+seq; seq+=10; idMap[id]=id; // 같은 묶음 안 참조 허용
-    const cls=(String(c[4]||'').match(/[1-9]000/)||[''])[0];
-    rows.push({id,name,dur,preds,phase:sPhaseFrom(c[3]),cls,cp:false,line:i+1});
+    const cls=(String(c[4]||c[3]||'').match(/[1-9]000/)||[''])[0];
+    // 단계가 비면 첫 선행 공정의 단계를 따름
+    const ph=sPhaseFrom(/[1-9]000/.test(c[3]||'')?'':c[3])||(preds[0]&&(sA(preds[0].id)||rows.find(r=>r.id===preds[0].id)||{}).phase)||'P1';
+    rows.push({id,name,dur,preds,phase:ph,cls,cp:false,line:i+1});
   });
   return {rows,errs,seq};
 }
-function sBulkPreview(){
-  const t=$('cfBulk').value; sBulk=null; $('cfBulkAdd').disabled=true;
-  if(!t.trim()){ $('cfBulkPrev').innerHTML=''; return; }
-  const p=sBulkParse(t); sBulk=p;
-  $('cfBulkPrev').innerHTML=(p.rows.length?`<div style="overflow-x:auto"><table class="s-t"><tr><th>새 ID</th><th>공정명</th><th class="s-num">기간</th><th>선행</th><th>단계</th></tr>${p.rows.map(r=>`<tr><td><small class="gid">${r.id}</small></td><td>${esc(r.name)}</td><td class="s-num">${r.dur}일</td><td style="font-size:.68rem">${r.preds.map(x=>`${x.id}${x.type!=='FS'?x.type:''}${x.lag?(x.lag>0?'+':'')+x.lag:''}`).join(', ')||'-'}</td><td>${S_PHASES.find(x=>x.id===r.phase).short}</td></tr>`).join('')}</table></div>`:'')+
-    (p.errs.length?`<div class="paste-hint" style="color:var(--red);margin-top:6px">${p.errs.map(esc).join('<br>')}<br>(이 행들은 건너뜁니다)</div>`:'');
-  $('cfBulkAdd').disabled=!p.rows.length;
+// 미리보기: 새 공정을 넣은 상태로 계산해 날짜·여유·크리티컬 여부까지 보여줌
+const sBulkState={};
+function sBulkPreview(src,prev,btn){
+  const t=$(src).value; sBulkState[src]=null; $(btn).disabled=true;
+  if(!t.trim()){ $(prev).innerHTML=''; $(btn).textContent='추가'; return; }
+  const p=sBulkParse(t); sBulkState[src]=p;
+  let calc=null;
+  if(p.rows.length){ const tmp=JSON.parse(JSON.stringify(sPlan)); p.rows.forEach(r=>{ const {line,...a}=r; tmp.acts.push(a); }); calc=sRun(tmp,sAct); if(calc.cyc) calc=null; }
+  const nameOf=id=>{ const a=sA(id)||p.rows.find(r=>r.id===id); return a?a.name:id; };
+  $(prev).innerHTML=(p.rows.length?`<div class="paste-hint" style="margin-bottom:4px">인식: <b>${p.rows.length}개</b> 공정${p.errs.length?` · 건너뛸 줄 ${p.errs.length}개`:''}</div>`+p.rows.map(r=>{ const x=calc&&calc.R[r.id];
+      return `<div class="s-bk${x&&x.crit?' crit':''}"><div class="t"><small class="gid">${r.id}</small>${esc(r.name)} <span class="s-pill asm">${r.dur}일</span><span class="s-pill asm">${S_PHASES.find(q=>q.id===r.phase).short}</span>${r.cls?`<span class="s-pill cls">${r.cls}</span>`:''}</div>
+        <div class="sub">${r.preds.length?r.preds.map(q=>`<b>${q.id}</b> ${esc(nameOf(q.id).slice(0,14))} → <b>${sRelTxt(q)}</b>`).join('<br>'):'<span style="color:var(--amber)">선행 없음 — 착공일부터 시작으로 계산</span>'}</div>
+        ${x?`<div class="sub">예상 ${sMD(calc.cal[x.es])}~${sMD(calc.cal[x.ef])} · ${x.crit?'<b style="color:var(--s-crit)">크리티컬 패스가 됩니다</b>':`여유 ${x.tf}일`}</div>`:''}</div>`; }).join(''):'')+
+    (calc===null&&p.rows.length?`<div class="paste-hint" style="color:var(--red)">선후행이 순환합니다 — 선행 공정을 확인하세요</div>`:'')+
+    (p.errs.length?`<div class="paste-hint" style="color:var(--red);margin-top:6px">${p.errs.map(esc).join('<br>')}<br>(이 줄들은 건너뜁니다)</div>`:'');
+  $(btn).disabled=!p.rows.length||calc===null;
+  $(btn).textContent=p.rows.length?`${p.rows.length}개 추가`:'추가';
 }
-async function sBulkAdd(){
-  if(!sBulk||!sBulk.rows.length) return;
+async function sBulkAdd(src,prev,btn,done){
+  const B=sBulkState[src]; if(!B||!B.rows.length) return;
   const snap=JSON.stringify(sPlan);
-  sBulk.rows.forEach(r=>{ const {line,...a}=r; sPlan.acts.push(a); });
-  sPlan.seq=sBulk.seq;
-  const test=sRun(sPlan,sAct);
-  if(test.cyc){ sPlan=JSON.parse(snap); toast('선후행이 순환해서 하나도 추가하지 않았습니다 — 선행 공정을 확인하세요'); return; }
-  sSetBaseline(sPlan,sBulk.rows.map(r=>r.id)); // 새 공정은 계산 날짜를 기준선으로
+  B.rows.forEach(r=>{ const {line,...a}=r; sPlan.acts.push(a); });
+  sPlan.seq=B.seq;
+  if(sRun(sPlan,sAct).cyc){ sPlan=JSON.parse(snap); toast('선후행이 순환해서 하나도 추가하지 않았습니다 — 선행 공정을 확인하세요'); return; }
+  sSetBaseline(sPlan,B.rows.map(r=>r.id)); // 새 공정은 계산 날짜를 기준선으로
   if(!(await sSavePlan())){ sPlan=JSON.parse(snap); return; }
-  toast(`공정 ${sBulk.rows.length}개를 추가했습니다`); $('cfBulk').value=''; sBulkPreview(); sRenderAll();
+  toast(`공정 ${B.rows.length}개를 추가했습니다`); $(src).value=''; sBulkPreview(src,prev,btn); sRenderAll();
+  if(done) done();
 }
 function sExport(){
   const blob=new Blob([JSON.stringify({exported:new Date().toISOString(),plan:sPlan,actual:sAct},null,1)],{type:'application/json'});
@@ -4219,7 +4303,7 @@ let sEditId=null;
 function sPredRow(list, p){
   const opts=sPlan.acts.filter(a=>a.id!==sEditId).map(a=>`<option value="${a.id}" ${p&&p.id===a.id?'selected':''}>${a.id} ${a.cp?'🔴 ':''}${esc(a.name)}</option>`).join('');
   const d=document.createElement('div'); d.className='s-predrow';
-  d.innerHTML=`<select class="f-input" style="flex:1;min-width:0">${opts}</select><select class="f-input" style="width:64px">${['FS','SS','FF'].map(t=>`<option ${p&&p.type===t?'selected':''}>${t}</option>`).join('')}</select><input class="f-input" style="width:54px" inputmode="numeric" placeholder="Lag" value="${p&&+p.lag?p.lag:''}"><button class="mini-btn" title="빼기">×</button>`;
+  d.innerHTML=`<select class="f-input" style="flex:1;min-width:0">${opts}</select><select class="f-input" style="width:108px;flex:none">${['FS','SS','FF'].map(t=>`<option value="${t}" ${p&&p.type===t?'selected':''}>${S_REL[t]}</option>`).join('')}</select><input class="f-input" style="width:50px;flex:none" inputmode="numeric" placeholder="±일" title="간격: 2 = 2일 뒤, -1 = 1일 당겨서" value="${p&&+p.lag?p.lag:''}"><button class="mini-btn" title="빼기">×</button>`;
   d.querySelector('button').onclick=()=>d.remove();
   $(list).appendChild(d);
 }
@@ -4240,13 +4324,21 @@ function sEdit(id){
   $('aActBox').style.display=a?'':'none';
   $('aDel').style.display=a&&!a.cp?'':'none';
   const r=a&&sCalc.R[a.id], b=a&&sBaseOf(a.id);
-  $('aCalc').innerHTML=r?`계산 결과: ${sFmt(sDate(r.es))} ~ ${sFmt(sDate(r.ef))} · 여유 ${r.tf}일${r.crit?' · <b style="color:var(--s-crit)">크리티컬</b>':''}${b?` · 기준 ${sMD(sDate(b[0]))}~${sMD(sDate(b[1]))}`:''}`:'';
+  const vv=a&&sVar(a.id);
+  $('aCalc').innerHTML=r?`계산 결과: ${sFmt(sDate(r.es))} ~ ${sFmt(sDate(r.ef))} · 여유 ${r.tf}일${r.crit?' · <b style="color:var(--s-crit)">크리티컬</b>':''}${vv?`<br>기준${a.cp?'(고정)':''} ${sMD(vv.bs)}~${sMD(vv.bf)} → ${sVarChip(vv,/^done/.test(r.state))}${vv.ds!==vv.df?` (착수 ${sVarShort(vv.ds)}일)`:''}`:''}`:'';
   const ed=isEditor();
   $('actModal').querySelectorAll('input,select').forEach(x=>x.disabled=!ed);
   ['aAddPred','aAddSucc','aSave'].forEach(id=>$(id).style.display=ed?'':'none'); if(!ed) $('aDel').style.display='none';
   $('actModal').querySelectorAll('.s-predrow .mini-btn').forEach(x=>x.style.display=ed?'':'none');
   if(!ed) $('aCalc').innerHTML+='<br>🔒 보기 전용 — 수정은 관리자 로그인 후';
+  $('aMode').style.display=!a&&ed?'':'none'; sAddMode('one');
   $('actModal').classList.add('show');
+}
+function sAddMode(m){
+  document.querySelectorAll('#aMode [data-am]').forEach(x=>x.classList.toggle('on',x.dataset.am===m));
+  $('aOneBox').style.display=m==='one'?'':'none'; $('aManyBox').style.display=m==='many'?'':'none';
+  $('aSave').style.display=m==='one'&&isEditor()?'':'none';
+  if(m==='many') sBulkPreview('aBulk','aBulkPrev','aBulkAdd');
 }
 async function sSaveEdit(){
   const name=$('aName').value.trim(), dur=parseInt($('aDur').value,10);
@@ -4291,9 +4383,11 @@ async function sDelete(){
   closeModal('actModal'); toast('삭제했습니다'); sRenderAll();
 }
 async function sSaveBase(){
-  if(!confirm('지금 계산된 일정을 새 기준선으로 저장할까요?\n(기준 화입일이 바뀌고, 이후 지연은 새 기준선 대비로 계산됩니다. 이전 기준선은 공정표 이력(rev)에 남습니다)')) return;
+  const extra=sPlan.acts.filter(a=>!a.cp);
+  if(!extra.length){ toast('크리티컬 패스 기준은 고정입니다 — 다시 잡을 추가 공정이 없습니다'); return; }
+  if(!confirm(`추가 공정 ${extra.length}개의 기준을 지금 계산된 일정으로 다시 잡을까요?\n(크리티컬 패스 40개의 기준 날짜와 기준 화입일 '27.03.23은 고정이라 바뀌지 않습니다)`)) return;
   const C=sCalc, snap=JSON.stringify(sPlan);
-  sPlan.base={at:sSD(),fire:C.fin,dates:Object.fromEntries(sPlan.acts.filter(a=>C.R[a.id]).map(a=>[a.id,[C.cal[C.R[a.id].es],C.cal[C.R[a.id].ef]]]))};
+  extra.forEach(a=>{ const r=C.R[a.id]; if(r) sPlan.base.dates[a.id]=[C.cal[r.es],C.cal[r.ef]]; });
   if(await sSavePlan()){ toast('새 기준선을 저장했습니다'); sRenderAll(); } else sPlan=JSON.parse(snap);
 }
 $('simAct').onchange=sSim; $('simDays').onchange=sSim;
@@ -4306,8 +4400,11 @@ $('gCritOnly').onchange=()=>{ sCritOnly=$('gCritOnly').checked; sGantt(); };
 $('sAddAct').onclick=()=>sEdit(null);
 $('sBaseBtn').onclick=sSaveBase;
 $('cfSave').onclick=sSaveConfig;
-$('cfBulk').addEventListener('input',sBulkPreview);
-$('cfBulkAdd').onclick=sBulkAdd;
+$('cfBulk').addEventListener('input',()=>sBulkPreview('cfBulk','cfBulkPrev','cfBulkAdd'));
+$('cfBulkAdd').onclick=()=>sBulkAdd('cfBulk','cfBulkPrev','cfBulkAdd');
+$('aBulk').addEventListener('input',()=>sBulkPreview('aBulk','aBulkPrev','aBulkAdd'));
+$('aBulkAdd').onclick=()=>sBulkAdd('aBulk','aBulkPrev','aBulkAdd',()=>closeModal('actModal'));
+document.querySelectorAll('#aMode [data-am]').forEach(b=>b.onclick=()=>sAddMode(b.dataset.am));
 $('cfExport').onclick=sExport;
 $('cfImport').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) sImport(f); };
 $('aAddPred').onclick=()=>sPredRow('aPreds',null);
