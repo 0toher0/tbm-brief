@@ -619,6 +619,7 @@ table.s-t tr[data-act]{cursor:pointer}
 .wk-bar.c0{border-top-left-radius:0;border-bottom-left-radius:0} .wk-bar.c1{border-top-right-radius:0;border-bottom-right-radius:0}
 .wk-bar .pf{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.25)}
 .wk-bar span{position:relative;font-size:.58rem;font-weight:800;color:#fff;padding:0 4px;white-space:nowrap;font-family:var(--num)}
+body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body:not(.editor) .s-act .d,body:not(.editor) .s-act .nm,body:not(.editor) .s-gr[data-act],body:not(.editor) .wk-row,body:not(.editor) .s-rc .m{cursor:default!important}
 /* v6.1 */
 .de-row{border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:8px;background:#fff}
 .de-row textarea{width:100%;margin-top:6px;font-size:.8rem;resize:vertical;box-sizing:border-box}
@@ -1232,7 +1233,7 @@ table.s-t tr[data-act]{cursor:pointer}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.7.0',
+  version : '6.7.1',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3902,6 +3903,7 @@ let editorPass=loadJSON(LS_EDITOR,'');
 const isEditor=()=>!!editorPass;
 function applyEditorUI(){
   const ed=isEditor(), b=$('btnAdmin');
+  document.body.classList.toggle('editor',ed); // 관리자 아니면 공정 줄에 손가락 커서 없음
   b.innerHTML=ed?'✓ 관리자<br>로그인됨':'🔒 관리자'; b.classList.toggle('on',ed); b.title=ed?'누르면 로그아웃':'관리자 로그인';
   [['dUpCard','dLockNote'],['mpUpCard','mpLockNote']].forEach(([u,n])=>{ if($(u)){ $(u).style.display=ed?'':'none'; $(n).style.display=ed?'none':''; } });
   if(typeof sLoaded!=='undefined'&&sLoaded){ sRenderAll(); if($('pgGantt').classList.contains('show')) sGanttView(); }
@@ -4438,6 +4440,7 @@ function sPredRow(list, p){
 }
 function sReadRows(list){ return [...$(list).querySelectorAll('.s-predrow')].map(d=>{ const [s,t]=d.querySelectorAll('select'); return {id:s.value,type:t.value,lag:parseInt(d.querySelector('input').value,10)||0}; }).filter(x=>x.id); }
 function sEdit(id){
+  if(!isEditor()) return; // 공정 세부 창은 관리자만 (일반 사용자는 눌러도 열리지 않음 — 사용자 결정 2026-11-21)
   sEditId=id||null; const a=id?sA(id):null; if(id&&!a) return;
   $('aTitle').textContent=a?(a.cp?'🔴 크리티컬 패스 공정':'공정 수정'):'＋ 공정 추가 (neck 작업)';
   $('aDesc').textContent=a?`${a.id} · 날짜는 기간과 선후행으로 자동 계산됩니다`:'기간과 "어느 공정에 붙는지"만 넣으면 날짜·여유일이 자동 계산됩니다. 화입일 영향을 보려면 후행 공정(이 작업이 끝나야 시작할 수 있는 공정)도 넣으세요.';
