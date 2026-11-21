@@ -432,3 +432,11 @@ const APP = {
 - D1 `progress_img(day PK, data, note, w, h, updated_at)` — 날짜당 1장. `/kakao/progress-img` GET 목록(그림 제외)·GET ?day= 한 장·POST 저장(관리자), `/kakao/progress-img-delete`(관리자·POST만).
 - 앱: 공정 첫 화면 단계별 표 오른쪽(좁으면 아래) `#sPimg`. 관리자는 날짜·메모 + 노란 칸에 Ctrl+V(PPT 그림)/파일 선택, 같은 날짜는 교체 확인, 삭제. 누구나 ◀ ▶·슬라이더·D+n 칩·▶ 추이 재생(1.1초 간격, 미리 받기)·눌러서 전체화면(`#pimgModal`, 뒤로가기로 닫힘). 그림은 `mShrinkImage`로 1.3MB 이하.
 - v6.9.1 (2026-11-21): PPT 그림이 안 붙던 문제 — Office 복사는 그림 파일 없이 RTF(`\pngblip`/`\jpegblip` 16진수)·HTML(깨진 file:// img)만 주는 경우가 있음. `pimgOnPaste`가 파일 → HTML data: img → RTF 그림(`pimgRtfImage`) → `navigator.clipboard.read()` 순으로 찾고, 실패 시 클립보드 형식을 알림에 표시. '📋 클립보드 그림 붙이기' 버튼, 관리자는 공정 화면 아무 데서나 Ctrl+V(입력칸 제외).
+
+## 31. 고로 모식도 (앱 v6.10.0 / Worker v3.4.0, 2026-11-21)
+- 공정 첫 화면 진행률 칸에 '🏭 모식도 | 📸 PPT 그림' 전환(기본 모식도, `localStorage tbm_pimg_mode`). 광양 2고로 PPT 모식도를 참고한 SVG(`pmSvg`, viewBox 680×742).
+- 부위 81칸(`PM_PARTS`): 상부(Bleeder·Uptake 상부·상승관 좌우·Downcomer·S-2 Head부·병렬 Bunker 좌우·Upper Seal Valve·Material Gate·Lower Seal Valve·Drive Unit·Offtake 좌우·Top Cone), 철골·Outrigger Crane, 노체 철피(Stave 줄×좌우, 실선 구분), Stave 줄 15개(TA~H-1), 노저 측벽 내화물(계단형, 줄×좌우), 노저 바닥 Ceramic Pad·Carbon Block, 환상관·풍구 좌우, 풍구상 발판·주상 바닥·주상기기(네모).
+- 상태 6종 `PM_ST`: keep 유용(노랑)·none 기본(회색)·rmw 철거중(빨강 빗금)·rm 철거·inw 설치중(파랑 빗금)·in 설치. 노체 범위는 기본 none, 그 외 keep(`p.def`). 이름표 묶음(`PM_GROUPS`: Shell 층·측벽 내화물·환상관)을 누르면 그 칸 전체 선택.
+- D1 `progress_map(day PK, data{states,note})`. `/kakao/progress-map` GET 전체·POST(관리자, 상태값 검증), `/kakao/progress-map-delete`(관리자·POST). 예전 키(bunker·cEq·thoL/R·묶음 id)는 `pmNorm`이 칸으로 변환.
+- 관리자: '✎ 오늘 상태 편집'(그 날 기록 없으면 직전 기록에서 시작) → 칸 선택·상태·메모·저장/삭제, '✓ 오늘 직전과 동일 확정'(직전 기록을 오늘로 복사, 메모 '변동 없음'). 누구나 ◀ ▶·슬라이더·D+n·▶ 추이 재생·눌러서 전체화면.
+- 덤: 숨긴 '되돌리기' 띠(`#undoBar`)가 화면 아래 검은 동그라미로 남던 문제 — 숨김 시 visibility:hidden.

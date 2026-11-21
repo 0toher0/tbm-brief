@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.3.0',
+        version: '3.4.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -340,6 +340,8 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS daily_work_hist (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, kind TEXT, payload TEXT, analysis TEXT, updated_at TEXT, reason TEXT, saved_at TEXT)`),
     // v3.3.0: 고로 진행률 그림(PPT 캡처) — 날짜당 1장, 추이 재생용
     db.prepare(`CREATE TABLE IF NOT EXISTS progress_img (day TEXT PRIMARY KEY, data TEXT NOT NULL, note TEXT, w INTEGER, h INTEGER, updated_at TEXT)`),
+    // v3.4.0: 고로 모식도 부위별 상태 — 날짜당 1건 {states:{부위:상태}, note}
+    db.prepare(`CREATE TABLE IF NOT EXISTS progress_map (day TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS manpower (day TEXT NOT NULL, shift TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift))`),
   ]);
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
@@ -550,10 +552,10 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok }, ok ? 200 : 401, cors);
   }
   // 쓰기는 관리자만 (읽기는 누구나)
-  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST' };
+  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST', 'progress-map': 'POST', 'progress-map-delete': 'POST' };
   if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) return json({ error: 'editor_required' }, 403, cors);
   // 고치기·지우기 전용 주소는 POST만 (GET으로 우회 금지)
-  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','sched-actual-undo','daily-ai','progress-img-delete'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','sched-actual-undo','daily-ai','progress-img-delete','progress-map-delete'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
 
   // ---- 공정관리: 공정표 + 실적 ----
   if (sub === 'sched') {
@@ -701,6 +703,23 @@ async function handleKakao(request, env, url, cors) {
     }
     const r = await db.prepare(`SELECT day, note, w, h, updated_at, length(data) AS size FROM progress_img ORDER BY day LIMIT 1000`).all();
     return json({ today: now.day, items: r.results }, 200, cors);
+  }
+  if (sub === 'progress-map') {
+    if (request.method === 'POST') {
+      const day = String(body.day || ''), d = body.data;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !d || typeof d.states !== 'object') return json({ error: 'bad_payload' }, 400, cors);
+      const states = {}; for (const [k, v] of Object.entries(d.states)) if (/^[\w-]{1,24}$/.test(k) && ['keep', 'none', 'rmw', 'rm', 'inw', 'in'].includes(v)) states[k] = v;
+      const data = JSON.stringify({ states, note: String(d.note || '').slice(0, 200) });
+      const prev = await db.prepare(`SELECT day FROM progress_map WHERE day=?`).bind(day).first();
+      await db.prepare(`INSERT INTO progress_map(day,data,updated_at) VALUES(?,?,?) ON CONFLICT(day) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at`).bind(day, data, now.ts).run();
+      return json({ ok: true, replaced: !!prev }, 200, cors);
+    }
+    const r = await db.prepare(`SELECT day, data, updated_at FROM progress_map ORDER BY day LIMIT 2000`).all();
+    return json({ today: now.day, items: r.results.map(x => ({ ...x, data: JSON.parse(x.data) })) }, 200, cors);
+  }
+  if (sub === 'progress-map-delete') {
+    const r = await db.prepare(`DELETE FROM progress_map WHERE day=?`).bind(String(body.day || '')).run();
+    return json({ ok: true, deleted: (r.meta && r.meta.changes) || 0 }, 200, cors);
   }
   if (sub === 'progress-img-delete') {
     const r = await db.prepare(`DELETE FROM progress_img WHERE day=?`).bind(String(body.day || '')).run();

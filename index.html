@@ -596,6 +596,24 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-vrow{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-top:10px}
 .s-vrow>.s-vt{flex:0 1 230px;width:auto;margin-top:0}
 .s-pimg{flex:1 1 280px;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+.pm-tabs{display:flex;gap:3px}
+.pm-tabs button{font-size:.72rem;font-weight:800;border:1px solid var(--line);background:#fff;color:var(--steel);border-radius:7px;padding:3px 8px;cursor:pointer}
+.pm-tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pm-wrap{position:relative;margin-top:6px;background:#fbfbfc;border-radius:8px;cursor:zoom-in}
+.pm-svg{display:block;width:100%;height:auto}
+.pm-p.ed,.pm-l{cursor:pointer}
+.pm-p.sel polygon,.pm-p.sel rect,.pm-p.sel circle{stroke:#000;stroke-width:2.2}
+.pm-p.sel line,.pm-p.sel path{filter:drop-shadow(0 0 2px #000)}
+.pm-leg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.68rem;color:var(--ink2);margin-top:5px}
+.pm-leg span{display:flex;align-items:center;gap:3px}
+.pm-sw{display:inline-block;width:14px;height:10px;border:1px solid #495057;border-radius:2px;vertical-align:middle}
+.pm-sw.keep{background:#f2d43d} .pm-sw.none{background:#e9ecef} .pm-sw.rm{background:#e03131} .pm-sw.in{background:#3b5bdb}
+.pm-sw.rmw{background:repeating-linear-gradient(135deg,#e03131 0 3px,#fff 3px 6px)} .pm-sw.inw{background:repeating-linear-gradient(135deg,#3b5bdb 0 3px,#fff 3px 6px)}
+.pm-pick{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px;min-height:28px}
+.pm-pick b{font-size:.76rem;margin-right:4px}
+.pm-pick button{font-size:.7rem;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:4px}
+.pm-pick button.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+.pm-hint{font-size:.7rem;color:var(--steel)}
 .pimg-h{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
 .pimg-h b{font-size:.8rem} .pimg-h small{font-family:var(--num);font-size:.68rem;color:var(--steel)}
 .pimg-view{margin-top:6px;background:#f6f7f7;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;position:relative}
@@ -621,6 +639,7 @@ table.s-t tr[data-act]{cursor:pointer}
 .pimg-fimg img{max-width:100%;max-height:100%}
 .pimg-full .pimg-ctl{color:#fff} .pimg-full .pimg-ctl .cnt{color:#ced4da}
 .undo-bar{position:fixed;left:50%;transform:translateX(-50%) translateY(140%);bottom:calc(env(safe-area-inset-bottom,0px) + 74px);background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:.8rem;z-index:70;max-width:94%;width:max-content;transition:transform .25s;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.undo-bar:not(.show){visibility:hidden;opacity:0;pointer-events:none}
 .undo-bar.show{transform:translateX(-50%) translateY(0)}
 .undo-bar button{border:none;background:#ffd43b;color:#16202b;font-weight:800;border-radius:8px;padding:7px 10px;white-space:nowrap}
 .s-rc{display:flex;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
@@ -1280,7 +1299,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.9.1',
+  version : '6.10.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4157,6 +4176,176 @@ function sPhaseInfo(){
     const df=bf?sDiff(bf,sDate(ef)):null, ds=bs?sDiff(bs,sDate(es)):null;
     return {p,es,ef,pct:Math.round(done/tot*100),st,bs,bf,ds,df}; }).filter(Boolean);
 }
+/* ===== 고로 모식도: 부위별 상태(유용·철거중·철거·설치중·설치)를 날짜별로 저장 → 추이 재생 ===== */
+const PM_ST={keep:['유용','#f2d43d'],none:['기본(회색)','#e9ecef'],rmw:['철거중','url(#pmHR)'],rm:['철거','#e03131'],inw:['설치중','url(#pmHB)'],in:['설치','#3b5bdb']};
+const PM_ORDER=['keep','none','rmw','rm','inw','in'];
+const PM_C=330;
+// 노체 Stave 줄 경계(위→아래): TA·R-2·R-1·S-5~S-1·B-2·B-1·T-1·H-4~H-1, 그 아래 노저 바닥 내화물(700~722)
+const PM_ROWS=[['TA',470,485],['R-2',485,499],['R-1',499,513],['S-5',513,529],['S-4',529,546],['S-3',546,563],['S-2',563,580],['S-1',580,596],['B-2',596,612],['B-1',612,629],['T-1',629,657],['H-4',657,668],['H-3',668,682],['H-2',682,695],['H-1',695,700]];
+function pmHW(y){ const P=[[470,54],[485,57],[596,90],[612,92],[722,92]];
+  for(let i=1;i<P.length;i++) if(y<=P[i][0]){ const [y0,w0]=P[i-1],[y1,w1]=P[i]; return w0+(w1-w0)*(y-y0)/(y1-y0); } return 80; }
+function pmBandYs(y0,y1){ const s=[y0]; [485,596,612].forEach(b=>{ if(b>y0&&b<y1) s.push(b); }); s.push(y1); return s; }
+const pmPts=a=>a.map(p=>p.map(v=>Math.round(v*10)/10).join(',')).join(' ');
+function pmWall(y0,y1){ const ys=pmBandYs(y0,y1), c=PM_C;
+  const L=pmPts([...ys.map(y=>[c-pmHW(y)-9,y]), ...ys.slice().reverse().map(y=>[c-pmHW(y),y])]);
+  const R=pmPts([...ys.map(y=>[c+pmHW(y)+9,y]), ...ys.slice().reverse().map(y=>[c+pmHW(y),y])]);
+  const seg=PM_ROWS.map(r=>r[1]).filter(y=>y>y0&&y<y1).flatMap(y=>[{t:'line',a:{x1:c-pmHW(y)-9,y1:y,x2:c-pmHW(y),y2:y},ln:.8},{t:'line',a:{x1:c+pmHW(y),y1:y,x2:c+pmHW(y)+9,y2:y},ln:.8}]);
+  return [{t:'polygon',a:{points:L},sw:1.3},{t:'polygon',a:{points:R},sw:1.3},...seg]; }
+function pmWallSide(y0,y1,sd){ const ys=pmBandYs(y0,y1), c=PM_C, k=sd==='L'?-1:1;
+  return {t:'polygon',a:{points:pmPts([...ys.map(y=>[c+k*(pmHW(y)+9),y]), ...ys.slice().reverse().map(y=>[c+k*pmHW(y),y])])},sw:1.1}; }
+function pmRow(y0,y1){ const ys=pmBandYs(y0,y1), c=PM_C;
+  return [{t:'polygon',a:{points:pmPts([...ys.map(y=>[c-pmHW(y)+1,y]), ...ys.slice().reverse().map(y=>[c+pmHW(y)-1,y])])}}]; }
+// 부위: id, 이름, 기본 상태, 그림, 이름표 위치(lx,ly,쪽), 이음선 끝(px,py)
+const PM_PARTS=(()=>{ const c=PM_C, P=[];
+  const add=(id,name,el,lab,def)=>P.push({id,name,el,lab,def}); const G={};
+  // 철골(타워·다리·발판) — 선
+  const S=(x1,y1,x2,y2,w)=>({t:'line',a:{x1,y1,x2,y2},w:w||7});
+  add('tower','철골 구조물',[S(190,212,190,470),S(470,212,470,470),S(186,212,474,212,6),S(186,405,474,405,6),S(186,470,474,470,6),
+    S(190,470,141,722,8),S(470,470,519,722,8),S(176,513,c-74,513,4),S(c+74,513,484,513,4),S(168,563,c-90,563,4),S(c+90,563,492,563,4),S(159,612,c-101,612,4),S(c+101,612,501,612,4)],{x:545,y:186,s:'R',px:474,py:212});
+  add('crane','Outrigger Crane',[S(190,300,92,300,5),S(190,345,100,300,4),{t:'rect',a:{x:100,y:284,width:36,height:14}}],{x:135,y:232,s:'L',px:118,py:284});
+  add('bleeder','Bleeder Valve',[{t:'polygon',a:{points:pmPts([[c-24,92],[c-24,34],[c,18],[c+24,34],[c+24,92]])}},{t:'polygon',a:{points:pmPts([[c-12,74],[c+12,74],[c,86]])},fix:'#3b5bdb'}],{x:545,y:60,s:'R',px:c+24,py:60});
+  add('uptake','Uptake 상부',[{t:'path',a:{d:`M${c} 92 L${c} 150 M${c} 150 L${c-72} 206 M${c} 150 L${c+72} 206`},w:20}],{x:135,y:150,s:'L',px:c-14,py:160});
+  // 상승관: Offtake 위에서 노정까지 올라가 Uptake 상부로 합류 (좌·우)
+  add('upL','상승관 (좌)',[{t:'path',a:{d:`M${c-72} 204 L${c-72} 420`},w:20}],{x:135,y:358,s:'L',px:c-81,py:358});
+  add('upR','상승관 (우)',[{t:'path',a:{d:`M${c+72} 204 L${c+72} 420`},w:20}],{x:545,y:372,s:'R',px:c+81,py:372});
+  add('downcomer','Downcomer',[{t:'path',a:{d:`M${c+6} 120 L${c+72} 128 L${c+152} 340`},w:24}],{x:545,y:250,s:'R',px:c+124,py:262});
+  add('head','S-2 Head부',[{t:'rect',a:{x:c-15,y:196,width:30,height:52}}],{x:545,y:222,s:'R',px:c+15,py:222});
+  // 병렬 Hopper(Bell-less Top): Hopper 2개 — 각각 위에 Upper Seal Valve, 아래 Material Gate → 공통 Lower Seal Valve → Drive Unit(분배 Chute)
+  add('usv','Upper Seal Valve',[{t:'polygon',a:{points:pmPts([[c-58,252],[c-8,252],[c-12,264],[c-54,264]])}},{t:'polygon',a:{points:pmPts([[c+58,252],[c+8,252],[c+12,264],[c+54,264]])}}],{x:135,y:257,s:'L',px:c-56,py:257});
+  add('bunkerL','Bunker (좌)',[{t:'polygon',a:{points:pmPts([[c-58,266],[c-8,266],[c-5,300],[c-5,340],[c-18,372],[c-34,372],[c-60,340],[c-62,300]])}}],{x:135,y:318,s:'L',px:c-62,py:318});
+  add('bunkerR','Bunker (우)',[{t:'polygon',a:{points:pmPts([[c+58,266],[c+8,266],[c+5,300],[c+5,340],[c+18,372],[c+34,372],[c+60,340],[c+62,300]])}}],{x:545,y:330,s:'R',px:c+62,py:330});
+  add('mGate','Material Gate',[{t:'rect',a:{x:c-34,y:373,width:16,height:9}},{t:'rect',a:{x:c+18,y:373,width:16,height:9}}],{x:135,y:376,s:'L',px:c-34,py:377});
+  add('lsv','Lower Seal Valve',[{t:'polygon',a:{points:pmPts([[c-34,384],[c+34,384],[c+20,404],[c-20,404]])}}],{x:135,y:398,s:'L',px:c-27,py:394});
+  add('drive','Drive Unit',[{t:'rect',a:{x:c-19,y:418,width:38,height:20}}],{x:135,y:420,s:'L',px:c-19,py:428});
+  add('offL','Offtake (좌)',[{t:'polygon',a:{points:pmPts([[c-78,420],[c-58,410],[c-34,452],[c-52,462]])}}],{x:135,y:442,s:'L',px:c-66,py:446});
+  add('offR','Offtake (우)',[{t:'polygon',a:{points:pmPts([[c+78,420],[c+58,410],[c+34,452],[c+52,462]])}}],{x:545,y:430,s:'R',px:c+68,py:430});
+  add('cone','Top Cone',[{t:'polygon',a:{points:pmPts([[c-19,440],[c+19,440],[c+54,470],[c-54,470]])}}],{x:545,y:458,s:'R',px:c+32,py:458},'none');
+  // ---- 노체: 유용 범위가 아님 → 기본(회색). 실선으로 나뉜 칸 하나하나가 부위 (이름표를 누르면 그 묶음 전체 선택) ----
+  const SIDE=sd=>sd==='L'?'좌':'우';
+  [['sTop','Top Shell',470,485],['sThroat','Throat Shell',485,513],['sUShaft','Upper Shaft Shell',513,546],['sMShaft','Middle Shaft Shell',546,580],['sLShaft','Lower Shaft Shell',580,596],
+   ['sBelly','Belly Shell',596,612],['sBosh','Bosh Shell',612,629],['sTuyere','Tuyere Shell',629,657],['sUHearth','Upper Hearth Shell',657,682],['sLHearth','Lower Hearth Shell',682,722]]
+   .forEach(([gid,gname,y0,y1])=>{ const ids=[];
+     [...PM_ROWS,['BT',700,722]].filter(r=>r[1]>=y0&&r[2]<=y1).forEach(([rn,ry0,ry1])=>['L','R'].forEach(sd=>{ const id='w'+rn+sd; ids.push(id);
+       add(id,`${gname} ${rn==='BT'?'바닥':rn} ${SIDE(sd)}`,[pmWallSide(ry0,ry1,sd)],null,'none'); }));
+     const ym=(y0+y1)/2; G[gid]={name:gname,ids,lab:{x:135,y:Math.round(ym+4),s:'L',px:c-pmHW(ym)-9,py:ym}}; });
+  // 내부 Stave(냉각반) 줄
+  PM_ROWS.forEach(([n,y0,y1])=>{ const H=n[0]==='H'||n==='T-1';
+    add('st'+n,n+(H?'':' Stave'),[...pmRow(y0+0.4,y1-0.4),{t:'text',a:{x:c,y:(y0+y1)/2+(n==='H-1'?1.8:3)},txt:n+(H?'':' Stave'),fs:n==='H-1'?5:(n[0]==='H'?6.5:7.5)}],null,'none'); });
+  // 노저 측벽 내화물(Carbon Block + Ceramic Cup): 줄마다·좌우마다 한 칸, 아래로 갈수록 두꺼운 계단형 조적
+  const lnIds=[];
+  [['T-1',640,657,5],['H-4',657,668,9],['H-3',668,682,14],['H-2',682,695,19],['H-1',695,700,19]].forEach(([n,y0,y1,d])=>['L','R'].forEach(sd=>{
+    const x=sd==='L'?c-92:c+92-d, id='ln'+n+sd; lnIds.push(id);
+    add(id,`측벽 내화물 ${n} ${SIDE(sd)}`,[{t:'rect',a:{x,y:y0,width:d,height:y1-y0},sw:.9},{t:'rect',a:{x,y:y0,width:d,height:y1-y0},ov:'url(#pmBrick)'}],null,'none'); }));
+  G.refWall={name:'노저 측벽 내화물',ids:lnIds,lab:{x:545,y:660,s:'R',px:c+80,py:690}};
+  // 노저 바닥: 위 Ceramic Pad(세운 벽돌) · 아래 Carbon Block(눕힌 층)
+  add('refPad','노저 바닥 Ceramic Pad',[{t:'rect',a:{x:c-92,y:700,width:184,height:11},sw:1},{t:'rect',a:{x:c-92,y:700,width:184,height:11},ov:'url(#pmBrickV)'}],{x:545,y:724,s:'R',px:c+70,py:705},'none');
+  add('refBot','노저 바닥 Carbon Block',[{t:'rect',a:{x:c-92,y:711,width:184,height:11},sw:1},{t:'rect',a:{x:c-92,y:711,width:184,height:11},ov:'url(#pmBrick)'}],{x:545,y:739,s:'R',px:c+70,py:717},'none');
+  // 환상관·풍구(송풍지관) 좌우
+  ['L','R'].forEach(sd=>{ const k=sd==='L'?-1:1; add('bustle'+sd,`환상관·풍구 ${SIDE(sd)}`,[{t:'circle',a:{cx:c+k*128,cy:618,r:12},sw:1.1},{t:'path',a:{d:`M${c+k*120} 628 L${c+k*101} 636`},w:5}],null,'none'); });
+  G.bustle={name:'환상관·풍구',ids:['bustleL','bustleR'],lab:{x:545,y:604,s:'R',px:c+140,py:618}};
+  add('tDeck','풍구상 발판',[S(154,644,c-101,644,5),S(c+101,644,506,644,5)],{x:545,y:632,s:'R',px:506,py:644});
+  add('cFloor','주상 바닥',[S(146,690,c-101,690,6),S(c+101,690,514,690,6)],{x:545,y:680,s:'R',px:514,py:690});
+  add('cEq','주상기기',[{t:'rect',a:{x:c-176,y:676,width:44,height:12}},{t:'rect',a:{x:c+132,y:676,width:44,height:12}}],{x:545,y:708,s:'R',px:c+176,py:684});
+  P.G=G; return P; })();
+const PM_GROUPS=PM_PARTS.G;
+const PM_DEFAULT=()=>Object.fromEntries(PM_PARTS.map(p=>[p.id,p.def||'keep']));
+function pmNorm(s){ s={...(s||{})}; for(const [gid,g] of Object.entries(PM_GROUPS)) if(s[gid]){ g.ids.forEach(i=>{ if(!s[i]) s[i]=s[gid]; }); delete s[gid]; } if(s.bunker){ s.bunkerL=s.bunkerL||s.bunker; s.bunkerR=s.bunkerR||s.bunker; delete s.bunker; }
+  if(!s.cEq&&(s.thoL||s.thoR)) s.cEq=s.thoL||s.thoR; delete s.thoL; delete s.thoR; return {...PM_DEFAULT(),...s}; }
+function pmSvg(st,sel,edit){
+  const col=id=>(PM_ST[st[id]]||PM_ST.keep)[1];
+  const at=a=>Object.entries(a).map(([k,v])=>`${k}="${v}"`).join(' ');
+  const parts=PM_PARTS.map(p=>{ const f=col(p.id);
+    const els=p.el.map(e=>{ if(e.t==='text') return `<text class="pm-st" ${at(e.a)}${e.fs?` style="font-size:${e.fs}px"`:''}>${esc(e.txt)}</text>`;
+      if(e.ln) return `<${e.t} ${at(e.a)} fill="none" stroke="#343a40" stroke-width="${e.ln}"/>`;
+      if(e.ov) return `<${e.t} ${at(e.a)} fill="${e.ov}" stroke="none" pointer-events="none"/>`;
+      if(e.w) return `<${e.t} ${at(e.a)} fill="none" stroke="${f}" stroke-width="${e.w}" stroke-linecap="square"/>`;
+      return `<${e.t} ${at(e.a)} fill="${e.fix||f}" stroke="#343a40" stroke-width="${e.sw||.7}"/>`; }).join('');
+    return `<g class="pm-p${sel&&sel.includes(p.id)?' sel':''}${edit?' ed':''}" data-pm="${p.id}"><title>${esc(p.name)} · ${(PM_ST[st[p.id]]||PM_ST.keep)[0]}</title>${els}</g>`; }).join('');
+  const lab=(L,name,attr,on)=>{ const R=L.s==='R';
+    return `<g class="pm-l${on?' sel':''}" ${attr}><line x1="${R?L.x-4:L.x+4}" y1="${L.y-3}" x2="${L.px}" y2="${L.py}" stroke="#495057" stroke-width=".7"/><text x="${L.x}" y="${L.y}" text-anchor="${R?'start':'end'}">${esc(name)}</text></g>`; };
+  const labs=PM_PARTS.filter(p=>p.lab).map(p=>lab(p.lab,p.name,`data-pm="${p.id}"`,sel&&sel.includes(p.id))).join('')
+    +Object.entries(PM_GROUPS).map(([gid,g])=>lab(g.lab,g.name,`data-pmg="${gid}"`,sel&&g.ids.every(i=>sel.includes(i)))).join('');
+  return `<svg class="pm-svg" viewBox="0 0 680 742" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="광양 2고로 모식도">
+    <defs><pattern id="pmHR" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><rect width="3.5" height="7" fill="#e03131"/></pattern>
+    <pattern id="pmBrick" width="10" height="3.2" patternUnits="userSpaceOnUse"><rect width="10" height="3.2" fill="none"/><line x1="0" y1="3" x2="10" y2="3" stroke="#212529" stroke-width=".8"/></pattern>
+    <pattern id="pmBrickV" width="3.4" height="10" patternUnits="userSpaceOnUse"><line x1="3.2" y1="0" x2="3.2" y2="10" stroke="#212529" stroke-width=".8"/></pattern>
+    <pattern id="pmHB" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><rect width="3.5" height="7" fill="#3b5bdb"/></pattern></defs>
+    <style>text{font-size:12.5px;fill:#212529;font-family:sans-serif}.pm-st{font-size:7.5px;font-weight:700;text-anchor:middle;pointer-events:none}.pm-lv{font-size:11px;fill:#495057}.sel text{font-weight:800;fill:#0b4ea2}</style><text x="600" y="482" class="pm-lv">5상</text>${parts}${labs}</svg>`;
+}
+const pmLegend=()=>`<div class="pm-leg">${PM_ORDER.map(k=>`<span><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</span>`).join('')}</div>`;
+function pmCounts(st){ const n={}; PM_PARTS.forEach(p=>{ const s=st[p.id]||'keep'; n[s]=(n[s]||0)+1; });
+  return PM_ORDER.filter(k=>k!=='keep'&&k!=='none'&&n[k]).map(k=>`${PM_ST[k][0]} ${n[k]}`).join(' · ')||'전부 유용'; }
+
+let pmList=null, pmIdx=-1, pmTimer=null, pmEdit=null, pmSel=null, pmSelName='', pimgMode=(()=>{ try{ return localStorage.getItem('tbm_pimg_mode')||'map'; }catch(e){ return 'map'; } })();
+const pimgTabs=()=>`<div class="pm-tabs"><button class="${pimgMode==='map'?'on':''}" data-pmode="map">🏭 모식도</button><button class="${pimgMode==='photo'?'on':''}" data-pmode="photo">📸 PPT 그림</button></div>`;
+function pimgBindTabs(box){ box.querySelectorAll('[data-pmode]').forEach(b=>b.onclick=()=>{ pimgMode=b.dataset.pmode; try{ localStorage.setItem('tbm_pimg_mode',pimgMode); }catch(e){} pmStop(); pimgStop(); pimgRender(); }); }
+async function pmLoad(keepDay){
+  try{ const d=await kApi('progress-map'); pmList=(d.items||[]).map(x=>({...x,data:typeof x.data==='string'?JSON.parse(x.data):x.data}));
+    const i=keepDay?pmList.findIndex(x=>x.day===keepDay):-1; pmIdx=i>=0?i:pmList.length-1;
+  }catch(e){ pmList=pmList||[]; console.warn('progress-map',e.message); }
+  pimgRender();
+}
+function pmStop(){ if(pmTimer){ clearInterval(pmTimer); pmTimer=null; if(pimgMode==='map') pimgRender(); } }
+function pmGo(i){ if(!pmList||!pmList.length) return; pmIdx=Math.max(0,Math.min(pmList.length-1,i)); pimgRender(); }
+function pmPlay(){ if(pmTimer){ pmStop(); return; } if(pmList.length<2) return; if(pmIdx>=pmList.length-1) pmIdx=0;
+  pmTimer=setInterval(()=>{ if(pmIdx>=pmList.length-1){ pmStop(); return; } pmGo(pmIdx+1); },1000); pimgRender(); }
+function pmBaseFor(day){ // 그 날짜 기록, 없으면 그 전 마지막 기록, 없으면 전부 유용
+  const ex=pmList.find(x=>x.day===day); if(ex) return pmNorm(ex.data.states);
+  const prev=pmList.filter(x=>x.day<day).pop(); return prev?pmNorm(prev.data.states):PM_DEFAULT(); }
+function pmRender(box){
+  const ed=isEditor();
+  if(pmList===null){ box.innerHTML=`<div class="pimg-h">${pimgTabs()}</div><div class="pimg-view"><div class="ph">불러오는 중…</div></div>`; pimgBindTabs(box); pmLoad(); return; }
+  if(pmEdit){ // ---- 관리자 편집 ----
+    const st=pmEdit.states, sel=pmSel||[], same=sel.length&&sel.every(i=>st[i]===st[sel[0]])?st[sel[0]]:null;
+    box.innerHTML=`<div class="pimg-h">${pimgTabs()}<small>✎ 편집 · ${esc(pimgLabel(pmEdit.day))}</small></div>
+      <div class="pimg-adm" style="border:none;margin:0;padding:4px 0 0"><input type="date" id="pmDay" value="${pmEdit.day}"><span class="pm-hint">부위를 눌러 상태를 고르세요</span></div>
+      <div class="pm-wrap">${pmSvg(st,pmSel,true)}</div>
+      <div class="pm-pick">${sel.length?`<b>${esc(pmSelName)}</b>${PM_ORDER.map(k=>`<button class="${same===k?'on':''}" data-pst="${k}"><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</button>`).join('')}`:'<span class="pm-hint">↑ 실선으로 나뉜 칸(철피·Stave·내화물·Bunker 등)을 누르세요. 왼쪽 Shell 이름을 누르면 그 층 좌우 칸을 한꺼번에 고릅니다</span>'}</div>
+      <div class="pimg-note">${pmCounts(st)}</div>
+      <div class="pimg-adm"><input type="text" id="pmNote" placeholder="메모(선택) 예: Offtake 철거 착수" value="${esc(pmEdit.note||'')}">
+        <button class="mini-btn" id="pmSave" style="background:var(--ink);color:#fff">💾 저장</button><button class="mini-btn" id="pmCancel">취소</button>
+        ${pmList.some(x=>x.day===pmEdit.day)?'<button class="mini-btn" id="pmDel" style="color:var(--red)">이 날짜 삭제</button>':''}</div>`;
+    pimgBindTabs(box);
+    box.querySelectorAll('[data-pm]').forEach(g=>g.onclick=()=>{ const id=g.dataset.pm; pmSel=[id]; pmSelName=(PM_PARTS.find(p=>p.id===id)||{}).name||id; pimgRender(); });
+    box.querySelectorAll('[data-pmg]').forEach(g=>g.onclick=()=>{ const G=PM_GROUPS[g.dataset.pmg]; pmSel=[...G.ids]; pmSelName=`${G.name} 전체 (${G.ids.length}칸)`; pimgRender(); });
+    box.querySelectorAll('[data-pst]').forEach(b=>b.onclick=()=>{ (pmSel||[]).forEach(i=>{ st[i]=b.dataset.pst; }); pimgRender(); });
+    $('pmDay').onchange=e=>{ const d=e.target.value; if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; const ex=pmList.find(x=>x.day===d);
+      pmEdit={day:d,states:pmBaseFor(d),note:ex?ex.data.note||'':''}; pimgRender(); };
+    $('pmNote').oninput=e=>{ pmEdit.note=e.target.value; };
+    $('pmCancel').onclick=()=>{ pmEdit=null; pmSel=null; pimgRender(); };
+    $('pmSave').onclick=async()=>{ try{ const r=await kApi('progress-map',{day:pmEdit.day,data:{states:pmEdit.states,note:pmEdit.note||''}});
+        toast(`${pimgLabel(pmEdit.day)} 모식도 ${r.replaced?'수정':'저장'} 완료`); const d=pmEdit.day; pmEdit=null; pmSel=null; await pmLoad(d); }catch(e){ toast(kErr(e)); } };
+    if($('pmDel')) $('pmDel').onclick=async()=>{ if(!confirm(`${pimgLabel(pmEdit.day)} 모식도 기록을 삭제할까요?`)) return;
+      try{ await kApi('progress-map-delete',{day:pmEdit.day}); toast('삭제했습니다'); pmEdit=null; pmSel=null; await pmLoad(); }catch(e){ toast(kErr(e)); } };
+    return;
+  }
+  // ---- 보기·추이 ----
+  const n=pmList.length, x=pmList[pmIdx], st=x?pmNorm(x.data.states):PM_DEFAULT();
+  box.innerHTML=`<div class="pimg-h">${pimgTabs()}${x?`<small>${esc(pimgLabel(x.day))}</small>`:''}</div>
+    <div class="pm-wrap">${x?`<span class="pimg-tag">${esc(dPlus(x.day))}</span>`:''}${pmSvg(st,null,false)}</div>
+    ${pmLegend()}
+    <div class="pimg-note">${x?`${pmCounts(st)}${x.data.note?` — ${esc(x.data.note)}`:''}`:(ed?'아직 저장된 날이 없습니다 — 아래 ✎ 편집으로 시작하세요':'아직 기록된 진행 상태가 없습니다 (예시: 전부 유용)')}</div>
+    ${n?`<div class="pimg-ctl"><button class="mini-btn" data-pm2="prev" ${pmIdx<=0?'disabled':''}>◀</button><button class="mini-btn" data-pm2="play">${pmTimer?'⏸ 멈춤':'▶ 추이 재생'}</button>
+      <input type="range" min="0" max="${n-1}" value="${pmIdx}" data-pm2="range" ${n<2?'disabled':''}><button class="mini-btn" data-pm2="next" ${pmIdx>=n-1?'disabled':''}>▶</button><span class="cnt">${pmIdx+1}/${n}</span></div>`:''}
+    ${n>1?`<div class="pimg-days">${pmList.map((y,i)=>`<button class="${i===pmIdx?'on':''}" data-pmd="${i}">${esc(dPlus(y.day))}</button>`).join('')}</div>`:''}
+    ${ed?`<div class="pimg-adm">${pmList.some(y=>y.day===pimgToday())?`<span class="pm-hint">✓ 오늘(${esc(dPlus(pimgToday()))}) 저장됨</span>`:pmList.some(y=>y.day<pimgToday())?`<button class="mini-btn" id="pmSame" style="background:#2b8a3e;color:#fff">✓ 오늘(${esc(dPlus(pimgToday()))}) 직전과 동일 확정</button>`:''}<button class="mini-btn" id="pmEditToday">✎ 오늘(${esc(dPlus(pimgToday()))}) 상태 편집</button>${x?`<button class="mini-btn" id="pmEditThis">✎ ${esc(dPlus(x.day))} 고치기</button>`:''}</div>`:''}`;
+  pimgBindTabs(box);
+  box.querySelectorAll('[data-pm2]').forEach(el=>{ const k=el.dataset.pm2;
+    if(k==='range') el.oninput=()=>{ pmStop(); pmGo(+el.value); };
+    else el.onclick=()=>{ if(k==='prev'){ pmStop(); pmGo(pmIdx-1); } else if(k==='next'){ pmStop(); pmGo(pmIdx+1); } else pmPlay(); }; });
+  box.querySelectorAll('[data-pmd]').forEach(b=>b.onclick=()=>{ pmStop(); pmGo(+b.dataset.pmd); });
+  const on=box.querySelector('.pimg-days .on'); if(on) on.scrollIntoView({block:'nearest',inline:'center'});
+  const startEdit=d=>{ pmStop(); const ex=pmList.find(y=>y.day===d); pmEdit={day:d,states:pmBaseFor(d),note:ex?ex.data.note||'':''}; pmSel=null; pimgRender(); };
+  if($('pmEditToday')) $('pmEditToday').onclick=()=>startEdit(pimgToday());
+  if($('pmSame')) $('pmSame').onclick=async()=>{ const d=pimgToday(), last=pmList.filter(y=>y.day<d).pop(); if(!last) return;
+    if(!confirm(`${pimgLabel(d)} 모식도를 ${pimgLabel(last.day)}와 똑같이 확정할까요?`)) return;
+    try{ await kApi('progress-map',{day:d,data:{states:pmNorm(last.data.states),note:`변동 없음 (${dPlus(last.day)}와 동일)`}}); toast(`${pimgLabel(d)} 확정 — ${dPlus(last.day)}와 동일`); pmStop(); await pmLoad(d); }catch(e){ toast(kErr(e)); } };
+  if($('pmEditThis')) $('pmEditThis').onclick=()=>startEdit(x.day);
+  box.querySelector('.pm-wrap').onclick=()=>{ pmStop(); const s=box.querySelector('.pm-svg').outerHTML;
+    $('pimgFI').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s); $('pimgFI').style.background='#fff';
+    $('pimgFT').textContent=(x?pimgLabel(x.day)+' · ':'')+pmCounts(st); $('pimgFC').innerHTML=''; $('pimgModal').classList.add('show'); };
+}
+
 /* ===== 고로 진행률 그림 (PPT 캡처를 날짜별 1장 저장 → 추이 재생) ===== */
 let pimgList=null, pimgIdx=-1, pimgCache={}, pimgTimer=null, pimgLoading=false;
 const pimgToday=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
@@ -4208,8 +4397,9 @@ async function pimgShow(){
 }
 function pimgRender(){
   const box=$('sPimg'); if(!box) return;
+  if(pimgMode==='map') return pmRender(box);
   const ed=isEditor();
-  if(pimgList===null){ box.innerHTML='<div class="pimg-h"><b>📸 고로 진행률</b></div><div class="pimg-view"><div class="ph">불러오는 중…</div></div>'; pimgLoad(); return; }
+  if(pimgList===null){ box.innerHTML=`<div class="pimg-h">${pimgTabs()}</div><div class="pimg-view"><div class="ph">불러오는 중…</div></div>`; pimgBindTabs(box); pimgLoad(); return; }
   const n=pimgList.length, x=pimgList[pimgIdx];
   const adm=ed?`<div class="pimg-adm">
       <input type="date" id="pimgDay" value="${box.dataset.day||pimgToday()}"><input type="text" id="pimgNote" placeholder="메모(선택) 예: 철피 해체 60%" value="${esc(box.dataset.note||'')}">
@@ -4217,13 +4407,13 @@ function pimgRender(){
       ${x?`<button class="mini-btn" id="pimgDel" style="color:var(--red)">이 날짜 그림 삭제</button>`:''}
       <div class="pimg-zone" id="pimgZone" contenteditable="true" spellcheck="false">여기를 누르고 <b>Ctrl+V</b> (공정 화면 아무 데서나 Ctrl+V 해도 됨) — PPT에서 복사한 그림을 위 날짜로 저장</div>
     </div>`:'';
-  box.innerHTML=`<div class="pimg-h"><b>📸 고로 진행률</b>${x?`<small>${esc(pimgLabel(x.day))}</small>`:''}</div>
+  box.innerHTML=`<div class="pimg-h">${pimgTabs()}${x?`<small>${esc(pimgLabel(x.day))}</small>`:''}</div>
     <div class="pimg-view" id="pimgView">${x?`<img id="pimgImg" alt="고로 진행률 ${esc(x.day)}" style="visibility:hidden"><span class="pimg-tag">${esc(dPlus(x.day))}</span>`:`<div class="ph">${ed?'아직 그림이 없습니다.<br>아래 노란 칸에 PPT 그림을 붙여넣으세요.':'아직 등록된 진행률 그림이 없습니다.'}</div>`}</div>
     ${x&&x.note?`<div class="pimg-note">${esc(x.note)}</div>`:''}
     ${n?`<div class="pimg-ctl">${pimgCtl()}</div>`:''}
     ${n>1?`<div class="pimg-days">${pimgList.map((y,i)=>`<button class="${i===pimgIdx?'on':''}" data-pd="${i}">${esc(dPlus(y.day))}</button>`).join('')}</div>`:''}
     ${adm}`;
-  pimgBind(box);
+  pimgBind(box); pimgBindTabs(box);
   box.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{ pimgStop(); pimgGo(+b.dataset.pd); });
   const on=box.querySelector('.pimg-days .on'); if(on) on.scrollIntoView({block:'nearest',inline:'center'});
   if(x) $('pimgView').onclick=pimgOpenFull;
@@ -4285,7 +4475,7 @@ async function pimgFromClipboard(){
 }
 // 관리자가 공정 첫 화면에서 입력칸 밖에 Ctrl+V 해도 진행률 그림으로 받기
 document.addEventListener('paste',e=>{
-  if(!isEditor()||!$('sPimg')||!$('pimgZone')) return;
+  if(!isEditor()||pimgMode!=='photo'||!$('sPimg')||!$('pimgZone')) return;
   const pg=$('sPimg').closest('.pg'); if(pg&&!pg.classList.contains('show')) return;
   if($('sPimg').offsetParent===null) return;
   const t=e.target; if(t&&t.closest&&(t.closest('input,textarea,[contenteditable="true"]')&&!t.closest('#pimgZone'))) return;
