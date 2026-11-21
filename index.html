@@ -589,6 +589,36 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-rc .nm{font-weight:800;font-size:.82rem}
 .s-rc .sub{font-size:.68rem;color:var(--steel);margin-top:2px}
 .s-rc .b{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+/* 주간 공정 */
+.wk-nav{display:flex;gap:6px;justify-content:space-between;margin-top:4px}
+.wk-sums{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.wk-sum{border-radius:12px;padding:9px 10px;border:1px solid var(--line);background:#fff}
+.wk-sum.w0{border-top:4px solid var(--ink)} .wk-sum.w1{border-top:4px solid #74c0fc}
+.wk-sum .t{font-weight:800;font-size:.86rem} .wk-sum .t small{font-weight:600;font-size:.64rem;color:var(--steel);font-family:var(--num)}
+.wk-sum .n{font-size:.7rem;color:var(--ink2);margin-top:3px}
+.wk-board{padding:10px 8px}
+.wk-hd{display:grid;grid-template-columns:1fr 1fr;margin-bottom:2px}
+.wk-hn{text-align:center;font-weight:800;font-size:.74rem;padding:3px 0;border-radius:6px 6px 0 0}
+.wk-hn.w0{background:var(--ink);color:#fff} .wk-hn.w1{background:#d0ebff;color:#1864ab}
+.wk-days{display:grid;grid-template-columns:repeat(14,1fr);border-bottom:1px solid var(--line)}
+.wk-d{text-align:center;padding:3px 0;font-family:var(--num);line-height:1.1}
+.wk-d b{display:block;font-size:.68rem} .wk-d i{font-style:normal;font-size:.54rem;color:var(--steel)}
+.wk-d.sun b{color:var(--s-crit)} .wk-d.sat b{color:var(--s-norm)}
+.wk-d.today{background:var(--red);border-radius:5px} .wk-d.today b,.wk-d.today i{color:#fff}
+.wk-d:nth-child(8){border-left:2px solid var(--ink)}
+.wk-row{padding:7px 0 6px;border-bottom:1px solid #f1f3f5;cursor:pointer}
+.wk-nm{font-size:.74rem;font-weight:700;margin-bottom:4px;line-height:1.35}
+.wk-x{font-size:.58rem;font-weight:800;color:#1864ab;background:#e7f5ff;border-radius:4px;padding:0 4px;white-space:nowrap}
+.wk-tr{position:relative;display:grid;grid-template-columns:repeat(14,1fr);height:20px}
+.wk-c{border-left:1px solid #f1f3f5}
+.wk-c.today{background:rgba(224,49,49,.08)}
+.wk-c.hol{background:repeating-linear-gradient(135deg,rgba(134,142,150,.22) 0 3px,transparent 3px 6px)}
+.wk-c.wsep{border-left:2px solid var(--ink)}
+.wk-bar{position:absolute;top:2px;height:16px;border-radius:5px;background:var(--s-norm);overflow:hidden;display:flex;align-items:center;z-index:1}
+.wk-bar.crit{background:var(--s-crit)} .wk-bar.done{background:#adb5bd}
+.wk-bar.c0{border-top-left-radius:0;border-bottom-left-radius:0} .wk-bar.c1{border-top-right-radius:0;border-bottom-right-radius:0}
+.wk-bar .pf{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.25)}
+.wk-bar span{position:relative;font-size:.58rem;font-weight:800;color:#fff;padding:0 4px;white-space:nowrap;font-family:var(--num)}
 /* v6.1 */
 .de-row{border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:8px;background:#fff}
 .de-row textarea{width:100%;margin-top:6px;font-size:.8rem;resize:vertical;box-sizing:border-box}
@@ -663,7 +693,7 @@ table.s-t tr[data-act]{cursor:pointer}
 
 <!-- ============ 🗓️ 공정표 ============ -->
 <div class="pg" id="pgGantt">
-  <div class="k-seg" id="gSeg"><button class="on" data-gv="gantt">간트</button><button data-gv="list">단계별 목록</button><button data-gv="look">3주 앞</button><button data-gv="config">⚙ 설정</button></div>
+  <div class="k-seg" id="gSeg"><button class="on" data-gv="gantt">간트</button><button data-gv="list">단계별 목록</button><button data-gv="look">주간 공정</button><button data-gv="config">⚙ 설정</button></div>
   <div id="gvGantt">
     <div class="s-gtools">
       <div class="s-zoom" id="gZoom"><button data-z="8">좁게</button><button data-z="14" class="on">보통</button><button data-z="24">넓게</button></div>
@@ -1202,7 +1232,7 @@ table.s-t tr[data-act]{cursor:pointer}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.6.0',
+  version : '6.7.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4247,12 +4277,47 @@ function sList(){
       </table></div></details>`; }).join('');
   $('gvList').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
 }
+/* 주간 공정: 일요일 시작 주 기준 금주 | 차주 14일 판. 두 주에 걸치는 작업은 막대가 경계를 넘어 이어짐 */
+let sWeekOff=0;
 function sLook(){
-  const C=sCalc, t0=C.wi(sSD()), t1=t0+21;
-  const as=sPlan.acts.filter(a=>{ const r=C.R[a.id]; return r&&!/^done/.test(r.state)&&r.es<=t1&&r.ef>=t0; }).sort((x,y)=>C.R[x.id].es-C.R[y.id].es);
-  $('gvLook').innerHTML=`<div class="card"><div style="font-weight:800">${sMD(sSD())} ~ ${sMD(sDate(t1))} 착수·진행 공정 <small style="color:var(--steel)">${as.length}개</small></div>
-    ${as.map(a=>{ const r=C.R[a.id]; return `<div class="s-act" data-act="${a.id}"><div class="d">${sMD(sDate(r.es))}~${sMD(sDate(r.ef))}<br>${r.es<=t0?'진행 중':`${r.es-t0}일 후`}</div><div class="m"><div class="nm">${r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}</span>`}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}${esc(a.name)}</div><div class="sub">${r.dur}일 · ${sPhaseOf(a).name}</div></div></div>`; }).join('')||'<div class="paste-hint">해당 공정이 없습니다</div>'}</div>`;
+  const C=sCalc, sd=sSD(), sdN=sDN(sd);
+  const w0=sdN-new Date(sT(sd)).getUTCDay()+sWeekOff*7, w1=w0+7, wEnd=w0+13; // 금주 일요일 · 차주 일요일
+  const ds=n=>sISO(n*sDAY), md=n=>sMD(ds(n)), P=n=>(n-w0)/14*100;
+  const nm0=sWeekOff===0?'금주':sWeekOff===-1?'지난주':`${sWeekOff>0?sWeekOff+'주 뒤':(-sWeekOff)+'주 전'}`;
+  const nm1=sWeekOff===0?'차주':sWeekOff===-1?'금주':`${sWeekOff+1>0?(sWeekOff+1)+'주 뒤':(-sWeekOff-1)+'주 전'}`;
+  const span=a=>{ const r=C.R[a.id]; return [sDN(sDate(r.es)), sDN(sDate(r.ef))]; };
+  const as=sPlan.acts.filter(a=>C.R[a.id]&&(([s,e])=>e>=w0&&s<=wEnd)(span(a)))
+    .sort((x,y)=>span(x)[0]-span(y)[0]||((C.R[y.id].crit?1:0)-(C.R[x.id].crit?1:0)));
+  // 주별 요약: 착수·완료·진행(걸친 것)
+  const sum=(a0,a1)=>{ const L=as.filter(a=>{ const [s,e]=span(a); return e>=a0&&s<=a1; });
+    return {n:L.length, st:L.filter(a=>span(a)[0]>=a0).length, fin:L.filter(a=>span(a)[1]<=a1).length, crit:L.filter(a=>C.R[a.id].crit).length}; };
+  const S0=sum(w0,w0+6), S1=sum(w1,w1+6);
+  const card=(nm,a0,S,cls)=>`<div class="wk-sum ${cls}"><div class="t">${nm} <small>${md(a0)}(일)~${md(a0+6)}(토)</small></div><div class="n">작업 <b>${S.n}</b> · 착수 ${S.st} · 완료 ${S.fin}${S.crit?` · <span style="color:var(--s-crit)">크리티컬 ${S.crit}</span>`:''}</div></div>`;
+  // 날짜 머리(14칸): 요일, 오늘, 휴일
+  const days=[...Array(14)].map((_,i)=>w0+i);
+  const head=days.map(n=>{ const d=new Date(n*sDAY).getUTCDay(), s=ds(n);
+    return `<div class="wk-d ${d===0?'sun':d===6?'sat':''} ${n===sdN?'today':''} ${C.hol.has(s)?'hol':''}"><b>${+s.slice(8)}</b><i>${'일월화수목금토'[d]}</i></div>`; }).join('');
+  const bg=days.map(n=>`<div class="wk-c ${n===sdN?'today':''} ${C.hol.has(ds(n))?'hol':''} ${(n-w0)===7?'wsep':''}"></div>`).join('');
+  const rows=as.map(a=>{ const r=C.R[a.id], [s,e]=span(a), vv=sVar(a.id), done=/^done/.test(r.state);
+    const L=Math.max(s,w0), R=Math.min(e,wEnd), cut0=s<w0, cut1=e>wEnd, cross=s<w1&&e>=w1;
+    const cls=done?'done':(r.crit||r.critPast)?'crit':'';
+    const ac=sAct[a.id], pct=done?100:r.state==='run'&&ac&&ac.pct!=null?ac.pct:r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0;
+    return `<div class="wk-row" data-act="${a.id}">
+      <div class="wk-nm"><small class="gid">${a.id}</small>${esc(a.name)} ${done?sStateLabel(r):r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}</span>`}${vv&&vv.df?` ${sVarChip(vv,done)}`:''}${cross?' <span class="wk-x">금주→차주 이어짐</span>':''}</div>
+      <div class="wk-tr">${bg}<div class="wk-bar ${cls} ${cut0?'c0':''} ${cut1?'c1':''}" style="left:${P(L)}%;width:${P(R+1)-P(L)}%"><i class="pf" style="width:${pct}%"></i><span>${cut0?'◀ ':''}${md(s)}~${md(e)}${cut1?' ▶':''}</span></div></div>
+    </div>`; }).join('');
+  $('gvLook').innerHTML=`<div class="wk-nav"><button class="mini-btn" id="wkPrev">◀ 이전 주</button><button class="mini-btn" id="wkNow" ${sWeekOff===0?'disabled':''}>금주로</button><button class="mini-btn" id="wkNext">다음 주 ▶</button></div>
+    <div class="wk-sums">${card(nm0,w0,S0,'w0')}${card(nm1,w1,S1,'w1')}</div>
+    <div class="card wk-board">
+      <div class="wk-hd"><div class="wk-hn w0">${nm0}</div><div class="wk-hn w1">${nm1}</div></div>
+      <div class="wk-days">${head}</div>
+      ${rows||'<div class="paste-hint" style="padding:12px 0">이 두 주에 걸친 공정이 없습니다</div>'}
+      <div class="s-legend" style="margin-top:8px"><span><i style="background:var(--s-crit)"></i>크리티컬</span><span><i style="background:var(--s-norm)"></i>그 외</span><span><i style="background:#adb5bd"></i>완료</span><span>◀ ▶ 두 주 밖으로 이어짐</span></div>
+    </div>`;
   $('gvLook').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
+  $('wkPrev').onclick=()=>{ sWeekOff--; sLook(); };
+  $('wkNext').onclick=()=>{ sWeekOff++; sLook(); };
+  $('wkNow').onclick=()=>{ sWeekOff=0; sLook(); };
 }
 
 /* ---- ⚙ 설정: 착공일·기준일·휴일 · 여러 공정 붙여넣기 · 기준선 · 백업 ---- */
