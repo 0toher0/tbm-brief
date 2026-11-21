@@ -68,7 +68,7 @@ async function handleRequest(request, env) {
     const cors = {
       'Access-Control-Allow-Origin': okOrigin || 'null',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'X-App-Token, X-Admin-Pass, Content-Type',
+      'Access-Control-Allow-Headers': 'X-App-Token, X-Admin-Pass, X-Editor-Pass, Content-Type', // v3.1.1: 관리자 로그인 헤더 허용(빠지면 앱 주소에서 브라우저가 요청을 막음)
       'Cache-Control': 'no-store',
     };
 
@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.1.0',
+        version: '3.1.1',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
