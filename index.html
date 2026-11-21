@@ -9,7 +9,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>TBM 브리핑 보조 · 광양 2고로 개수</title>
+<title>G2R2 공정관리 · 광양 2고로 개수</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -57,6 +57,8 @@ header{background:var(--ink);color:#fff;padding:calc(env(safe-area-inset-top,0px
 .h-btns{display:flex;gap:8px}
 .icon-btn{background:#2b323a;border:none;color:#e9ecef;width:38px;height:38px;border-radius:9px;font-size:1.05rem;display:flex;align-items:center;justify-content:center}
 .icon-btn:active{background:#3d444d}
+.h-admin{background:none;border:1px solid #4a535d;color:#adb5bd;border-radius:8px;font-size:.66rem;font-weight:700;padding:5px 7px;align-self:center;white-space:nowrap}
+.h-admin.on{border-color:#2b8a3e;color:#8ce99a}
 
 main{max-width:600px;margin:0 auto;padding:14px 14px 0}
 
@@ -429,23 +431,173 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 }
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:.82rem;font-weight:700;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none;white-space:nowrap;max-width:90%}
 .toast.show{opacity:1}
+/* ===== v6 공정관리 ===== */
+:root{--s-crit:#e03131;--s-norm:#2f6fed}
+.grp-bar{display:flex;gap:6px;overflow-x:auto;margin:2px 0 10px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:21;background:var(--paper);padding:4px 0}
+.grp-bar button{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-weight:800;font-size:.78rem;color:var(--steel)}
+.grp-bar button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.s-hero{background:linear-gradient(135deg,#1b2631,#2c3e50);color:#fff;border-radius:16px;padding:14px 16px;margin-top:4px}
+.s-hero .s-row{display:flex;justify-content:space-between;align-items:flex-end}
+.s-hero .lab{font-size:.7rem;color:#b8c4cf;font-weight:700}
+.s-hero .big{font-family:var(--num);font-size:1.85rem;font-weight:800;margin-top:2px}
+.s-hero .dd{font-family:var(--num);font-size:1.4rem;font-weight:800;color:#ffd43b;text-align:right}
+.s-delta{display:inline-block;margin-top:6px;font-size:.78rem;font-weight:800;padding:3px 9px;border-radius:999px;background:#2b8a3e}
+.s-delta.late{background:var(--s-crit)}
+.s-phases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.s-ph .bar{height:6px;background:rgba(255,255,255,.18);border-radius:3px;overflow:hidden;margin-top:4px}
+.s-ph .bar div{height:100%;background:#69db7c}
+.s-ph .n{font-size:.62rem;color:#d0d8df;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-ph .p{font-family:var(--num);font-size:.7rem;font-weight:800}
+.s-assume{font-size:.64rem;color:#b8c4cf;margin-top:8px}
+.s-sec{font-weight:800;font-size:.92rem;margin:18px 2px 0;display:flex;align-items:baseline;gap:6px}
+.s-sec small{font-weight:600;font-size:.7rem;color:var(--steel)}
+.s-act{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.s-act:first-child{border-top:none}
+.s-act .d{font-family:var(--num);font-size:.7rem;color:var(--steel);width:78px;flex:none;line-height:1.35}
+.s-act .m{flex:1;min-width:0}
+.s-act .nm{font-weight:800;font-size:.86rem}
+.s-act .sub{font-size:.7rem;color:var(--steel);margin-top:2px}
+.s-pill{display:inline-block;font-size:.6rem;font-weight:800;border-radius:4px;padding:1px 5px;margin-right:3px;vertical-align:1px}
+.s-pill.crit{background:#ffe3e3;color:var(--s-crit)}
+.s-pill.ok{background:#e6fcf5;color:#087f5b}
+.s-pill.asm{background:#f1f3f5;color:var(--steel)}
+.s-pill.cls{background:#e8eefc;color:#2f4bb0;font-family:var(--num)}
+.s-pill.flt{background:#e8eefc;color:var(--s-norm)}
+.s-prog{height:8px;background:#eceff2;border-radius:4px;overflow:hidden;margin-top:6px}
+.s-prog div{height:100%;background:var(--s-crit)}
+.s-prog div.n{background:var(--s-norm)}
+.s-warn{display:flex;gap:8px;font-size:.8rem;padding:9px 10px;border-radius:10px;background:#fff4e6;margin-top:8px;line-height:1.45}
+.s-warn:first-child{margin-top:0}
+.s-warn.red{background:#fff0f0}
+.s-brief{white-space:pre-wrap;font-size:.8rem;background:#f7f8f9;border-radius:10px;padding:10px;line-height:1.55;margin-top:8px}
+.s-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.68rem;color:var(--steel);margin-top:4px}
+.s-legend i{display:inline-block;width:14px;height:8px;border-radius:2px;vertical-align:0;margin-right:3px}
+.s-gwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:8px}
+.s-gh{display:flex;position:sticky;top:0;background:#f7f8f9;border-bottom:1px solid var(--line);z-index:2}
+.s-gl{position:sticky;left:0;z-index:3;background:#fff;width:136px;flex:none;font-size:.7rem;padding:0 6px;border-right:1px solid var(--line);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.s-gh .s-gl{background:#f7f8f9;font-weight:800;color:var(--steel);cursor:default}
+.s-gm{position:relative;height:26px}
+.s-gm span{position:absolute;top:6px;font-size:.62rem;font-weight:800;color:var(--steel);padding-left:3px;border-left:1px solid var(--line);height:20px}
+.s-gr{display:flex;height:26px;border-bottom:1px solid #f1f3f5}
+.s-gr.ph{background:#f7f8f9;height:28px}
+.s-gr.ph .s-gl{background:#f7f8f9;font-weight:800;font-size:.74rem}
+.s-gt{position:relative}
+.s-gb{position:absolute;top:8px;height:10px;border-radius:3px;background:var(--s-norm)}
+.s-gb.crit{background:var(--s-crit)}
+.s-gb.done{opacity:.4}
+.s-gbase{position:absolute;top:20px;height:3px;background:#adb5bd;border-radius:2px}
+.s-gp{position:absolute;top:8px;height:10px;border-radius:3px;background:rgba(0,0,0,.3)}
+.s-gtoday{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:1}
+.s-ghol{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#e9ecef 0 3px,#fff 3px 6px)}
+details.s-phase{background:#fff;border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden}
+details.s-phase summary{padding:11px 12px;font-weight:800;font-size:.86rem;display:flex;justify-content:space-between;list-style:none;cursor:pointer}
+details.s-phase .body{padding:0 8px 6px;overflow-x:auto}
+table.s-t{width:100%;border-collapse:collapse;font-size:.74rem;background:#fff}
+table.s-t th{font-size:.64rem;color:var(--steel);text-align:left;padding:6px;border-bottom:1px solid var(--line);background:#f7f8f9;white-space:nowrap}
+table.s-t td{padding:7px 6px;border-bottom:1px solid #f1f3f5;vertical-align:top}
+table.s-t tr[data-act]{cursor:pointer}
+.s-num{font-family:var(--num);text-align:right;white-space:nowrap}
+.s-predrow{display:flex;gap:4px;margin-top:6px}
+.s-predrow select,.s-predrow input{font-size:.8rem;padding:7px 6px}
+/* 일일작업 */
+.d-sum{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.d-sum span{font-size:.72rem;background:#f1f3f5;border-radius:6px;padding:3px 8px;font-weight:700;color:var(--ink2)}
+.d-cls{font-weight:800;font-size:.8rem;margin:12px 2px 4px;color:#2f4bb0}
+.d-tm{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;background:#fff}
+.d-tm .t{font-weight:800;font-size:.85rem}
+.d-tm .meta{font-size:.7rem;color:var(--steel);margin-top:2px}
+.d-tm .hz{font-size:.78rem;background:#fff4e6;border-radius:8px;padding:6px 8px;margin-top:6px;line-height:1.5}
+.d-tm ul{margin:6px 0 0 18px;padding:0;font-size:.76rem;line-height:1.5;color:var(--ink2)}
+.d-orig{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px;margin-top:6px;background:#fff}
+.d-orig img{width:100%;display:block}
 </style>
 </head>
 <body>
 <header>
   <div>
-    <div class="h-title">TBM <span>브리핑</span> 보조</div>
+    <div class="h-title">G2R2 <span>공정관리</span></div>
     <div class="h-sub" id="hSub">광양 2고로 개수 현장 · —</div>
   </div>
   <div class="h-btns">
+    <button class="h-admin" id="btnAdmin" title="관리자 로그인">🔒 관리자</button>
     <button class="icon-btn" id="btnRefresh" title="새로고침">⟳</button>
     <button class="icon-btn" id="btnSettings" title="설정">⚙</button>
   </div>
 </header>
 
 <main>
-<!-- ============ 오늘 ============ -->
-<div class="pg show" id="pgToday">
+<!-- 그룹 하위 탭 (일일작업 · 현장 · 안전) -->
+<div class="grp-bar" id="grpBar" style="display:none"></div>
+
+<!-- ============ 📈 공정 (첫 화면) ============ -->
+<div class="pg show" id="pgSched">
+  <div id="sLoading" class="loading">공정표를 불러오는 중…</div>
+  <div id="sMain" style="display:none">
+    <div class="s-hero">
+      <div class="s-row">
+        <div><div class="lab">예상 화입일</div><div class="big" id="sFire">—</div></div>
+        <div><div class="lab" style="text-align:right">화입까지</div><div class="dd" id="sDday">—</div></div>
+      </div>
+      <span class="s-delta" id="sDelta"></span>
+      <div class="s-phases" id="sPhases"></div>
+      <div class="s-assume" id="sAssume"></div>
+    </div>
+    <div class="s-sec">지금 진행 중 <small>주공정 · 실적 입력은 공정을 눌러서</small></div>
+    <div class="card" id="sNow"></div>
+    <div class="s-sec">곧 착수 <small>오늘~3일 안</small></div>
+    <div class="card" id="sSoon"></div>
+    <div class="s-sec">주의 <small>지연 · 여유 부족</small></div>
+    <div class="card" id="sWarn"></div>
+    <div class="s-sec">지연 시뮬레이터 <small>저장 안 됨 · 회의용</small></div>
+    <div class="card">
+      <div style="display:flex;gap:6px">
+        <select class="f-input" id="simAct" style="flex:1"></select>
+        <select class="f-input" id="simDays" style="width:86px"><option value="1">+1일</option><option value="2">+2일</option><option value="3" selected>+3일</option><option value="5">+5일</option><option value="7">+7일</option></select>
+      </div>
+      <div class="s-brief" id="simOut" style="background:#fff8f0"></div>
+    </div>
+    <div class="s-sec">아침 공정 브리핑 <small>카톡 공유</small></div>
+    <div class="card">
+      <div class="s-brief" id="sBrief"></div>
+      <div class="btn-row"><button class="btn primary" id="sShare">📤 카톡으로 공유</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 🗓️ 공정표 ============ -->
+<div class="pg" id="pgGantt">
+  <div class="k-seg" id="gSeg"><button class="on" data-gv="gantt">간트</button><button data-gv="list">단계별 목록</button><button data-gv="look">3주 앞</button></div>
+  <div id="gvGantt">
+    <div class="s-legend"><span><i style="background:var(--s-crit)"></i>크리티컬 패스</span><span><i style="background:var(--s-norm)"></i>그 외 공정(여유 있음)</span><span><i style="background:#adb5bd;height:3px"></i>기준선</span><span><i style="background:var(--red);width:2px"></i>오늘</span><span><i style="background:repeating-linear-gradient(45deg,#ddd 0 3px,#fff 3px 6px)"></i>휴일</span></div>
+    <div class="s-gwrap"><div id="gant"></div></div>
+    <div class="paste-hint" style="margin-top:6px">단계 이름을 누르면 접고 펼칩니다. 공정 이름을 누르면 기간·선후행·실적을 고칩니다.</div>
+  </div>
+  <div id="gvList" style="display:none"></div>
+  <div id="gvLook" style="display:none"></div>
+  <div class="btn-row"><button class="btn primary" id="sAddAct">＋ 공정 추가 (neck 작업)</button><button class="btn ghost" id="sBaseBtn">기준선 저장</button></div>
+  <div class="paste-hint" id="sPlanInfo" style="text-align:center;margin-top:6px"></div>
+</div>
+
+<!-- ============ 📋 일일작업 ============ -->
+<div class="pg" id="pgDaily">
+  <div class="card paste-hint" id="dLockNote" style="display:none;margin-top:4px">🔒 일일작업 올리기·삭제는 관리자만 할 수 있습니다. 오른쪽 위 <b>관리자</b>로 로그인하세요. 올라온 내용은 누구나 볼 수 있습니다.</div>
+  <div class="card" id="dUpCard" style="margin-top:4px">
+    <div class="sec-t" style="margin-bottom:6px">금일·명일 작업 올리기</div>
+    <div class="paste-hint">매일 받는 'SD 공사 일일작업' 표를 붙여넣으세요. <b>엑셀로 붙이기</b>는 엑셀에서 표 범위를 복사해 그대로, <b>이미지로 붙이기</b>는 캡쳐·사진을 붙이면 AI가 표를 읽어 금일·명일 작업을 정리합니다. 같은 날짜를 다시 올리면 새 내용으로 바뀝니다.</div>
+    <div class="k-seg m-mode" id="dModes"><button class="on" data-dm="excel">📊 엑셀로 붙이기</button><button data-dm="image">🖼️ 이미지로 붙이기</button></div>
+    <div class="m-zone" id="dZone" contenteditable="true" spellcheck="false"></div>
+    <div class="btn-row" id="dImgBtns" style="display:none;margin-top:6px">
+      <label class="btn ghost" style="text-align:center">📁 이미지 파일<input type="file" id="dFile" accept="image/*" hidden></label>
+      <label class="btn ghost" style="text-align:center">📷 표 촬영<input type="file" id="dCam" accept="image/*" capture="environment" hidden></label>
+    </div>
+    <div class="paste-hint" id="dStatus" style="margin-top:8px"></div>
+  </div>
+  <div id="dDayChips" class="date-chips" style="margin-top:12px"></div>
+  <div id="dBody"></div>
+</div>
+
+<!-- ============ 오늘 (안전 > 오늘 TBM) ============ -->
+<div class="pg" id="pgToday">
   <div id="loading" class="loading" style="display:none">날씨 데이터를 불러오는 중…</div>
   <div id="errBox" class="err" style="display:none"></div>
 
@@ -780,13 +932,57 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 
 <!-- bottom nav -->
 <nav class="bottombar">
-  <button class="tab-btn on" data-pg="pgToday"><span class="ic">☀</span>오늘</button>
+  <button class="tab-btn nav-btn on" data-grp="sched" data-pg="pgSched"><span class="ic">📈</span>공정</button>
+  <button class="tab-btn nav-btn" data-grp="gantt" data-pg="pgGantt"><span class="ic">🗓</span>공정표</button>
+  <button class="tab-btn nav-btn" data-grp="daily" data-pg="pgDaily"><span class="ic">📋</span>일일작업</button>
+  <button class="tab-btn nav-btn" data-grp="site" data-pg="pgKakao"><span class="ic">💬</span>현장</button>
+  <button class="tab-btn nav-btn" data-grp="safe" data-pg="pgToday"><span class="ic">🦺</span>안전</button>
+</nav>
+<!-- 예전 탭 버튼(코드에서 .click()으로 쓰는 곳이 있어 숨겨 둠) -->
+<div id="legacyTabs" hidden>
+  <button class="tab-btn" data-pg="pgToday"><span class="ic">☀</span>오늘</button>
   <button class="tab-btn" data-pg="pgInput"><span class="ic">✎</span>작업입력</button>
   <button class="tab-btn" data-pg="pgRecords"><span class="ic">▤</span>기록</button>
   <button class="tab-btn" data-pg="pgInfo"><span class="ic">§</span>기준</button>
   <button class="tab-btn" data-pg="pgKakao" id="tabKakao" style="display:none"><span class="ic">✉</span>현장톡</button>
   <button class="tab-btn" data-pg="pgMemo" id="tabMemo" style="display:none"><span class="ic">✓</span>순시메모</button>
-</nav>
+</div>
+
+<!-- 공정 추가·수정 -->
+<div class="modal-bg" id="actModal">
+  <div class="modal">
+    <h2 id="aTitle">공정</h2>
+    <div class="desc" id="aDesc"></div>
+    <label class="f-label">공정명</label><input class="f-input" id="aName">
+    <div class="f-two">
+      <div><label class="f-label">기간 (작업일)</label><input class="f-input" id="aDur" inputmode="numeric"></div>
+      <div><label class="f-label">단계</label><select class="f-input" id="aPhase"></select></div>
+    </div>
+    <label class="f-label">설비 Class</label><select class="f-input" id="aCls"></select>
+    <label class="f-label">선행 공정 <small style="font-weight:500;color:var(--steel)">FS=끝나면 시작 · SS=같이 시작 · FF=같이 끝 · Lag=간격(일)</small></label>
+    <div id="aPreds"></div><button class="mini-btn" id="aAddPred" style="margin-top:6px">＋ 선행 추가</button>
+    <label class="f-label">후행 공정 <small style="font-weight:500;color:var(--steel)">이 공정이 끝나야 시작할 수 있는 공정 — 화입일 영향 계산에 필요</small></label>
+    <div id="aSuccs"></div><button class="mini-btn" id="aAddSucc" style="margin-top:6px">＋ 후행 추가</button>
+    <div id="aActBox" style="border-top:1px dashed var(--line);margin-top:14px;padding-top:4px">
+      <label class="f-label">실적</label>
+      <div class="f-two">
+        <div><label class="f-label">착수일</label><input type="date" class="f-input" id="aS"></div>
+        <div><label class="f-label">완료일</label><input type="date" class="f-input" id="aF"></div>
+      </div>
+      <div class="f-two">
+        <div><label class="f-label">진도율 %</label><input class="f-input" id="aPct" inputmode="decimal" placeholder="예: 40"></div>
+        <div><label class="f-label">메모</label><input class="f-input" id="aNote"></div>
+      </div>
+      <div class="f-hint">실적을 비우면 '계획대로 진행'으로 계산합니다.</div>
+    </div>
+    <div class="paste-hint" id="aCalc" style="margin-top:10px"></div>
+    <div class="btn-row">
+      <button class="btn ghost" id="aDel" style="color:var(--red);flex:.6">삭제</button>
+      <button class="btn ghost" onclick="closeModal('actModal')">닫기</button>
+      <button class="btn primary" id="aSave">저장</button>
+    </div>
+  </div>
+</div>
 
 <!-- 설정 모달 -->
 <div class="modal-bg" id="modalBg">
@@ -828,7 +1024,7 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '5.15.0',
+  version : '6.0.1',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1475,7 +1671,7 @@ function pmLabel(pm25){
 function renderToday(){
   if(!wx) return;
   $('content').style.display='block'; $('errBox').style.display='none';
-  $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()} ${dPlus(todayDot())}${wx.demo?' · 데모':''} · v${APP.version}`;
+  if($('pgToday').classList.contains('show')) $('hSub').textContent=`광양 2고로 개수 현장 · ${fmtDate()} ${dPlus(todayDot())}${wx.demo?' · 데모':''} · v${APP.version}`;
 
   // 날짜 칩: 입력된 작업의 날짜들
   const dates=availableDates();
@@ -2308,15 +2504,17 @@ async function kApi(path, body){
   const base=APP.proxyBase.replace(/\/$/,'');
   const r=await fetch(base+'/kakao/'+path,{
     method: body ? 'POST' : 'GET',
-    headers:{'Content-Type':'application/json','X-App-Token':APP.appToken},
+    headers:Object.assign({'Content-Type':'application/json','X-App-Token':APP.appToken}, editorPass?{'X-Editor-Pass':editorPass}:{}),
     body: body ? JSON.stringify(body) : undefined,
   });
   const d=await r.json().catch(()=>({error:'bad_response'}));
-  if(!r.ok || d.error){ const e=new Error(d.error||('http_'+r.status)); e.data=d; e.status=r.status; throw e; }
+  if(!r.ok || d.error){ const e=new Error(d.error||('http_'+r.status)); e.data=d; e.status=r.status;
+    if(d.error==='editor_required'&&editorPass){ editorPass=''; saveJSON(LS_EDITOR,''); applyEditorUI(); } // 암호가 바뀐 경우 로그아웃
+    throw e; }
   return d;
 }
 function kErr(e){
-  const map={admin_auth_failed:'관리자 암호가 맞지 않습니다', auth_failed:'서버 접속 인증 실패 — 앱을 새로고침해 주세요',kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
+  const map={editor_required:'관리자만 할 수 있습니다 — 오른쪽 위 관리자로 로그인하세요', admin_auth_failed:'관리자 암호가 맞지 않습니다', auth_failed:'서버 접속 인증 실패 — 앱을 새로고침해 주세요',kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
     ai_not_configured:'서버에 ANTHROPIC_API_KEY가 없습니다', no_messages:'이 날짜에 추적 중인 방의 메시지가 없습니다',
     refused:'AI가 이 내용의 분석을 거절했습니다', anthropic_error:'AI 호출 오류'};
   const d=e.data&&e.data.detail, dm=d&&(d.error&&d.error.message||d.message);
@@ -3487,15 +3685,523 @@ $('mBodyMic').onclick=()=>pVoice($('mBody'),$('mBodyMic'));
 // 시작 시 📌 상태 불러와 오늘 탭 목록에 반영
 pRefresh().then(()=>{ if(wx) renderTaskList(); }).catch(()=>{});
 
-document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('on',x===b));
-  document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===b.dataset.pg));
-  if(b.dataset.pg==='pgInput') renderInputTab();
-  if(b.dataset.pg==='pgRecords') renderRecords();
-  if(b.dataset.pg==='pgInfo') renderInfo();
-  if(b.dataset.pg==='pgKakao') renderKakao();
-  if(b.dataset.pg==='pgMemo'){ if(pMode==='patrol') pLoad(); else renderMemo(); }
-});
+
+/* ================= 관리자 로그인 =================
+ * 일일작업 올리기·삭제·AI 분석, 공정 추가·수정·실적·기준선은 관리자만. 암호 확인은 서버(/kakao/editor-check)가 하고,
+ * 이 기기에는 로그인 상태만 저장(로그아웃하면 지움). 보기는 누구나. */
+const LS_EDITOR='tbm3_editor';
+let editorPass=loadJSON(LS_EDITOR,'');
+const isEditor=()=>!!editorPass;
+function applyEditorUI(){
+  const ed=isEditor(), b=$('btnAdmin');
+  b.textContent=ed?'✓ 관리자':'🔒 관리자'; b.classList.toggle('on',ed); b.title=ed?'관리자 로그아웃':'관리자 로그인';
+  if($('dUpCard')){ $('dUpCard').style.display=ed?'':'none'; $('dLockNote').style.display=ed?'none':''; }
+  ['sAddAct','sBaseBtn'].forEach(id=>{ if($(id)) $(id).style.display=ed?'':'none'; });
+  if(typeof dSel!=='undefined'&&$('pgDaily').classList.contains('show')) dLoad();
+}
+$('btnAdmin').onclick=async()=>{
+  if(isEditor()){ if(confirm('관리자에서 로그아웃할까요?')){ editorPass=''; saveJSON(LS_EDITOR,''); applyEditorUI(); toast('로그아웃했습니다'); } return; }
+  const p=(prompt('관리자 비밀번호')||'').trim(); if(!p) return;
+  try{
+    const r=await fetch(APP.proxyBase.replace(/\/$/,'')+'/kakao/editor-check',{headers:{'X-App-Token':APP.appToken,'X-Editor-Pass':p}});
+    if(!r.ok){ toast('비밀번호가 맞지 않습니다'); return; }
+    editorPass=p; saveJSON(LS_EDITOR,p); applyEditorUI(); toast('관리자로 로그인했습니다');
+  }catch(e){ toast('서버에 연결하지 못했습니다'); }
+};
+
+/* ================= v6 공정관리 =================
+ * 공정표는 날짜가 아니라 '기간 + 선후행(FS/SS/FF, Lag)'으로 저장하고 CPM(전진·후진 계산)으로 날짜·여유·크리티컬을 구한다.
+ * 휴일은 달력에서 빼고 계산. 실적이 없는 공정은 '계획대로 진행'으로 가정(실적을 넣은 공정만 계획과 달라짐).
+ * 저장: Worker /kakao/sched (D1 sched_doc · sched_actual). 서버에 없으면 아래 주공정 초기값을 씀. */
+const S_PHASES=[{id:'P1',name:'해체',short:'해체'},{id:'P2',name:'본체 설치',short:'본체'},{id:'P3',name:'연와 축조',short:'연와'},{id:'P4',name:'배관·화입준비',short:'화입준비'}];
+const S_SEED=[ // 사용자 제공 크리티컬 패스 (휴식 '27.2.6~2.9는 휴일, Carbon 축조는 하나로)
+ ['노저출선','2026-11-12','2026-11-12','P1'],['주수냉각','2026-11-13','2026-11-14','P1'],['주수냉각 배관 및 송풍지관 철거','2026-11-15','2026-11-16','P1'],
+ ['풍구상~환상관 하부배관 철거','2026-11-17','2026-11-19','P1'],['환상관 상부 배관철거','2026-11-20','2026-11-23','P1'],['풍구상 180도 철거','2026-11-24','2026-11-25','P1'],
+ ['풍구 개구 랜싱 및 발파','2026-11-26','2026-11-27','P1'],['코크스 소출','2026-11-28','2026-11-30','P1'],['고로 본체 및 잔여상 철거','2026-12-01','2026-12-06','P1'],
+ ['발파안전데크 설치','2026-12-07','2026-12-07','P1'],['Ring Carbon 소출','2026-12-08','2026-12-09','P1'],['Metal 해체 및 평탄화','2026-12-10','2026-12-12','P1'],
+ ['잔선천공','2026-12-13','2026-12-21','P1'],['잔선발파','2026-12-21','2026-12-23','P1'],['T1~H4 철피철거','2026-12-23','2026-12-24','P1'],
+ ['잔선 소출용 Deck 설치','2026-12-24','2026-12-26','P1'],['잔선소출','2026-12-27','2026-12-29','P1'],['Bottom & Ring Carbon 소출','2026-12-30','2027-01-03','P1'],
+ ['잔여철피 철거','2027-01-04','2027-01-04','P1'],['노저 기초 Leveling','2027-01-05','2027-01-06','P2'],['본체 1단 설치','2027-01-07','2027-01-08','P2'],
+ ['본체 2단 설치','2027-01-09','2027-01-10','P2'],['본체 3단 설치','2027-01-11','2027-01-12','P2'],['본체 4단 설치','2027-01-13','2027-01-14','P2'],
+ ['B1 & B2 Stave 설치','2027-01-15','2027-01-18','P2'],['안전 Deck 설치','2027-01-19','2027-01-19','P2'],['노내 가설 및 Leveling Castable','2027-01-20','2027-01-22','P3'],
+ ['Carbon A~M단 및 보호벽 축조','2027-01-23','2027-02-11','P3'],['Bosh 연와 반입 Deck 설치','2027-02-12','2027-02-13','P3'],['풍구 하단 Carbon 및 보호벽 축조','2027-02-13','2027-02-19','P3'],
+ ['풍구 Block 축조','2027-02-19','2027-02-23','P3'],['Bosh 연와 반입구 복구','2027-02-24','2027-02-26','P3'],['냉각반 및 Stave 연와 축조','2027-02-26','2027-03-05','P3'],
+ ['노내 가설 해체 및 반출','2027-03-06','2027-03-07','P3'],['안전 Deck 안착 및 건조 배관 설치','2027-03-08','2027-03-11','P4'],['노체 배관 설치','2027-03-12','2027-03-14','P4'],
+ ['도압관 설치','2027-03-15','2027-03-15','P4'],['Leak Test','2027-03-16','2027-03-18','P4'],['침목적','2027-03-18','2027-03-20','P4'],['충진 및 화입준비','2027-03-21','2027-03-23','P4'],
+];
+const S_HOLIDAYS0=['2027-02-06','2027-02-07','2027-02-08','2027-02-09'];
+let sPlan=null, sRev=null, sAct={}, sCalc=null, sBase=null, sToday=null, sLoaded=false;
+const sDAY=86400e3, sT=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)), sISO=t=>new Date(t).toISOString().slice(0,10);
+const sWD='일월화수목금토';
+const sFmt=(s,y)=>{ if(!s) return '—'; const d=new Date(sT(s)); return `${y?`'${String(d.getUTCFullYear()).slice(2)}.`:''}${String(d.getUTCMonth()+1).padStart(2,'0')}.${String(d.getUTCDate()).padStart(2,'0')}(${sWD[d.getUTCDay()]})`; };
+const sMD=s=>s?`${+s.slice(5,7)}/${+s.slice(8,10)}`:'';
+const sDiff=(a,b)=>Math.round((sT(b)-sT(a))/sDAY);
+function sCal(plan){
+  const hol=new Set(plan.holidays||[]), cal=[];
+  for(let t=sT(plan.start)-30*sDAY;cal.length<800;t+=sDAY){ const s=sISO(t); if(!hol.has(s)) cal.push(s); }
+  const idx={}; cal.forEach((s,i)=>idx[s]=i);
+  const wi=s=>{ let t=sT(s), n=0; while(idx[sISO(t)]===undefined&&n++<30) t+=sDAY; return idx[sISO(t)]; };
+  return {cal,wi,hol};
+}
+function sSeedPlan(){
+  const plan={v:1,start:'2026-11-12',holidays:S_HOLIDAYS0.slice(),phases:S_PHASES,acts:[]};
+  const {wi}=sCal(plan);
+  S_SEED.forEach((c,i)=>{ const a={id:'C'+String(i+1).padStart(2,'0'),name:c[0],dur:wi(c[2])-wi(c[1])+1,phase:c[3],cls:'1000',cp:true,preds:[]};
+    if(i){ const p=S_SEED[i-1]; a.preds.push({id:'C'+String(i).padStart(2,'0'),type:'FS',lag:wi(c[1])-(wi(p[2])+1)}); } // 같은 날 이어지면 Lag -1
+    plan.acts.push(a); });
+  const r=sRun(plan,{},{noActual:true});
+  plan.base={at:'2026-11-12',fire:r.fin,dates:Object.fromEntries(plan.acts.map(a=>[a.id,[r.R[a.id].es,r.R[a.id].ef]]))};
+  return plan;
+}
+/* CPM — opt.delay {id:n}: 시뮬레이터, opt.noActual: 실적 무시(기준선) */
+function sRun(plan, actual, opt={}){
+  const {cal,wi}=sCal(plan), acts=plan.acts, by={}; acts.forEach(a=>by[a.id]=a);
+  const succ={}; acts.forEach(a=>(a.preds||[]).forEach(p=>{ if(by[p.id]) (succ[p.id]=succ[p.id]||[]).push({id:a.id,type:p.type,lag:+p.lag||0}); }));
+  const indeg={}; acts.forEach(a=>indeg[a.id]=(a.preds||[]).filter(p=>by[p.id]).length);
+  const order=[], q=acts.filter(a=>!indeg[a.id]).map(a=>a.id);
+  while(q.length){ const id=q.shift(); order.push(id); (succ[id]||[]).forEach(s=>{ if(--indeg[s.id]===0) q.push(s.id); }); }
+  const cyc=acts.length!==order.length;
+  const today=wi(sToday||sISO(Date.now()+9*3600e3)), p0=wi(plan.start), R={};
+  for(const id of order){
+    const a=by[id], dur=Math.max(1,(+a.dur||1)+((opt.delay&&opt.delay[id])||0)), ac=opt.noActual?null:actual[id];
+    let es=p0;
+    (a.preds||[]).forEach(p=>{ const r=R[p.id]; if(!r) return; const lag=+p.lag||0;
+      if(p.type==='SS') es=Math.max(es,r.es+lag); else if(p.type==='FF') es=Math.max(es,r.ef+lag-dur+1); else es=Math.max(es,r.ef+1+lag); });
+    let ef, rem=dur, state;
+    if(ac&&ac.f){ es=ac.s?wi(ac.s):Math.min(es,wi(ac.f)); ef=wi(ac.f); rem=0; state='done'; }
+    else if(ac&&ac.s){ es=wi(ac.s);
+      if(ac.pct!=null&&ac.pct!==''){ rem=Math.max(1,Math.ceil(dur*(1-ac.pct/100))); ef=Math.max(today+rem-1,es); }
+      else { ef=Math.max(es+dur-1,today); rem=ef-today+1; }
+      state='run'; }
+    else { ef=es+dur-1; state= opt.noActual?'plan' : ef<today?'done*': es<=today?'run*':'plan';
+      if(state==='run*') rem=ef-today+1; if(state==='done*') rem=0; }
+    R[id]={es,ef,rem,state,dur};
+  }
+  const fin=order.length?Math.max(...order.map(id=>R[id].ef)):p0;
+  // 후진 계산: 기준 화입일(없으면 예상 화입일)에 맞춰 여유 — 늦어지면 주공정 여유가 음수
+  const anchor=plan.base&&!opt.noActual?Math.max(wi(plan.base.fire),0):fin;
+  for(const id of [...order].reverse()){
+    const r=R[id]; let lf=anchor;
+    (succ[id]||[]).forEach(s=>{ const x=R[s.id]; if(!x) return;
+      if(s.type==='SS') lf=Math.min(lf,x.ls-s.lag+r.dur-1); else if(s.type==='FF') lf=Math.min(lf,x.lf-s.lag); else lf=Math.min(lf,x.ls-1-s.lag); });
+    r.lf=lf; r.ls=lf-((r.state==='run'||r.state==='run*')?r.rem:r.dur)+1; r.tf=lf-r.ef;
+  }
+  const open=order.filter(id=>!/^done/.test(R[id].state));
+  const minTf=open.length?Math.min(...open.map(id=>R[id].tf)):0;
+  order.forEach(id=>{ const r=R[id]; r.crit=!/^done/.test(r.state)&&r.tf<=Math.min(0,minTf); r.critPast=/^done/.test(r.state)&&by[id].cp; });
+  return {R,fin:cal[fin],finIdx:fin,cal,wi,order,cyc,minTf};
+}
+const sA=id=>sPlan.acts.find(a=>a.id===id);
+const sDate=i=>sCalc.cal[i];
+
+async function sLoad(force){
+  if(sLoaded&&!force) return sRenderAll();
+  try{
+    const r=await kApi('sched'); sToday=r.today;
+    sPlan=r.plan||sSeedPlan(); sRev=r.rev; sAct={}; (r.actual||[]).forEach(x=>sAct[x.id]={s:x.s,f:x.f,pct:x.pct,note:x.note});
+    sLoaded=true; $('sLoading').style.display='none'; $('sMain').style.display='';
+    $('sPlanInfo').textContent=r.plan?`공정표 저장본 rev ${r.rev} · ${r.updated_at||''}`:'초기 주공정(아직 저장 전 — 공정을 고치면 서버에 저장됩니다)';
+  }catch(e){ $('sLoading').textContent='공정표를 불러오지 못했습니다: '+kErr(e); return; }
+  sRenderAll();
+}
+async function sSavePlan(){
+  try{ const r=await kApi('sched',{plan:sPlan,rev:sRev}); sRev=r.rev; $('sPlanInfo').textContent=`공정표 저장본 rev ${r.rev}`; return true; }
+  catch(e){
+    if(e.message==='conflict'&&e.data){ sPlan=e.data.plan; sRev=e.data.rev; toast('다른 기기가 먼저 공정표를 고쳤습니다 — 최신본을 불러왔으니 다시 수정해 주세요'); sRenderAll(); return false; }
+    toast(kErr(e)); return false;
+  }
+}
+function sRenderAll(){
+  sCalc=sRun(sPlan,sAct); sBase=sPlan.base;
+  if(sCalc.cyc) toast('⚠ 선후행 관계가 순환합니다 — 공정 연결을 확인하세요');
+  sHome(); if($('pgGantt').classList.contains('show')) sGanttView();
+}
+function sPhaseOf(a){ return S_PHASES.find(p=>p.id===a.phase)||S_PHASES[0]; }
+function sStateLabel(r){ return r.state==='done'?'<span class="s-pill ok">완료</span>':r.state==='run'?'<span class="s-pill crit" style="background:#fff4e6;color:#e8590c">진행</span>':r.state==='done*'?'<span class="s-pill asm">계획상 완료</span>':r.state==='run*'?'<span class="s-pill asm">계획상 진행</span>':''; }
+function sHome(){
+  const C=sCalc, fire=C.fin, base=sBase?sBase.fire:fire;
+  const late=sDiff(base,fire), dday=sDiff(sToday,fire);
+  $('hSub').textContent=`광양 2고로 2차 개수 · ${sFmt(sToday)} ${dPlus(sToday)} · 기준 화입 ${sFmt(base,true)} · v${APP.version}`;
+  $('sFire').textContent=sFmt(fire,true); $('sDday').textContent=dday>=0?`D-${dday}`:`D+${-dday}`;
+  $('sDelta').textContent=late>0?`▲ 기준 대비 ${late}일 지연`:late<0?`▼ ${-late}일 단축`:'± 기준 화입일 유지';
+  $('sDelta').className='s-delta'+(late>0?' late':'');
+  $('sPhases').innerHTML=S_PHASES.map(p=>{
+    const as=sPlan.acts.filter(a=>a.phase===p.id); if(!as.length) return '';
+    const tot=as.reduce((s,a)=>s+(+a.dur||1),0);
+    const done=as.reduce((s,a)=>{ const r=C.R[a.id]; if(!r) return s; const ac=sAct[a.id];
+      if(/^done/.test(r.state)) return s+r.dur; if(r.state==='run') return s+(ac&&ac.pct!=null?r.dur*ac.pct/100:r.dur-r.rem); if(r.state==='run*') return s+(r.dur-r.rem); return s; },0);
+    const pct=Math.round(done/tot*100), ef=Math.max(...as.map(a=>C.R[a.id]?C.R[a.id].ef:0));
+    return `<div class="s-ph"><div class="n">${p.short} ~${sMD(sDate(ef))}</div><div class="p">${pct}%</div><div class="bar"><div style="width:${pct}%"></div></div></div>`;
+  }).join('');
+  const nAct=Object.keys(sAct).filter(id=>sA(id)).length;
+  $('sAssume').textContent=`실적 입력 ${nAct}/${sPlan.acts.length}개 · 실적이 없는 공정은 계획대로 진행된 것으로 계산`;
+  const t0=C.wi(sToday);
+  const row=(a,extra)=>{ const r=C.R[a.id];
+    return `<div class="s-act" data-act="${a.id}"><div class="d">${sMD(sDate(r.es))}~${sMD(sDate(r.ef))}${extra?`<br>${extra}`:''}</div><div class="m">
+      <div class="nm">${r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}일</span>`}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}${esc(a.name)}</div>`; };
+  const run=sPlan.acts.filter(a=>{ const r=C.R[a.id]; return r&&(r.state==='run'||r.state==='run*'); });
+  $('sNow').innerHTML=run.length?run.map(a=>{ const r=C.R[a.id], ac=sAct[a.id], day=t0-r.es+1;
+    const pct=ac&&ac.pct!=null?ac.pct:Math.round((r.dur-r.rem)/r.dur*100);
+    return row(a,`${day}/${r.dur}일차`)+`<div class="s-prog"><div class="${r.crit?'':'n'}" style="width:${pct}%"></div></div>
+      <div class="sub">${r.state==='run'?`진도 ${pct}%`:'실적 미입력 — 계획 기준'} · 남은 ${r.rem}일 · 완료 예상 ${sFmt(sDate(r.ef))}${ac&&ac.note?` · ${esc(ac.note)}`:''}</div></div></div>`; }).join('')
+    :'<div class="paste-hint">진행 중인 공정이 없습니다</div>';
+  const soon=sPlan.acts.filter(a=>{ const r=C.R[a.id]; return r&&r.state==='plan'&&r.es>=t0&&r.es<=t0+3; });
+  $('sSoon').innerHTML=soon.length?soon.map(a=>{ const r=C.R[a.id];
+    return row(a,r.es===t0?'오늘 착수':`${r.es-t0}일 후 착수`)+`<div class="sub">${r.dur}일 · 선행: ${(a.preds||[]).map(p=>sA(p.id)?esc(sA(p.id).name)+(p.type!=='FS'||+p.lag?` (${p.type}${+p.lag>0?'+':''}${+p.lag||''})`:''):'').filter(Boolean).join(', ')||'없음'}</div></div></div>`; }).join('')
+    :'<div class="paste-hint">3일 안에 착수할 공정이 없습니다</div>';
+  const w=[], lateList=[];
+  sPlan.acts.forEach(a=>{ const r=C.R[a.id], b=sBase&&sBase.dates[a.id]; if(!r||!b||/^done/.test(r.state)) return;
+    if(r.ef>b[1]) lateList.push(`<div class="s-warn red" data-act="${a.id}">⏱️ <div><b>${esc(a.name)}</b> 기준보다 ${r.ef-b[1]}일 늦게 끝날 예정 (${sMD(sDate(b[1]))} → ${sMD(sDate(r.ef))})</div></div>`); });
+  // 뒤 공정이 줄줄이 밀리는 건 앞 3개만 보여주고 나머지는 건수로
+  w.push(...lateList.slice(0,3)); if(lateList.length>3) w.push(`<div class="s-warn red">⏱️ <div>그 뒤 공정 ${lateList.length-3}개도 같이 밀립니다 — 공정표에서 확인</div></div>`);
+  sPlan.acts.filter(a=>!a.cp).forEach(a=>{ const r=C.R[a.id]; if(r&&!/^done/.test(r.state)&&!r.crit&&r.tf<=3) w.push(`<div class="s-warn" data-act="${a.id}">⚠️ <div><b>${esc(a.name)}</b> 여유 ${r.tf}일 — 더 밀리면 크리티컬 패스가 됩니다</div></div>`); });
+  sPlan.acts.filter(a=>!a.cp).forEach(a=>{ const r=C.R[a.id]; if(r&&r.crit) w.push(`<div class="s-warn red" data-act="${a.id}">🔴 <div><b>${esc(a.name)}</b> 크리티컬 패스가 됐습니다 — 화입일에 직접 영향</div></div>`); });
+  $('sWarn').innerHTML=w.join('')||'<div class="paste-hint">지연·여유 부족 공정이 없습니다</div>';
+  // 브리핑
+  const cur=run.filter(a=>C.R[a.id].crit).map(a=>{ const r=C.R[a.id], ac=sAct[a.id]; return `${a.name} (${t0-r.es+1}/${r.dur}일차${ac&&ac.pct!=null?`, ${ac.pct}%`:''})`; }).join(', ')||'없음';
+  const nx=sPlan.acts.filter(a=>C.R[a.id]&&C.R[a.id].crit&&C.R[a.id].state==='plan').sort((x,y)=>C.R[x.id].es-C.R[y.id].es)[0];
+  const nLate=sPlan.acts.filter(a=>{ const r=C.R[a.id], b=sBase&&sBase.dates[a.id]; return r&&b&&!/^done/.test(r.state)&&r.ef>b[1]; }).length;
+  $('sBrief').textContent=`[G2R2 공정] ${sMD(sToday)} ${dPlus(sToday)} · 화입 D-${dday}\n예상 화입 ${sFmt(fire,true)} (${late>0?`기준 대비 +${late}일`:late<0?`기준 대비 -${-late}일`:'기준 유지'})\n· 오늘 크리티컬: ${cur}${nx?`\n· 다음 크리티컬: ${nx.name} ${sMD(sDate(C.R[nx.id].es))} 착수`:''}\n· 지연 ${nLate}건`;
+  const keep=$('simAct').value;
+  $('simAct').innerHTML=sPlan.acts.filter(a=>C.R[a.id]&&!/^done/.test(C.R[a.id].state)).map(a=>`<option value="${a.id}">${C.R[a.id].crit?'🔴 ':''}${esc(a.name)}</option>`).join('');
+  if(keep&&sA(keep)) $('simAct').value=keep;
+  sSim();
+  document.querySelectorAll('#sMain [data-act]').forEach(el=>el.onclick=()=>sEdit(el.dataset.act));
+}
+function sSim(){
+  const id=$('simAct').value; if(!id){ $('simOut').textContent=''; return; }
+  const n=+$('simDays').value, a=sA(id), S=sRun(sPlan,sAct,{delay:{[id]:n}}), shift=sDiff(sCalc.fin,S.fin), r=sCalc.R[id];
+  $('simOut').innerHTML=`<b>${esc(a.name)}</b> ${n}일 지연 시 → 예상 화입 <b>${sFmt(S.fin,true)}</b> `+
+    (shift>0?`<span style="color:var(--s-crit);font-weight:800">(+${shift}일)</span>`:`<span style="color:var(--green);font-weight:800">(영향 없음 — 여유 ${r.tf}일 안에서 흡수)</span>`)+
+    (shift>0&&shift<n?`<br>여유 ${Math.max(0,r.tf)}일만큼은 흡수, 나머지 ${shift}일이 화입일로 넘어감`:'');
+}
+
+/* ---- 공정표 ---- */
+let sGv='gantt'; const sCollapsed={};
+function sGanttView(){
+  if(!sCalc) return;
+  $('gvGantt').style.display=sGv==='gantt'?'':'none'; $('gvList').style.display=sGv==='list'?'':'none'; $('gvLook').style.display=sGv==='look'?'':'none';
+  if(sGv==='gantt') sGantt(); else if(sGv==='list') sList(); else sLook();
+}
+function sGantt(){
+  const C=sCalc, PX=7, s0=C.wi(sPlan.start), baseEnd=sBase?C.wi(sBase.fire):0, s1=Math.max(C.finIdx,baseEnd)+4, width=(s1-s0+1)*PX, x=i=>(i-s0)*PX;
+  let h=`<div class="s-gh"><div class="s-gl">공정</div><div class="s-gt s-gm" style="width:${width}px">`;
+  for(let i=s0;i<=s1;i++){ const s=sDate(i); if(s.slice(8)==='01'||i===s0) h+=`<span style="left:${x(i)}px">${+s.slice(5,7)}월</span>`; }
+  h+='</div></div>';
+  // 휴일: 달력에서 빠진 날 → 앞 작업일 경계에 표시
+  const holMarks=(sPlan.holidays||[]).length?(()=>{ const m=[]; for(let i=s0+1;i<=s1;i++){ const gap=sDiff(sDate(i-1),sDate(i))-1; if(gap>0) m.push(`<div class="s-ghol" style="left:${x(i)-2}px;width:4px" title="휴일 ${gap}일"></div>`); } return m.join(''); })():'';
+  const todayL=`<div class="s-gtoday" style="left:${x(C.wi(sToday))}px"></div>`;
+  S_PHASES.forEach(p=>{
+    const as=sPlan.acts.filter(a=>a.phase===p.id&&C.R[a.id]); if(!as.length) return;
+    const es=Math.min(...as.map(a=>C.R[a.id].es)), ef=Math.max(...as.map(a=>C.R[a.id].ef));
+    h+=`<div class="s-gr ph"><div class="s-gl" data-ph="${p.id}">${sCollapsed[p.id]?'▸':'▾'} ${p.name} <small style="color:var(--steel);font-weight:600">${sMD(sDate(es))}~${sMD(sDate(ef))}</small></div><div class="s-gt" style="width:${width}px">${todayL}<div class="s-gb" style="left:${x(es)}px;width:${(ef-es+1)*PX}px;background:#495057;height:6px;top:11px"></div></div></div>`;
+    if(sCollapsed[p.id]) return;
+    as.sort((a,b)=>C.R[a.id].es-C.R[b.id].es||(b.cp-a.cp)).forEach(a=>{ const r=C.R[a.id], b=sBase&&sBase.dates[a.id], ac=sAct[a.id];
+      const isCrit=r.crit||r.critPast;
+      const pw=r.state==='run'&&ac&&ac.pct!=null?(ac.pct/100)*(r.ef-r.es+1)*PX:0;
+      h+=`<div class="s-gr"><div class="s-gl" data-act="${a.id}" title="${esc(a.name)}">${isCrit?'':'<span class="s-pill flt">여유</span>'}${esc(a.name)}</div><div class="s-gt" style="width:${width}px">${todayL}${holMarks}
+        ${b?`<div class="s-gbase" style="left:${x(b[0])}px;width:${(b[1]-b[0]+1)*PX}px"></div>`:''}
+        <div class="s-gb ${isCrit?'crit':''} ${/^done/.test(r.state)?'done':''}" style="left:${x(r.es)}px;width:${(r.ef-r.es+1)*PX}px" title="${esc(a.name)} ${sMD(sDate(r.es))}~${sMD(sDate(r.ef))} · 여유 ${r.tf}"></div>
+        ${pw?`<div class="s-gp" style="left:${x(r.es)}px;width:${pw}px"></div>`:''}</div></div>`; });
+  });
+  $('gant').innerHTML=h;
+  $('gant').querySelectorAll('[data-ph]').forEach(e=>e.onclick=()=>{ sCollapsed[e.dataset.ph]=!sCollapsed[e.dataset.ph]; sGantt(); });
+  $('gant').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
+  const wrap=$('gant').parentElement; wrap.scrollLeft=Math.max(0,x(C.wi(sToday))-80);
+}
+function sList(){
+  const C=sCalc;
+  $('gvList').innerHTML=S_PHASES.map(p=>{
+    const as=sPlan.acts.filter(a=>a.phase===p.id&&C.R[a.id]).sort((a,b)=>C.R[a.id].es-C.R[b.id].es); if(!as.length) return '';
+    return `<details class="s-phase" open><summary><span>${p.name} <small style="color:var(--steel)">${as.length}개</small></span><span style="font-family:var(--num);font-size:.74rem;color:var(--steel)">${sMD(sDate(Math.min(...as.map(a=>C.R[a.id].es))))}~${sMD(sDate(Math.max(...as.map(a=>C.R[a.id].ef))))}</span></summary>
+      <div class="body"><table class="s-t"><tr><th>공정</th><th class="s-num">기간</th><th class="s-num">예상</th><th class="s-num">여유</th></tr>
+      ${as.map(a=>{ const r=C.R[a.id], col=/^done/.test(r.state)?'var(--steel)':r.crit?'var(--s-crit)':'var(--s-norm)';
+        return `<tr data-act="${a.id}"><td>${sStateLabel(r)}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}<b style="color:${r.crit||r.critPast?'var(--s-crit)':'var(--ink)'}">${esc(a.name)}</b>
+          <div style="font-size:.64rem;color:var(--steel)">${(a.preds||[]).map(x=>sA(x.id)?`← ${esc(sA(x.id).name.slice(0,12))} ${x.type}${+x.lag?(+x.lag>0?'+':'')+x.lag:''}`:'').filter(Boolean).join(' · ')||'시작'}</div></td>
+          <td class="s-num">${a.dur}일</td><td class="s-num">${sMD(sDate(r.es))}<br>~${sMD(sDate(r.ef))}</td><td class="s-num" style="color:${col};font-weight:800">${/^done/.test(r.state)?'—':r.tf}</td></tr>`; }).join('')}
+      </table></div></details>`; }).join('');
+  $('gvList').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
+}
+function sLook(){
+  const C=sCalc, t0=C.wi(sToday), t1=t0+21;
+  const as=sPlan.acts.filter(a=>{ const r=C.R[a.id]; return r&&!/^done/.test(r.state)&&r.es<=t1&&r.ef>=t0; }).sort((x,y)=>C.R[x.id].es-C.R[y.id].es);
+  $('gvLook').innerHTML=`<div class="card"><div style="font-weight:800">${sMD(sToday)} ~ ${sMD(sDate(t1))} 착수·진행 공정 <small style="color:var(--steel)">${as.length}개</small></div>
+    ${as.map(a=>{ const r=C.R[a.id]; return `<div class="s-act" data-act="${a.id}"><div class="d">${sMD(sDate(r.es))}~${sMD(sDate(r.ef))}<br>${r.es<=t0?'진행 중':`${r.es-t0}일 후`}</div><div class="m"><div class="nm">${r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}</span>`}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}${esc(a.name)}</div><div class="sub">${r.dur}일 · ${sPhaseOf(a).name}</div></div></div>`; }).join('')||'<div class="paste-hint">해당 공정이 없습니다</div>'}</div>`;
+  $('gvLook').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
+}
+
+/* ---- 공정 추가·수정 (기간 + 선행/후행) ---- */
+let sEditId=null;
+function sPredRow(list, p){
+  const opts=sPlan.acts.filter(a=>a.id!==sEditId).map(a=>`<option value="${a.id}" ${p&&p.id===a.id?'selected':''}>${a.cp?'🔴 ':''}${esc(a.name)}</option>`).join('');
+  const d=document.createElement('div'); d.className='s-predrow';
+  d.innerHTML=`<select class="f-input" style="flex:1;min-width:0">${opts}</select><select class="f-input" style="width:64px">${['FS','SS','FF'].map(t=>`<option ${p&&p.type===t?'selected':''}>${t}</option>`).join('')}</select><input class="f-input" style="width:54px" inputmode="numeric" placeholder="Lag" value="${p&&+p.lag?p.lag:''}"><button class="mini-btn" title="빼기">×</button>`;
+  d.querySelector('button').onclick=()=>d.remove();
+  $(list).appendChild(d);
+}
+function sReadRows(list){ return [...$(list).querySelectorAll('.s-predrow')].map(d=>{ const [s,t]=d.querySelectorAll('select'); return {id:s.value,type:t.value,lag:parseInt(d.querySelector('input').value,10)||0}; }).filter(x=>x.id); }
+function sEdit(id){
+  sEditId=id||null; const a=id?sA(id):null; if(id&&!a) return;
+  $('aTitle').textContent=a?(a.cp?'🔴 크리티컬 패스 공정':'공정 수정'):'＋ 공정 추가 (neck 작업)';
+  $('aDesc').textContent=a?`${a.id} · 날짜는 기간과 선후행으로 자동 계산됩니다`:'기간과 "어느 공정에 붙는지"만 넣으면 날짜·여유일이 자동 계산됩니다. 화입일 영향을 보려면 후행 공정(이 작업이 끝나야 시작할 수 있는 공정)도 넣으세요.';
+  $('aName').value=a?a.name:''; $('aDur').value=a?a.dur:'';
+  $('aPhase').innerHTML=S_PHASES.map(p=>`<option value="${p.id}" ${a&&a.phase===p.id?'selected':''}>${p.name}</option>`).join('');
+  $('aCls').innerHTML='<option value="">(없음)</option>'+Object.keys(CLASS_NAMES).map(c=>`<option value="${c}" ${a&&a.cls===c?'selected':''}>${c} ${CLASS_NAMES[c]}</option>`).join('');
+  $('aPreds').innerHTML=''; $('aSuccs').innerHTML='';
+  (a?a.preds||[]:[]).forEach(p=>sPredRow('aPreds',p));
+  if(!a) sPredRow('aPreds',null);
+  if(a) sPlan.acts.forEach(s=>(s.preds||[]).forEach(p=>{ if(p.id===a.id) sPredRow('aSuccs',{id:s.id,type:p.type,lag:p.lag}); }));
+  const ac=(a&&sAct[a.id])||{};
+  $('aS').value=ac.s||''; $('aF').value=ac.f||''; $('aPct').value=ac.pct!=null?ac.pct:''; $('aNote').value=ac.note||'';
+  $('aActBox').style.display=a?'':'none';
+  $('aDel').style.display=a&&!a.cp?'':'none';
+  const r=a&&sCalc.R[a.id];
+  $('aCalc').innerHTML=r?`계산 결과: ${sFmt(sDate(r.es))} ~ ${sFmt(sDate(r.ef))} · 여유 ${r.tf}일${r.crit?' · <b style="color:var(--s-crit)">크리티컬</b>':''}${sBase&&sBase.dates[a.id]?` · 기준 ${sMD(sDate(sBase.dates[a.id][0]))}~${sMD(sDate(sBase.dates[a.id][1]))}`:''}`:'';
+  const ed=isEditor();
+  $('actModal').querySelectorAll('input,select').forEach(x=>x.disabled=!ed);
+  ['aAddPred','aAddSucc','aSave'].forEach(id=>$(id).style.display=ed?'':'none'); if(!ed) $('aDel').style.display='none';
+  $('actModal').querySelectorAll('.s-predrow .mini-btn').forEach(x=>x.style.display=ed?'':'none');
+  if(!ed) $('aCalc').innerHTML+='<br>🔒 보기 전용 — 수정은 관리자 로그인 후';
+  $('actModal').classList.add('show');
+}
+async function sSaveEdit(){
+  const name=$('aName').value.trim(), dur=parseInt($('aDur').value,10);
+  if(!name||!(dur>=1)){ toast('공정명과 기간(1일 이상)을 넣으세요'); return; }
+  const preds=sReadRows('aPreds'), succs=sReadRows('aSuccs');
+  const old=sEditId?sA(sEditId):null;
+  const planChanged=!old||old.name!==name||old.dur!==dur||old.phase!==$('aPhase').value||(old.cls||'')!==$('aCls').value||JSON.stringify(old.preds||[])!==JSON.stringify(preds)
+    ||JSON.stringify(sPlan.acts.filter(s=>(s.preds||[]).some(p=>p.id===old.id)).map(s=>s.id).sort())!==JSON.stringify(succs.map(s=>s.id).sort());
+  const btn=$('aSave'); btn.disabled=true;
+  try{
+    if(planChanged){
+      const snapshot=JSON.stringify(sPlan);
+      const id=old?old.id:'N'+Date.now().toString(36);
+      const a=old||{id,cp:false}; Object.assign(a,{name,dur,phase:$('aPhase').value,cls:$('aCls').value,preds});
+      if(!old) sPlan.acts.push(a);
+      // 후행: 다른 공정의 선행 목록에 이 공정을 넣거나 뺀다
+      sPlan.acts.forEach(s=>{ if(s.id===id) return; s.preds=(s.preds||[]).filter(p=>p.id!==id); const m=succs.find(x=>x.id===s.id); if(m) s.preds.push({id,type:m.type,lag:m.lag}); });
+      const test=sRun(sPlan,sAct); if(test.cyc){ sPlan=JSON.parse(snapshot); toast('선후행이 순환합니다(서로가 서로의 선행) — 저장하지 않았습니다'); return; }
+      if(!(await sSavePlan())) return;
+      sEditId=id;
+    }
+    if(old){
+      const ac={s:$('aS').value,f:$('aF').value,pct:$('aPct').value,note:$('aNote').value.trim()}, prev=sAct[old.id]||{};
+      if(ac.s!==(prev.s||'')||ac.f!==(prev.f||'')||String(ac.pct)!==String(prev.pct==null?'':prev.pct)||ac.note!==(prev.note||'')){
+        await kApi('sched-actual',{id:old.id,...ac});
+        if(!ac.s&&!ac.f&&ac.pct===''&&!ac.note) delete sAct[old.id]; else sAct[old.id]={s:ac.s||null,f:ac.f||null,pct:ac.pct===''?null:+ac.pct,note:ac.note};
+      }
+    }
+    closeModal('actModal'); toast(old?'저장했습니다':'공정을 추가했습니다'); sRenderAll();
+  }catch(e){ toast(kErr(e)); }
+  finally{ btn.disabled=false; }
+}
+async function sDelete(){
+  const a=sA(sEditId); if(!a||a.cp) return;
+  if(!confirm(`'${a.name}' 공정을 삭제할까요? 이 공정에 연결된 선후행도 함께 빠집니다.`)) return;
+  const snapshot=JSON.stringify(sPlan);
+  sPlan.acts=sPlan.acts.filter(x=>x.id!==a.id); sPlan.acts.forEach(s=>s.preds=(s.preds||[]).filter(p=>p.id!==a.id));
+  if(!(await sSavePlan())){ sPlan=JSON.parse(snapshot); return; }
+  if(sAct[a.id]){ try{ await kApi('sched-actual',{id:a.id}); }catch(e){} delete sAct[a.id]; }
+  closeModal('actModal'); toast('삭제했습니다'); sRenderAll();
+}
+async function sSaveBase(){
+  if(!confirm('지금 계산된 일정을 새 기준선으로 저장할까요?\n(기준 화입일이 바뀌고, 이후 지연은 새 기준선 대비로 계산됩니다. 이전 기준선은 공정표 이력(rev)에 남습니다)')) return;
+  const C=sCalc; sPlan.base={at:sToday,fire:C.fin,dates:Object.fromEntries(sPlan.acts.filter(a=>C.R[a.id]).map(a=>[a.id,[C.R[a.id].es,C.R[a.id].ef]]))};
+  if(await sSavePlan()){ toast('새 기준선을 저장했습니다'); sRenderAll(); }
+}
+$('simAct').onchange=sSim; $('simDays').onchange=sSim;
+$('sShare').onclick=async()=>{ const text=$('sBrief').textContent;
+  if(navigator.share){ try{ await navigator.share({text}); return; }catch(e){ if(e.name==='AbortError') return; } }
+  try{ await navigator.clipboard.writeText(text); toast('복사했습니다 — 카톡에 붙여넣으세요'); }catch(e){ toast('복사 실패 — 길게 눌러 복사하세요'); } };
+document.querySelectorAll('#gSeg [data-gv]').forEach(b=>b.onclick=()=>{ sGv=b.dataset.gv; document.querySelectorAll('#gSeg [data-gv]').forEach(x=>x.classList.toggle('on',x===b)); sGanttView(); });
+$('sAddAct').onclick=()=>sEdit(null);
+$('sBaseBtn').onclick=sSaveBase;
+$('aAddPred').onclick=()=>sPredRow('aPreds',null);
+$('aAddSucc').onclick=()=>sPredRow('aSuccs',null);
+$('aSave').onclick=sSaveEdit; $('aDel').onclick=sDelete;
+
+/* ================= 📋 일일작업: 엑셀/이미지 붙여넣기 → 금일·명일 작업 분석 ================= */
+let dMode='excel', dList=[], dSel=null;
+const dHint=()=>dMode==='image'
+  ? '<span class="m-hint">🖼️ 여기를 누르고 <b>붙여넣기(Ctrl+V)</b> — 표 캡쳐·사진을 AI가 읽습니다. 아래 버튼으로 파일·촬영도 됩니다</span>'
+  : '<span class="m-hint">📊 여기를 누르고 <b>붙여넣기(Ctrl+V)</b> — 엑셀에서 일일작업 표 범위를 복사해 그대로</span>';
+function dStatus(t,cls){ const s=$('dStatus'); s.innerHTML=t||''; s.style.color=cls==='err'?'var(--red)':cls==='ok'?'var(--green)':'var(--steel)'; }
+// 표 이미지는 긴 변 2576px까지 AI가 읽음. 세로로 아주 긴 표는 위→아래 조각(겹침 포함)으로 나눠 보냄
+async function dPrepImage(dataUrl){
+  const img=await mLoadImg(dataUrl); const W=img.naturalWidth, H=img.naturalHeight, MAX=2576;
+  const draw=(sx,sy,sw,sh,k,q)=>{ const cv=document.createElement('canvas'); cv.width=Math.round(sw*k); cv.height=Math.round(sh*k);
+    const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(img,sx,sy,sw,sh,0,0,cv.width,cv.height); return cv.toDataURL('image/jpeg',q); };
+  const pieces=[];
+  const k=Math.min(1,MAX/W);                 // 가로는 2576 이하로
+  const pieceH=Math.round(Math.min(MAX, W*k*1.0)/k); // 조각 높이(원본 기준): 대략 정사각형~가로형
+  if(H*k>MAX*1.15 && H>W){
+    const ov=Math.round(pieceH*0.08);
+    for(let y=0;y<H;y+=pieceH-ov){ const h=Math.min(pieceH,H-y); pieces.push(draw(0,y,W,h,k,.9)); if(y+h>=H) break; if(pieces.length>=6) break; }
+  } else { const kk=Math.min(1,MAX/Math.max(W,H)); pieces.push(draw(0,0,W,H,kk,.9)); }
+  // 저장용(행 1.9MB 제한): 긴 변 2000·용량 1.2MB 이하
+  let store=null; for(const [mx,q] of [[2000,.85],[1600,.78],[1300,.7]]){ const kk=Math.min(1,mx/Math.max(W,H)); store=draw(0,0,W,H,kk,q); if(store.length<=1200000) break; }
+  return {pieces,store,w:W,h:H};
+}
+// AI 결과 / 엑셀 파서 결과 → 같은 형태
+function dFromAi(r){
+  const dt=String(r.date||'').match(/^\d{4}-\d{2}-\d{2}$/)?r.date:'';
+  return {date:dt,dplus:r.dplus||'',overall:{actual:r.overall_actual||'',plan:r.overall_plan||''},
+    today:(r.today||[]).filter(x=>x.task), tomorrow:(r.tomorrow||[]).filter(x=>x.task),
+    people:(r.people||[]).filter(x=>x.company), notes:r.notes||''};
+}
+function dFromSdRows(rows){
+  const t=rows.filter(r=>r.kind==='금일'), m=rows.filter(r=>r.kind==='명일'), r0=rows[0]||{};
+  const people=[]; const seen=new Set();
+  t.forEach(r=>{ if(r.coHead&&!seen.has(r.subcon)){ seen.add(r.subcon); people.push({company:r.subcon,day:String(r.coHead.주간||''),night:String(r.coHead.야간||''),overnight:String(r.coHead.철야||'')}); } });
+  const hd=(rows.find(r=>r.sdHead)||{}).sdHead; if(hd) people.push({company:'합계',day:String(hd.주간||''),night:String(hd.야간||''),overnight:String(hd.철야||'')});
+  return {date:String(r0.sdDate||'').replace(/\./g,'-'),dplus:dPlus(r0.sdDate||''),overall:{actual:r0.sdProg?String(r0.sdProg.actual):'',plan:r0.sdProg?String(r0.sdProg.plan):''},
+    today:t.map(r=>({gong:r.trade||'',cls:r.cls||'',task:r.task,equip:r.equip||'',company:r.subcon||'',period:r.period||'',progress:r.progress||'',shift:r.marks||''})),
+    tomorrow:m.map(r=>({gong:r.trade||'',cls:r.cls||'',task:r.task,equip:r.equip||'',company:r.subcon||'',hazard:r.hazard||'',measures:String(r.safety||'').split(/\s*-\s+|\n|\s+(?=\d+\)\s)/).map(s=>s.replace(/^-\s*/,'').trim()).filter(Boolean).join('\n'),manager:r.manager||''})),
+    people,notes:r0.sdNight?Object.entries(r0.sdNight).map(([k,v])=>`${k}: ${v}`).join('\n'):''};
+}
+async function dSave(kind,payload,an,src){
+  const day=an.date||rToday();
+  an.src=src;
+  const r=await kApi('daily',{day,kind,payload,analysis:an});
+  dSel=day; await dLoad();
+  dStatus(`${r.replaced?'같은 날짜를 새 내용으로 바꿨습니다':'저장했습니다'} — ${day} ${dPlus(day)} · 금일 ${an.today.length}건 · 명일 ${an.tomorrow.length}건${src==='ai'?' (AI 분석 — 원본과 꼭 대조하세요)':''}`,'ok');
+}
+async function dAnalyzeImage(dataUrl){
+  dStatus('이미지 준비 중…');
+  const p=await dPrepImage(dataUrl);
+  dStatus(`AI가 표를 읽는 중… (${p.pieces.length>1?`${p.pieces.length}조각, `:''}1~3분 걸릴 수 있음)`);
+  const r=await kApi('daily-ai',{images:p.pieces});
+  if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
+  const an=dFromAi(r.result);
+  if(!an.today.length&&!an.tomorrow.length) throw new Error('작업을 찾지 못했습니다 — 표가 잘 보이게 다시 캡쳐해 주세요');
+  await dSave('image',{img:p.store,w:p.w,h:p.h},an,'ai');
+}
+async function dOnPaste(e){
+  e.preventDefault();
+  const cd=e.clipboardData; if(!cd){ dStatus('클립보드를 읽을 수 없습니다','err'); return; }
+  let file=null; for(const it of [...(cd.items||[])]) if(it.kind==='file'&&/^image\//.test(it.type)){ file=it.getAsFile(); break; }
+  const html=cd.getData('text/html')||'', plain=cd.getData('text/plain')||'';
+  setTimeout(()=>{ $('dZone').innerHTML=dHint(); },0);
+  try{
+    if(dMode==='image'){
+      if(!file){ dStatus('클립보드에 그림이 없습니다 — 캡쳐(Win+Shift+S) 후 붙이거나, "엑셀로 붙이기"를 쓰세요','err'); return; }
+      return await dAnalyzeImage(await mFileToDataUrl(file));
+    }
+    // 엑셀: 서식 그대로 원본 저장 + 텍스트로 분석(정해진 양식이면 바로, 아니면 AI)
+    let grid=null;
+    if(html){ const st=$('mStage'); st.innerHTML=html; const t=st.querySelector('table'); grid=t?mExtractTable(t):null; st.innerHTML=''; }
+    if(!grid&&plain.indexOf('\t')>=0) grid=mTsvToGrid(plain);
+    if(!grid){ if(file) return await dAnalyzeImage(await mFileToDataUrl(file)); dStatus('표를 찾지 못했습니다 — 엑셀에서 범위를 복사했는지 확인하세요','err'); return; }
+    const text=plain&&plain.indexOf('\t')>=0?plain:mTsv(grid);
+    const sd=parseSdDaily(text);
+    if(sd&&sd.length){ dStatus('표 분석 중…'); return await dSave('excel',{grid:{grid:grid.grid,widths:grid.widths,rows:grid.rows,cols:grid.cols}},dFromSdRows(sd),'parser'); }
+    dStatus('정해진 양식과 달라 AI가 표를 읽는 중… (1~2분)');
+    const r=await kApi('daily-ai',{text}); if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
+    await dSave('excel',{grid:{grid:grid.grid,widths:grid.widths,rows:grid.rows,cols:grid.cols}},dFromAi(r.result),'ai');
+  }catch(err){ dStatus(err.message==='too_large'?'원본이 너무 큽니다 — 범위를 나눠 붙이거나 이미지로 올려 주세요':(err.data?kErr(err):err.message),'err'); }
+}
+async function dLoad(){
+  try{ const r=await kApi('daily'); dList=r.items||[]; if(!dSel||!dList.some(x=>x.day===dSel)) dSel=dList[0]&&dList[0].day; }
+  catch(e){ $('dBody').innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
+  $('dDayChips').innerHTML=dList.slice(0,40).map(x=>`<button class="dchip ${x.day===dSel?'on':''}" data-dd="${x.day}">${x.day===rToday()?'오늘':sMD(x.day)} <small class="dplus">${dPlus(x.day)}</small><span class="dc-cnt">${(x.analysis&&x.analysis.today||[]).length}</span></button>`).join('');
+  $('dDayChips').querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{ dSel=b.dataset.dd; dLoad(); });
+  const it=dList.find(x=>x.day===dSel);
+  if(!it){ $('dBody').innerHTML='<div class="k-empty" style="margin-top:10px">아직 올린 일일작업이 없습니다. 위 칸에 표를 붙여넣으세요.</div>'; return; }
+  dRender(it);
+}
+function dRender(it){
+  const a=it.analysis||{}, T=a.today||[], M=a.tomorrow||[], P=a.people||[];
+  const tot=P.find(x=>x.company==='합계');
+  const byCls={}; T.forEach(x=>(byCls[x.cls||'기타']=byCls[x.cls||'기타']||[]).push(x));
+  const nx=new Date(sT(it.day)+sDAY); const tm=sISO(nx);
+  let h=`<div class="card" style="margin-top:10px">
+    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:1.05rem">${sFmt(it.day)}</b><span class="dplus">${dPlus(it.day)}</span>
+      <span style="margin-left:auto;font-size:.66rem;color:var(--steel)">${it.kind==='image'?'🖼️ 이미지':'📊 엑셀'} · ${a.src==='ai'?'AI 분석':'양식 인식'} · ${esc((it.updated_at||'').slice(5))}</span></div>
+    <div class="d-sum">${a.overall&&a.overall.actual?`<span>공사진도 ${esc(a.overall.actual)}% / ${esc(a.overall.plan)}%</span>`:''}<span>금일 ${T.length}건</span><span>명일 ${M.length}건</span>${tot?`<span>인원 주간 ${esc(tot.day)}·야간 ${esc(tot.night)}·철야 ${esc(tot.overnight)}</span>`:''}</div>
+    ${a.src==='ai'?'<div class="paste-hint" style="margin-top:6px">⚠ AI가 이미지를 읽은 결과입니다. 숫자·이름은 아래 원본과 대조해 주세요.</div>':''}
+    <div class="btn-row"><button class="btn primary" id="dToTbm">🦺 안전(TBM) 작업에 반영</button>${isEditor()?'<button class="btn ghost" id="dDel" style="flex:.5;color:var(--red)">삭제</button>':''}</div>
+  </div>`;
+  h+=`<div class="s-sec">금일 작업 <small>${sMD(it.day)} · Class별</small></div><div class="card">`;
+  Object.keys(byCls).sort().forEach(c=>{ h+=`<div class="d-cls">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${byCls[c].length}건</div>
+    <div style="overflow-x:auto"><table class="s-t"><tr><th>작업</th><th>업체</th><th class="s-num">진도</th><th>일정</th></tr>
+    ${byCls[c].map(x=>`<tr><td>${x.gong?`<span class="s-pill asm">${esc(x.gong)}</span>`:''}${esc(x.task)}${x.equip?`<div style="font-size:.64rem;color:var(--steel)">🏗 ${esc(x.equip)}</div>`:''}${x.shift?`<div style="font-size:.64rem;color:var(--steel)">공정 ${esc(x.shift)}</div>`:''}</td><td style="white-space:nowrap">${esc(x.company)}</td><td class="s-num">${esc(x.progress)}</td><td style="font-size:.66rem;white-space:nowrap">${esc(x.period)}</td></tr>`).join('')}
+    </table></div>`; });
+  if(!T.length) h+='<div class="paste-hint">금일 작업 없음</div>';
+  h+=`</div><div class="s-sec">명일 작업 <small>${sMD(tm)} ${dPlus(tm)} · 위험요인·대책</small></div>`;
+  h+=M.map(x=>`<div class="d-tm"><div class="t">${x.cls?`<span class="s-pill cls">${esc(x.cls)}</span>`:''}${esc(x.task)}</div>
+    <div class="meta">${esc(x.company)}${x.equip?` · 🏗 ${esc(x.equip)}`:''}${x.manager?` · ${esc(x.manager)}`:''}</div>
+    ${x.hazard?`<div class="hz">⚠ ${esc(x.hazard)}</div>`:''}
+    ${x.measures?`<ul>${String(x.measures).split('\n').filter(Boolean).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}</div>`).join('')||'<div class="card paste-hint">명일 작업 없음</div>';
+  if(P.length) h+=`<div class="s-sec">인원</div><div class="card"><table class="s-t"><tr><th>업체</th><th class="s-num">주간</th><th class="s-num">야간</th><th class="s-num">철야</th></tr>
+    ${P.map(x=>`<tr style="${x.company==='합계'?'font-weight:800;background:#f7f8f9':''}"><td>${esc(x.company)}</td><td class="s-num">${esc(x.day)}</td><td class="s-num">${esc(x.night)}</td><td class="s-num">${esc(x.overnight)}</td></tr>`).join('')}</table>
+    ${a.notes?`<div class="paste-hint" style="white-space:pre-wrap;margin-top:6px">${esc(a.notes)}</div>`:''}</div>`;
+  h+=`<details class="k-more" id="dOrigBox"><summary>원본 보기 (${it.kind==='image'?'이미지':'엑셀 표'})</summary><div class="d-orig" id="dOrig">불러오는 중…</div></details>`;
+  $('dBody').innerHTML=h;
+  $('dOrigBox').addEventListener('toggle',async e=>{ if(!e.target.open) return;
+    try{ const r=await kApi('daily?day='+it.day); const p=r.item&&r.item.payload;
+      $('dOrig').innerHTML=!p?'(원본 없음)':p.img?`<img src="${p.img}" alt="원본">`:p.grid?mTableHtml(p.grid):'(원본 없음)'; }
+    catch(err){ $('dOrig').textContent=kErr(err); } });
+  if($('dDel')) $('dDel').onclick=async()=>{ if(!confirm(`${it.day} 일일작업을 삭제할까요? (원본·분석 모두 — 되돌릴 수 없습니다)`)) return;
+    try{ await kApi('daily-delete',{day:it.day}); dSel=null; dLoad(); toast('삭제했습니다'); }catch(e){ toast(kErr(e)); } };
+  $('dToTbm').onclick=()=>dToTbm(it);
+}
+// 분석 결과를 안전(TBM) 작업 목록 형식으로 → 같은 표 날짜는 교체(sd|날짜)
+function dToTbm(it){
+  const a=it.analysis, D=it.day.replace(/-/g,'.'), D2=sISO(sT(it.day)+sDAY).replace(/-/g,'.'), grp=`sd|${D}`;
+  const tot=(a.people||[]).find(x=>x.company==='합계'), num=v=>parseInt(String(v||'').replace(/[^\d]/g,''),10)||0;
+  const sdHead=tot?{주간:num(tot.day),야간:num(tot.night),철야:num(tot.overnight)}:null;
+  const base={project:'',contractor:'P-E&C',headcount:'',headcountN:0,vulnerable:'0/0/0/0',vuln:parseVuln('0/0/0/0'),src:'sd',grp,sdDate:D,
+    sdProg:a.overall&&a.overall.actual?{actual:+a.overall.actual,plan:+a.overall.plan}:null};
+  const rows=[];
+  (a.today||[]).forEach(x=>{ const risks=kwRisks(x.task,x.equip); const co=(a.people||[]).find(p=>p.company===x.company);
+    rows.push({...base,date:D,kind:'금일',cls:x.cls,trade:x.gong,subcon:x.company,task:x.task,equip:x.equip,period:x.period,progress:x.progress,marks:x.shift,
+      risk:risks.join(', '),risks,manager:'',safety:'',hazard:'',sdHead,coHead:co?{주간:num(co.day),야간:num(co.night),철야:num(co.overnight)}:null}); });
+  (a.tomorrow||[]).forEach(x=>{ const risks=kwRisks(x.task+' '+x.hazard,x.equip);
+    rows.push({...base,date:D2,kind:'명일',cls:x.cls,trade:x.gong,subcon:x.company,task:x.task,equip:x.equip,period:'',progress:'',marks:'',
+      risk:risks.join(', '),risks,manager:x.manager,safety:String(x.measures||'').split('\n').map(s=>'- '+s).join(' '),hazard:x.hazard}); });
+  if(!rows.length){ toast('반영할 작업이 없습니다'); return; }
+  if(!contractors.includes('P-E&C')){ contractors.push('P-E&C'); saveJSON(LS_CONS,contractors); }
+  inputData['P-E&C']=mergeByShift(inputData['P-E&C'], rows); saveJSON(LS_INPUT,inputData);
+  if(wx) renderToday();
+  toast(`안전(TBM) 작업에 반영: 금일 ${(a.today||[]).length} · 명일 ${(a.tomorrow||[]).length}건 (이 기기)`);
+}
+$('dZone').innerHTML=dHint();
+$('dZone').addEventListener('paste',dOnPaste);
+$('dZone').addEventListener('focus',()=>$('dZone').classList.add('focus'));
+$('dZone').addEventListener('blur',()=>$('dZone').classList.remove('focus'));
+$('dZone').addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)) e.preventDefault(); });
+document.querySelectorAll('#dModes [data-dm]').forEach(b=>b.onclick=()=>{ dMode=b.dataset.dm; document.querySelectorAll('#dModes [data-dm]').forEach(x=>x.classList.toggle('on',x===b)); $('dZone').innerHTML=dHint(); $('dImgBtns').style.display=dMode==='image'?'flex':'none'; dStatus(''); });
+['dFile','dCam'].forEach(id=>$(id).onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{ await dAnalyzeImage(await mFileToDataUrl(f)); }catch(err){ dStatus(err.data?kErr(err):err.message,'err'); } });
+
+/* ================= 하단 탭 5개 + 그룹 하위 탭 ================= */
+const PG_GROUP={pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgInput:'daily',pgKakao:'site',pgMemo:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
+const GROUP_SUBS={daily:[['pgDaily','📋 일일작업'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgMemo','✓ 순시메모']],safe:[['pgToday','☀ 오늘 TBM'],['pgRecords','▤ 기록'],['pgInfo','§ 기준']]};
+const lastPg={};
+function showPage(pg){
+  const g=PG_GROUP[pg]; lastPg[g]=pg;
+  document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===pg));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.grp===g));
+  const subs=GROUP_SUBS[g], bar=$('grpBar');
+  if(subs){ bar.style.display='flex'; bar.innerHTML=subs.map(([id,t])=>`<button class="${id===pg?'on':''}" data-sp="${id}">${t}</button>`).join('');
+    bar.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>showPage(b.dataset.sp)); }
+  else bar.style.display='none';
+  if(pg==='pgSched') sLoad();
+  if(pg==='pgGantt'){ sLoad().then(()=>sGanttView()); }
+  if(pg==='pgDaily') dLoad();
+  if(pg==='pgInput') renderInputTab();
+  if(pg==='pgRecords') renderRecords();
+  if(pg==='pgInfo') renderInfo();
+  if(pg==='pgKakao') renderKakao();
+  if(pg==='pgMemo'){ if(pMode==='patrol') pLoad(); else renderMemo(); }
+  if(pg==='pgToday'&&wx) renderToday();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>{ const g=b.dataset.grp; showPage(lastPg[g]||b.dataset.pg); });
+
+// 예전 탭 버튼(.click() 호출용) → 새 화면 전환
+document.querySelectorAll('#legacyTabs .tab-btn').forEach(b=>b.onclick=()=>showPage(b.dataset.pg));
+
 $('btnSettings').onclick=openSettings;
 $('btnRefresh').onclick=loadAll;
 $('btnRecord').onclick=saveRecord;
@@ -3514,8 +4220,10 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.onclick=e=>{if(e.target===m)
 $('hSub').textContent=`광양 2고로 개수 현장 · v${APP.version} ${APP.channel}`;
 if(adminPass){ $('adminPassInput').value=adminPass; }
 kShowTab();
-if(location.hash==='#kakao') document.querySelector('.tab-btn[data-pg="pgKakao"]').click();
-if(location.hash==='#memo') document.querySelector('.tab-btn[data-pg="pgMemo"]').click();
+applyEditorUI();
+showPage('pgSched');
+if(location.hash==='#kakao') showPage('pgKakao');
+if(location.hash==='#memo') showPage('pgMemo');
 loadAll();
 </script>
 

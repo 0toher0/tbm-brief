@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '2.12.0',
+        version: '3.0.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -304,6 +304,14 @@ function kakaoMemoAuthOk(request, env, body) {
   return !env.SHARED_TOKEN || tok === env.SHARED_TOKEN;
 }
 
+// v3.0.0: 관리자(편집자) 확인 — 일일작업 올리기·삭제·AI 분석, 공정표·실적 수정은 관리자만.
+// 암호 값은 Worker 비밀값 EDITOR_PASS(없으면 ADMIN_PASS)에만 있다. 앱은 X-Editor-Pass 헤더로 보냄.
+function editorOk(request, env, body) {
+  const p = request.headers.get('X-Editor-Pass') || body.ep || '';
+  if (!p) return false;
+  return (!!env.EDITOR_PASS && p === env.EDITOR_PASS) || (!!env.ADMIN_PASS && p === env.ADMIN_PASS);
+}
+
 let KAKAO_SCHEMA_READY = false;
 async function kakaoSchema(db) {
   if (KAKAO_SCHEMA_READY) return;
@@ -322,6 +330,10 @@ async function kakaoSchema(db) {
     // v2.12.0: 순회 체크 — 📌 고른 항목 + 상태·메모·사진
     db.prepare(`CREATE TABLE IF NOT EXISTS patrol_items (id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, src TEXT NOT NULL, ref TEXT NOT NULL, title TEXT, sub TEXT, memo TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT '', created_at TEXT, updated_at TEXT, UNIQUE(day, src, ref))`),
     db.prepare(`CREATE TABLE IF NOT EXISTS patrol_photos (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER NOT NULL, data TEXT NOT NULL, created_at TEXT)`),
+    // v3.0.0: 공정관리 — 공정표(문서 1개, rev 잠금) · 공정별 실적 · 일일작업(엑셀/이미지 원본 + 분석 결과)
+    db.prepare(`CREATE TABLE IF NOT EXISTS sched_doc (key TEXT PRIMARY KEY, json TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 0, updated_at TEXT)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS sched_actual (id TEXT PRIMARY KEY, s TEXT, f TEXT, pct REAL, note TEXT, updated_at TEXT)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS daily_work (day TEXT PRIMARY KEY, kind TEXT, payload TEXT, analysis TEXT, updated_at TEXT)`),
   ]);
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
   for (const t of ['kakao_works', 'kakao_events']) {
@@ -524,6 +536,86 @@ async function handleKakao(request, env, url, cors) {
   }
 
   // ---- 순회 체크: 📌 고른 항목(작업·현장톡 작업·이벤트·직접 추가)에 상태·메모·사진 ----
+  // ---- 관리자 로그인 확인 ----
+  if (sub === 'editor-check') {
+    const ok = editorOk(request, env, body);
+    if (!ok) await new Promise(r => setTimeout(r, 1200)); // 무작위 대입을 느리게
+    return json({ ok }, ok ? 200 : 401, cors);
+  }
+  // 쓰기는 관리자만 (읽기는 누구나)
+  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST' };
+  if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) return json({ error: 'editor_required' }, 403, cors);
+
+  // ---- 공정관리: 공정표 + 실적 ----
+  if (sub === 'sched') {
+    if (request.method === 'POST') {
+      // 공정표 저장: 다른 기기가 먼저 저장했으면(rev 다름) 덮어쓰지 않고 최신본을 돌려준다
+      const json0 = JSON.stringify(body.plan || null);
+      if (!body.plan || json0.length > 500000) return json({ error: 'bad_payload' }, 400, cors);
+      const cur = await db.prepare(`SELECT rev FROM sched_doc WHERE key='plan'`).first();
+      const base = body.rev == null ? null : parseInt(body.rev, 10);
+      if (cur && base !== null && cur.rev !== base) {
+        const doc = await db.prepare(`SELECT * FROM sched_doc WHERE key='plan'`).first();
+        return json({ error: 'conflict', plan: JSON.parse(doc.json), rev: doc.rev }, 409, cors);
+      }
+      const rev = cur ? cur.rev + 1 : 1;
+      await db.prepare(`INSERT INTO sched_doc(key,json,rev,updated_at) VALUES('plan',?,?,?) ON CONFLICT(key) DO UPDATE SET json=excluded.json, rev=excluded.rev, updated_at=excluded.updated_at`)
+        .bind(json0, rev, now.ts).run();
+      return json({ ok: true, rev }, 200, cors);
+    }
+    const [doc, act] = await db.batch([
+      db.prepare(`SELECT * FROM sched_doc WHERE key='plan'`),
+      db.prepare(`SELECT * FROM sched_actual`),
+    ]);
+    const d = doc.results[0];
+    return json({ today: now.day, plan: d ? JSON.parse(d.json) : null, rev: d ? d.rev : null, updated_at: d ? d.updated_at : null, actual: act.results }, 200, cors);
+  }
+  if (sub === 'sched-actual') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const id = String(body.id || ''); if (!id) return json({ error: 'bad_payload' }, 400, cors);
+    const dt = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null);
+    if (!body.s && !body.f && (body.pct == null || body.pct === '') && !body.note) {
+      await db.prepare(`DELETE FROM sched_actual WHERE id=?`).bind(id).run();
+      return json({ ok: true, cleared: true }, 200, cors);
+    }
+    const pct = body.pct == null || body.pct === '' ? null : Math.max(0, Math.min(100, Number(body.pct)));
+    await db.prepare(`INSERT INTO sched_actual(id,s,f,pct,note,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET s=excluded.s, f=excluded.f, pct=excluded.pct, note=excluded.note, updated_at=excluded.updated_at`)
+      .bind(id, dt(body.s), dt(body.f), pct, String(body.note || '').slice(0, 500), now.ts).run();
+    return json({ ok: true, at: now.ts }, 200, cors);
+  }
+
+  // ---- 일일작업: 엑셀 표/이미지 원본 + 분석 결과 (날짜당 1건, 다시 올리면 교체) ----
+  if (sub === 'daily') {
+    if (request.method === 'POST') {
+      const day = String(body.day || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !['excel', 'image'].includes(body.kind)) return json({ error: 'bad_payload' }, 400, cors);
+      const payload = JSON.stringify(body.payload || null), analysis = JSON.stringify(body.analysis || null);
+      if (payload.length + analysis.length > 1900000) return json({ error: 'too_large' }, 400, cors);
+      const prev = await db.prepare(`SELECT day FROM daily_work WHERE day=?`).bind(day).first();
+      await db.prepare(`INSERT INTO daily_work(day,kind,payload,analysis,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET kind=excluded.kind, payload=excluded.payload, analysis=excluded.analysis, updated_at=excluded.updated_at`)
+        .bind(day, body.kind, payload, analysis, now.ts).run();
+      return json({ ok: true, day, replaced: !!prev }, 200, cors);
+    }
+    if (body.day) {
+      const r = await db.prepare(`SELECT * FROM daily_work WHERE day=?`).bind(String(body.day)).first();
+      return json({ item: r ? { ...r, payload: JSON.parse(r.payload), analysis: JSON.parse(r.analysis) } : null }, 200, cors);
+    }
+    const r = await db.prepare(`SELECT day, kind, analysis, updated_at FROM daily_work ORDER BY day DESC LIMIT 60`).all();
+    return json({ today: now.day, items: r.results.map(x => ({ ...x, analysis: JSON.parse(x.analysis) })) }, 200, cors);
+  }
+  if (sub === 'daily-delete') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    await db.prepare(`DELETE FROM daily_work WHERE day=?`).bind(String(body.day || '')).run();
+    return json({ ok: true }, 200, cors);
+  }
+  // 이미지(또는 표 텍스트)를 AI로 읽어 금일·명일 작업 구조화
+  if (sub === 'daily-ai') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    if (!env.ANTHROPIC_API_KEY) return json({ error: 'ai_not_configured' }, 500, cors);
+    const r = await analyzeDailyWork(env, body);
+    return json(r, r.ok ? 200 : 502, cors);
+  }
+
   if (sub === 'patrol') {
     const from = String(body.from || body.day || now.day), to = String(body.to || body.day || now.day);
     const r = await db.prepare(`SELECT i.*, (SELECT group_concat(p.id) FROM patrol_photos p WHERE p.item_id=i.id) AS photo_ids
@@ -648,6 +740,68 @@ const KAKAO_WORK_STATUS = ['예정', '진행', '완료', '중단'];
 // 중복 판정용 키: 방 + 작업명(공백·기호 제거)
 const workKey = (room, title) => `${room}|${String(title || '').replace(/[\s·.,\-_/()\[\]]/g, '').toLowerCase()}`;
 const KAKAO_MAX_CHARS = 150000; // 한 번 분석에 넣는 대화 길이 상한(비용 보호). 넘으면 최근 대화 위주로 넣고 truncated 표시
+
+// 'SD 공사 일일작업' 표(이미지 조각 또는 표 텍스트) → 금일·명일 작업, 인원표
+async function analyzeDailyWork(env, body) {
+  const images = (Array.isArray(body.images) ? body.images : []).slice(0, 6);
+  const text = String(body.text || '').slice(0, 200000);
+  if (!images.length && !text.trim()) return { ok: false, error: 'bad_payload' };
+  const S = { type: 'string' };
+  const obj = (props) => ({ type: 'object', additionalProperties: false, required: Object.keys(props), properties: props });
+  const schema = obj({
+    date: S, dplus: S, overall_actual: S, overall_plan: S,
+    today: { type: 'array', items: obj({ gong: S, cls: S, task: S, equip: S, company: S, period: S, progress: S, shift: S }) },
+    tomorrow: { type: 'array', items: obj({ gong: S, cls: S, task: S, equip: S, company: S, hazard: S, measures: S, manager: S }) },
+    people: { type: 'array', items: obj({ company: S, day: S, night: S, overnight: S }) },
+    notes: S,
+  });
+  const content = [];
+  images.forEach((src, i) => {
+    const m = String(src).match(/^data:(image\/(?:png|jpeg|webp|gif));base64,(.+)$/);
+    if (m) content.push({ type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } });
+  });
+  const prompt = `광양 2고로 SD(Shut Down) 개수공사 '일일작업' 표입니다.${images.length > 1 ? ` 이미지 ${images.length}장은 한 표를 위에서 아래로 나눈 조각이며 경계가 조금씩 겹칩니다(겹친 행은 한 번만).` : ''}
+표 구조: 왼쪽은 '금일 작업'(공종 / 설비 #1000~#9000 / 작업 내용 / 장비 사용 / 업체명 / 일정(계획) / 진도율(실적) / 공정: 주간·20시·22시·철야 표시),
+오른쪽은 '명일 작업'(작업 내용 / 장비 사용 / 업체명 / 명일 예정 작업 위험요인 / 위험요인 대책 / 안전 점검 및 관리 담당자 주간·야간·철야의 관리·안전).
+한 행에 금일 작업과 명일 작업이 나란히 있을 수 있고, 한쪽만 있을 수도 있습니다. 공종(기계·전기·토목·건축)과 설비 번호는 첫 행에만 쓰여 있으면 아래 행이 이어받습니다.
+맨 아래 '인원' 표는 업체별 주간·야간·철야 인원이고, 맨 위에는 날짜·[D+n]·공사진도(실적/계획)가 있습니다.
+
+규칙:
+- 표에 있는 글자를 그대로 옮기세요. 추측해 채우지 말고, 읽을 수 없거나 빈 칸은 "" 로 두세요. 장비가 "-" 이면 "".
+- cls 는 설비 번호의 숫자 4자리만(예: "1000"). date 는 YYYY-MM-DD. dplus 는 "D+8" 형식.
+- today 는 금일 작업 내용이 있는 행만, tomorrow 는 명일 작업 내용이 있는 행만. 행 순서는 표 순서.
+- shift 는 공정 칸에 표시된 것(주간/20시/22시/철야)을 '·'로 이어서, 없으면 "".
+- measures(대책)는 항목마다 줄바꿈(\\n)으로 구분하고 앞의 "-" 기호는 지우세요.
+- manager 는 "주간 관리 이름·안전 이름" 형식, 야간·철야 칸이 있으면 " / "로 이어서.
+- people 은 인원표의 업체별 숫자(합계 행 포함, 업체명 "합계"). 빈 칸은 "".
+- notes 에는 야간·철야 근무자 명단 등 위에 안 들어간 내용을 짧게.
+${text ? `\n표 텍스트(엑셀에서 복사, 탭 구분):\n${text}` : ''}`;
+  content.push({ type: 'text', text: prompt });
+  const model = 'claude-opus-5-5';
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'server-side-fallback-2026-07-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 32000,
+      fallbacks: 'default',
+      output_config: { effort: 'high', format: { type: 'json_schema', schema } }, // 표 전사는 정확도 우선
+      messages: [{ role: 'user', content }],
+    }),
+  });
+  const data = await r.json();
+  if (!r.ok) return { ok: false, error: 'anthropic_error', detail: data };
+  if (data.stop_reason === 'refusal') return { ok: false, error: 'refused', detail: data.stop_details || null };
+  if (data.stop_reason === 'max_tokens') return { ok: false, error: 'output_too_long' };
+  const tb = (data.content || []).find(b => b.type === 'text');
+  try { return { ok: true, model: data.model || model, result: JSON.parse(tb ? tb.text : '') }; }
+  catch (e) { return { ok: false, error: 'bad_ai_json' }; }
+}
 
 async function analyzeKakaoDay(db, env, day, now) {
   const [msgsR, prevR, prevWorkR] = await db.batch([
