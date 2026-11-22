@@ -1611,7 +1611,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.25.0',
+  version : '6.25.1',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4080,7 +4080,7 @@ function mBindBlocks(root){
       else if(act==='save'){ const a=document.createElement('a'); a.href=b.payload.data; a.download=(b.caption||'현장사진')+(b.payload.mime==='image/png'?'.png':'.jpg'); a.click(); }
       else if(act==='cap'){ const c=prompt('설명(캡션)',b.caption||''); if(c===null) return; await mApi('block-update',{id:b.id,caption:c}); await mLoadNote(); }
       else if(act==='up'||act==='down'){ await mApi('block-move',{id:b.id,dir:act==='up'?-1:1}); await mLoadNote(); }
-      else if(act==='del'){ if(!confirm('이 항목을 삭제할까요? 되돌릴 수 없습니다.')) return; await mApi('block-delete',{id:b.id}); await mLoadNote(); }
+      else if(act==='del'){ if(!isEditor()){ toast('삭제는 관리자·부관리자만 할 수 있습니다'); return; } if(!confirm('이 항목을 삭제할까요? 되돌릴 수 없습니다.')) return; await mApi('block-delete',{id:b.id}); await mLoadNote(); }
     }catch(e){ toast(mErr(e)); }
   });
   // 표 칸 눌러 값 수정 (순시 체크용, 수정 화면에서만) — 서식·병합은 그대로
@@ -4131,7 +4131,7 @@ $('mSaveBtn').onclick=mSaveAndRead;
 $('mBack').onclick=mSaveAndRead;
 $('mEditBtn').onclick=async()=>{ mShow('edit'); await mLoadNote().catch(e=>toast(mErr(e))); };
 $('mReadBack').onclick=()=>{ mNoteId=null; mNoteCache=null; mShow('list'); renderMemo(); };
-$('mDel').onclick=async()=>{ if(!mNoteId||!confirm('이 메모와 붙인 표·이미지를 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+$('mDel').onclick=async()=>{ if(!isEditor()){ toast('삭제는 관리자·부관리자만 할 수 있습니다'); return; } if(!mNoteId||!confirm('이 메모와 붙인 표·이미지를 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
   try{ clearTimeout(mSaveTimer); await mApi('note-delete',{id:mNoteId}); mNoteId=null; mNoteCache=null; mShow('list'); renderMemo(); toast('삭제했습니다'); }catch(e){ toast(mErr(e)); } };
 ['mTitle','mBody'].forEach(id=>$(id).addEventListener('input',mQueueSave));
 $('mEdDay').addEventListener('change',()=>mSaveNote().catch(()=>{}));
@@ -4312,12 +4312,12 @@ function pBind(el){
     const pid=+ph.dataset.ph, img=ph.querySelector('img');
     pPhoto(pid).then(d=>{ if(!d) return; if(/^data:audio\//.test(d)){ const au=document.createElement('audio'); au.controls=true; au.preload='metadata'; au.src=d; ph.classList.add('aud'); img.replaceWith(au); } else img.src=d; }).catch(()=>{});
     img.onclick=()=>{ const o=document.createElement('div'); o.className='p-zoom'; o.innerHTML=`<img src="${img.src}">`; o.onclick=()=>o.remove(); document.body.appendChild(o); };
-    ph.querySelector('.p-phx').onclick=async()=>{
+    ph.querySelector('.p-phx').onclick=async()=>{ if(!isEditor()){ toast('삭제는 관리자·부관리자만 할 수 있습니다'); return; } 
       if(!confirm('이 사진·녹음을 삭제할까요?')) return;
       try{ await kApi('patrol-photo-delete',{id:pid}); it.photo_ids=it.photo_ids.filter(x=>x!==pid); pRender(); }catch(e){ toast(kErr(e)); }
     };
   });
-  el.querySelector('.p-del').onclick=async()=>{
+  el.querySelector('.p-del').onclick=async()=>{ if(!isEditor()){ toast('삭제는 관리자·부관리자만 할 수 있습니다'); return; } 
     if((it.memo||it.status||(it.photo_ids||[]).length) && !confirm('상태·메모·사진도 함께 지워집니다. 뺄까요?')) return;
     try{ await kApi('patrol-delete',{id}); pSet.delete(pKey(it.day,it.src,it.ref)); pAll=pAll.filter(x=>x.id!==id); pRender(); toast('뺐습니다'); }catch(e){ toast(kErr(e)); }
   };
@@ -4417,7 +4417,7 @@ function applyEditorUI(){
   // v6.16: 현장 탭은 관리자만 — 로그아웃하면 숨기고 회의결과로
   if($('navSite')) $('navSite').style.display=isOwner()?'':'none'; // v6.22: 부관리자에게도 안 보임
   try{ const cur=navCurPg(); if(!isOwner()&&PG_GROUP[cur]==='site') showPage('pgMtgC');
-    else if(cur==='pgMemo'&&!isEditor()) showPage('pgToday');
+    // v6.25.1: 점검메모는 로그아웃해도 그대로
     else if(PG_GROUP[cur]==='safe'){ grpBarRender('safe',cur); if(cur==='pgToday'&&typeof wx!=='undefined'&&wx) renderTaskList(); } // 점검메모 탭·⚠ 고위험 버튼 보이기/숨기기
     else if(cur==='pgMtgS') mtgRender('safety'); else if(cur==='pgMtgC') mtgRender('cp'); else if(cur==='pgMtgO') mtgRenderOpen(); }catch(e){}
 }
@@ -6650,9 +6650,9 @@ async function mtgRenderOpen0(quiet){
 
 /* ================= 하단 탭 5개 + 그룹 하위 탭 ================= */
 const PG_GROUP={pgMtgS:'meet',pgMtgC:'meet',pgMtgO:'meet',pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'safe',pgSubMon:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
-// v6.25: 회의결과 C.P회의 → 일일안전회의 → 미결(보통 C.P만 올림) · 점검메모(옛 순시메모)는 안전 탭 오늘 TBM 옆(관리자·부관리자만)
+// v6.25: 회의결과 C.P회의 → 일일안전회의 → 미결(보통 C.P만 올림) · 점검메모(옛 순시메모)는 안전 탭 오늘 TBM 옆(누구나)
 const GROUP_SUBS={meet:[['pgMtgC','🧭 C.P회의'],['pgMtgS','🦺 일일안전회의'],['pgMtgO','⏳ 미결사항']],daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgSubMon','👁 부관리자']],safe:[['pgToday','☀ 오늘 TBM'],['pgMemo','📝 점검메모'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
-const SUB_NEED={pgMemo:()=>isEditor()};
+const SUB_NEED={}; // v6.25.1: 점검메모는 누구나(로그인 없이) 쓰고 모두가 봄 — 삭제만 관리자·부관리자
 const lastPg={};
 function grpBarRender(g,pg){
   const subs=GROUP_SUBS[g], bar=$('grpBar');
