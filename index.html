@@ -1583,7 +1583,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
     <label class="f-label">에어코리아 시도명</label>
     <input class="f-input" id="inSido" value="전남">
     <label class="f-label">우선 측정소 (쉼표 구분)</label>
-    <input class="f-input" id="inStations" value="중동,태인동,골약동,광양읍">
+    <input class="f-input" id="inStations" value="태인동,광양항,중동,광양 중마,광양읍">
     <div class="btn-row">
       <button class="btn ghost" onclick="closeModal('modalBg')">닫기</button>
       <button class="btn primary" onclick="saveSettings()">저장하고 불러오기</button>
@@ -1611,7 +1611,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.25.1',
+  version : '6.25.2',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1623,7 +1623,10 @@ const LS_SET='tbm3_settings', LS_REC='tbm3_records', LS_INPUT='tbm3_input', LS_C
 const LS_OVERLAY='tbm3_overlay', LS_ADMIN='tbm3_admin_pass', LS_SHARED_CACHE='tbm3_shared_cache';
 
 /* ================= 상태 ================= */
-let S = loadJSON(LS_SET, {nx:'74',ny:'69',sido:'전남',stations:'중동,태인동,골약동,광양읍'});
+// v6.25.2: 광양제철소 기준 — 예보격자 74,69(금호동, 위경도 34.925·127.735 환산 확인), 대기 측정소는 제철소에서 가까운 순(태인동 → 광양항 → 중동 → 광양 중마). '골약동'은 에어코리아에 없는 측정소였음
+const WX_STATIONS='태인동,광양항,중동,광양 중마,광양읍';
+let S = loadJSON(LS_SET, {nx:'74',ny:'69',sido:'전남',stations:WX_STATIONS});
+if(!S.stations||S.stations==='중동,태인동,골약동,광양읍') S.stations=WX_STATIONS;
 let wx = null;               // 날씨 컨텍스트
 let sharedData = loadJSON(LS_SHARED_CACHE, {updatedAt:null, dates:{}}); // 공용 작업 (서버 KV 캐시)
 let overlay = loadJSON(LS_OVERLAY, {hidden:{}, added:{}, checked:{}});  // 개인 오버레이: 숨김/추가/체크
@@ -2153,16 +2156,26 @@ async function fetchFeed(feedId, params){
   return r.json();
 }
 async function fetchForecast(){
-  const now=new Date(); let base=new Date(now.getTime()-15*60000);
+  // 기준 시각은 한국시간으로 계산(기기 시간대가 달라도 같은 결과). 발표 후 15분 지나야 받을 수 있음.
+  // v6.25.2: 밤 23시 발표분에는 '오늘' 예보가 없어 "오늘자 예보 없음"으로 실패하던 문제 → 오늘 칸이 모자라면 오늘 02시 발표분(오늘 하루 전체)을 한 번 더 받아 합침
+  const k=new Date(Date.now()+9*3600e3-15*60000), kd=d=>`${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}`;
   const slots=[23,20,17,14,11,8,5,2];
-  let bh=slots.find(h=>base.getHours()>=h); let bd=new Date(base);
-  if(bh===undefined){bh=23;bd.setDate(bd.getDate()-1);}
-  let j;
-  try{ j=await fetchFeed('forecast',{base_date:todayStr(bd),base_time:pad(bh)+'00',nx:S.nx,ny:S.ny}); }
-  catch(e){ throw new Error('기상청 '+e.message); }
-  const hdr=j?.response?.header;
-  if(hdr?.resultCode!=='00')throw new Error('기상청: '+(hdr?.resultMsg||'응답오류'));
-  return j.response.body.items.item;
+  let bh=slots.find(h=>k.getUTCHours()>=h), bd=new Date(k);
+  if(bh===undefined){ bh=23; bd=new Date(k.getTime()-86400e3); }
+  const get=async(date,time)=>{ let j;
+    try{ j=await fetchFeed('forecast',{base_date:date,base_time:time,nx:S.nx,ny:S.ny}); }
+    catch(e){ throw new Error('기상청 '+e.message); }
+    const hdr=j?.response?.header;
+    if(hdr?.resultCode!=='00')throw new Error('기상청: '+(hdr?.resultMsg||'응답오류'));
+    return j?.response?.body?.items?.item||[]; };
+  let items=await get(kd(bd),pad(bh)+'00');
+  const today=kd(new Date(Date.now()+9*3600e3));
+  const nToday=new Set(items.filter(x=>x.fcstDate===today&&x.category==='TMP').map(x=>x.fcstTime)).size;
+  if(nToday<3&&!(bh===2&&kd(bd)===today)){
+    try{ const early=await get(today,'0200'); const seen=new Set(items.map(x=>x.fcstDate+x.fcstTime+x.category));
+      items=items.concat(early.filter(x=>!seen.has(x.fcstDate+x.fcstTime+x.category))); }catch(e){}
+  }
+  return items;
 }
 async function fetchAir(){
   let j;
@@ -2170,11 +2183,13 @@ async function fetchAir(){
   const items=j?.response?.body?.items;
   if(!items)throw new Error('에어코리아 응답오류');
   const prefs=S.stations.split(',').map(s=>s.trim()).filter(Boolean);
-  for(const p of prefs){ const hit=items.find(it=>it.stationName===p&&it.pm10Value!=='-'); if(hit)return hit; }
-  return items.find(it=>it.pm10Value!=='-')||items[0];
+  // v6.25.2: 점검 중인 측정소는 값이 '-' 또는 null — 숫자가 있는 가장 가까운 측정소로
+  const ok=it=>it&&/^\d/.test(String(it.pm10Value??''));
+  for(const p of prefs){ const hit=items.find(it=>it.stationName===p&&ok(it)); if(hit)return hit; }
+  return items.find(ok)||items[0];
 }
 function buildWx(fcItems,air){
-  const today=todayStr(); const byTime={};
+  const today=todayStr(new Date(Date.now()+9*3600e3+new Date().getTimezoneOffset()*60000)); const byTime={}; // 한국 날짜
   for(const it of fcItems){ if(it.fcstDate!==today)continue; (byTime[it.fcstTime]=byTime[it.fcstTime]||{})[it.category]=it.fcstValue; }
   const month=new Date().getMonth()+1;
   const hours=Object.keys(byTime).sort().map(t=>{
@@ -2367,7 +2382,7 @@ function renderToday(){
   renderTaskList();
   renderWxRules(wxFired);
   $('briefTxt').textContent=buildBrief(wx,wxFired,agg,gLabel);
-  $('stamp').textContent=`날씨 기준: ${wx.fetchedAt.toLocaleString('ko-KR')} · 측정소 ${wx.station} · 초미세먼지 PM2.5 ${wx.pm25||'-'}㎍/㎥`;
+  $('stamp').textContent=`날씨 기준: 광양제철소(예보격자 ${S.nx},${S.ny}) · ${wx.fetchedAt.toLocaleString('ko-KR')} · 측정소 ${wx.station} · 초미세먼지 PM2.5 ${wx.pm25||'-'}㎍/㎥`;
   renderSiteBox(); // 브리핑 문구까지 만든 뒤 (현장 현황 줄을 덧붙이므로 맨 끝)
 }
 /* 오늘 탭 '현장 현황' — 현장톡의 일일 현황·작업 기록을 같은 날짜로 보여줌 */
