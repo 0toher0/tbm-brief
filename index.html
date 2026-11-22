@@ -562,6 +562,18 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-zoom button{border:none;background:none;padding:5px 10px;font-size:.72rem;font-weight:800;color:var(--steel);border-radius:7px}
 .s-zoom button.on{background:#fff;color:var(--ink)}
 .s-crittog{font-size:.74rem;font-weight:700;display:flex;align-items:center;gap:4px}
+/* v6.21.0: 공정표 화면 안 '공정 추가'(관리자) · 쉬운 입력 · 날짜(오전/오후 반나절) */
+.s-gtr{display:flex;align-items:center;gap:8px}
+.s-addbtn{background:var(--s-crit)!important;color:#fff!important;border-color:var(--s-crit)!important;font-weight:800}
+.s-listtop{display:flex;justify-content:flex-end;margin:2px 0 6px}
+.a-easy{background:#fff9db;border:1px solid #ffe066;border-radius:10px;padding:8px 10px;margin-bottom:6px}
+.a-easy .f-label{margin-top:0}
+.a-easy-out{font-size:.72rem;margin-top:4px;line-height:1.45;color:var(--ink2)}
+.a-easy-out.err{color:var(--red)}
+.a-fx{display:flex;gap:4px} .a-fx input{flex:1;min-width:0} .a-fx select{width:auto;flex:none;font-size:.78rem}
+.a-fix-out{font-size:.74rem;font-weight:700;color:var(--s-norm);margin-top:4px}
+.a-req{color:var(--red);font-weight:800}
+@media(max-width:420px){ #aDateBox .f-two{grid-template-columns:1fr} }
 .s-gwrap{max-height:70vh;overflow:auto;position:relative}
 .s-ginner{position:relative}
 .s-gov{position:absolute;inset:0;pointer-events:none;z-index:2}
@@ -886,7 +898,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   <div id="gvGantt">
     <div class="s-gtools">
       <div class="s-zoom" id="gZoom"><button data-z="8">좁게</button><button data-z="14" class="on">보통</button><button data-z="24">넓게</button></div>
-      <label class="s-crittog"><input type="checkbox" id="gCritOnly"> 주공정만</label>
+      <div class="s-gtr"><button class="mini-btn s-addbtn" id="gAddAct" style="display:none">＋ 공정 추가</button><label class="s-crittog"><input type="checkbox" id="gCritOnly"> 주공정만</label></div>
     </div>
     <div class="s-legend"><span><i style="background:var(--s-crit)"></i>크리티컬 패스</span><span><i style="background:var(--s-norm)"></i>그 외(여유 있음)</span><span><i style="background:#adb5bd"></i>완료</span><span><i style="background:#868e96;height:3px"></i>기준(고정)</span><span><b style="color:var(--s-crit)">▲n</b> 늦음 · <b style="color:var(--green)">▼n</b> 빠름</span><span><i style="background:var(--red);width:2px"></i>기준일</span><span><i style="background:repeating-linear-gradient(135deg,#ced4da 0 3px,#fff 3px 6px)"></i>휴일</span></div>
     <div class="s-gwrap" id="gWrap"><div class="s-ginner" id="gant"></div></div>
@@ -1364,14 +1376,29 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
       <div class="btn-row"><button class="btn primary" id="aBulkAdd" disabled>추가</button></div>
     </div>
     <div id="aOneBox">
+    <div class="a-easy" id="aEasyBox">
+      <label class="f-label">✨ 쉬운 입력 <small style="font-weight:500;color:var(--steel)">한 줄로 쓰면 아래 칸을 채워 줍니다</small></label>
+      <textarea class="f-input" id="aEasy" rows="2" placeholder="예) 풍구 교체 24일 오후부터 26일까지 3000&#10;예) 송풍지관 조립 12/3~12/5 오전 · 노정 배관 24.5~26 2000"></textarea>
+      <div class="a-easy-out" id="aEasyOut">시작이 <b>오후부터</b>면 그날 반나절(0.5일), 끝이 <b>오전까지</b>면 그날 반나절입니다. <code>24.5</code>처럼 써도 됩니다(시작 24.5 = 24일 오후부터, 끝 25.5 = 25일 오전까지). Class는 1000~9000 숫자나 이름(본체·노정·주상·열풍로·청정·원료·전기·토목·Utility).</div>
+    </div>
     <label class="f-label">공정명</label><input class="f-input" id="aName">
+    <div class="k-seg m-mode" id="aHow" style="margin-top:10px"><button data-ah="date" class="on">📅 날짜로 입력</button><button data-ah="dur">⏱ 기간·선행으로</button></div>
+    <div id="aDateBox">
+      <div class="f-two">
+        <div><label class="f-label">작업 시작일</label><div class="a-fx"><input type="date" class="f-input" id="aFs"><select class="f-input" id="aFsh"><option value="">아침부터</option><option value="pm">오후부터</option></select></div></div>
+        <div><label class="f-label">작업 완료일</label><div class="a-fx"><input type="date" class="f-input" id="aFf"><select class="f-input" id="aFfh"><option value="">하루 종일</option><option value="am">오전까지</option></select></div></div>
+      </div>
+      <div class="a-fix-out" id="aFixOut"></div>
+    </div>
     <div class="f-two">
-      <div><label class="f-label">기간 (작업일)</label><input class="f-input" id="aDur" inputmode="numeric"></div>
+      <div id="aDurBox"><label class="f-label">기간 (작업일)</label><input class="f-input" id="aDur" inputmode="numeric"></div>
       <div><label class="f-label">단계</label><select class="f-input" id="aPhase"></select></div>
     </div>
-    <label class="f-label">설비 Class</label><select class="f-input" id="aCls"></select>
+    <label class="f-label">설비 Class <span class="a-req">*</span> <small style="font-weight:500;color:var(--steel)">1000 본체 · 2000 노정 · 3000 주상 · 4000 열풍로 · 5000 청정설비 · 6000 원료수송설비 · 7000 전기 · 8000 토목/건축 · 9000 Utility</small></label><select class="f-input" id="aCls"></select>
+    <div id="aPredBox">
     <label class="f-label">선행 공정 <small style="font-weight:500;color:var(--steel)">고른 공정과의 관계: 끝나면 시작 · 같이 시작 · 같이 끝남 / 간격(±일): 2 = 2일 뒤, -1 = 1일 당겨서</small></label>
     <div id="aPreds"></div><button class="mini-btn" id="aAddPred" style="margin-top:6px">＋ 선행 추가</button>
+    </div>
     <label class="f-label">후행 공정 <small style="font-weight:500;color:var(--steel)">이 공정이 끝나야 시작할 수 있는 공정 — 화입일 영향 계산에 필요</small></label>
     <div id="aSuccs"></div><button class="mini-btn" id="aAddSucc" style="margin-top:6px">＋ 후행 추가</button>
     <div id="aActBox" style="border-top:1px dashed var(--line);margin-top:14px;padding-top:4px">
@@ -1444,7 +1471,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.20.0',
+  version : '6.21.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1766,7 +1793,7 @@ function dPlus(d){
   const n=Math.round((Date.parse(s+'T00:00:00Z')-Date.parse(SD_DAY1+'T00:00:00Z'))/86400e3)+1;
   return n>=1?`D+${n}`:`D${n-1}`;
 }
-const CLASS_NAMES={'1000':'고로본체','2000':'노정설비','3000':'주상','4000':'열풍로','5000':'청정설비','6000':'원료수송설비','7000':'전기','8000':'토목·건축','9000':'Utility'};
+const CLASS_NAMES={'1000':'본체','2000':'노정','3000':'주상','4000':'열풍로','5000':'청정설비','6000':'원료수송설비','7000':'전기','8000':'토목/건축','9000':'Utility'}; // 사용자 지정 명칭(2026-11-22)
 const clsLabel=c=>c?`${c} ${CLASS_NAMES[c]||''}`.trim():'';
 function taskCls(r){ return r.cls || guessCls(`${r.project||''} ${r.task||''}`); }
 // Class가 없는 작업(카톡 보고 등)은 프로젝트·작업명으로 추정
@@ -4307,9 +4334,12 @@ function sRun(plan, actual, opt={}){
   const cyc=acts.length!==order.length;
   const today=wi((plan&&plan.statusDate)||sToday||sISO(Date.now()+9*3600e3)), p0=wi(plan.start), R={};
   for(const id of order){
-    const a=by[id], dur=Math.max(1,(+a.dur||1)+((opt.delay&&opt.delay[id])||0)), ac=opt.noActual?null:actual[id];
+    const a=by[id], fx=a.fix&&a.fix.s&&a.fix.f?a.fix:null; // v6.21.0: 날짜로 넣은 공정 — 선행과 상관없이 그 날짜(작업일 칸), 반나절은 그리기·표시만
+    const fdur=fx?Math.max(1,wiF(fx.f)-wi(fx.s)+1):0;
+    const dur=Math.max(1,(fx?fdur:(+a.dur||1))+((opt.delay&&opt.delay[id])||0)), ac=opt.noActual?null:actual[id];
     let es=p0;
-    (a.preds||[]).forEach(p=>{ const r=R[p.id]; if(!r) return; const lag=+p.lag||0;
+    if(fx) es=wi(fx.s);
+    else (a.preds||[]).forEach(p=>{ const r=R[p.id]; if(!r) return; const lag=+p.lag||0;
       if(p.type==='SS') es=Math.max(es,r.es+lag); else if(p.type==='FF') es=Math.max(es,r.ef+lag-dur+1); else es=Math.max(es,r.ef+1+lag); });
     let ef, rem=dur, state;
     if(ac&&ac.f){ es=ac.s?wi(ac.s):Math.min(es,wiF(ac.f)); ef=wiF(ac.f); rem=0; state='done'; }
@@ -4336,6 +4366,10 @@ function sRun(plan, actual, opt={}){
   return {R,fin:cal[fin+1],finIdx:fin+1,lastEnd:cal[fin],cal,wi,wiF,hol,order,cyc,minTf}; // fin = 예상 화입일(마지막 공정 다음 작업일)
 }
 const sA=id=>sPlan.acts.find(a=>a.id===id);
+// 반나절: 날짜로 넣은 공정의 시작 '오후부터'(sh=pm) · 끝 '오전까지'(fh=am). 실적이 있으면 실적 날짜가 우선이라 적용 안 함
+const sHalf=a=>{ const f=a&&a.fix; if(!f||(sAct[a.id]&&(sAct[a.id].s||sAct[a.id].f))) return {s:0,f:0}; return {s:f.sh==='pm'?.5:0, f:f.fh==='am'?.5:0}; };
+const sDays=a=>{ const h=sHalf(a), d=(+a.dur||0)-h.s-h.f; return Math.round(d*10)/10; };
+const sDurTxt=a=>`${sDays(a)}일`;
 const sDate=i=>sCalc.cal[i];
 // 기준 대비: {ds 착수 차이, df 완료 차이} — 날짜 차이(달력일), +면 늦음 -면 빠름
 function sVar(id){
@@ -4893,6 +4927,7 @@ function sGanttView(){
   ['gantt','list','look','config'].forEach(v=>{ const el=$({gantt:'gvGantt',list:'gvList',look:'gvLook',config:'gvConf'}[v]); el.style.display=sGv===v?'':'none'; });
   document.querySelectorAll('#gSeg [data-gv]').forEach(x=>x.classList.toggle('on',x.dataset.gv===sGv));
   $('sAddRow').style.display=sGv==='config'?'none':(isEditor()?'':'none');
+  $('gAddAct').style.display=isEditor()?'':'none';
   if(sGv==='gantt') sGantt(); else if(sGv==='list') sList(); else if(sGv==='look') sLook(); else sConfig();
 }
 // 간트: 하루 = sZoom px, 날짜 축(휴일도 칸을 차지하고 빗금 표시). 라벨 열·머리 줄은 sticky
@@ -4923,11 +4958,11 @@ function sGantt(){
     if(sCritOnly) as=as.filter(a=>C.R[a.id].crit||C.R[a.id].critPast);
     as.sort((a,b)=>C.R[a.id].es-C.R[b.id].es||(b.cp-a.cp)).forEach(a=>{ const r=C.R[a.id], b=sBaseOf(a.id), ac=sAct[a.id], vv=sVar(a.id);
       const isCrit=r.crit||r.critPast, done=/^done/.test(r.state);
-      const L=xs(sDate(r.es)), Wd=xs(sDate(r.ef))-L+dw;
+      const hf=sHalf(a), L=xs(sDate(r.es))+hf.s*dw, Wd=xs(sDate(r.ef))-xs(sDate(r.es))+dw-(hf.s+hf.f)*dw;
       const pct=done?100:r.state==='run'&&ac&&ac.pct!=null?ac.pct:r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0;
-      rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)} (${a.dur}일)"><small class="gid">${a.id}</small><span class="gnm">${esc(a.name)}</span><span class="gdur">(${a.dur}일)</span></div><div class="s-gt" style="width:${W}px">
+      rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)} (${sDurTxt(a)})"><small class="gid">${a.id}</small><span class="gnm">${esc(a.name)}</span><span class="gdur">(${sDurTxt(a)})</span></div><div class="s-gt" style="width:${W}px">
         ${b?`<div class="s-gbase" style="left:${xs(sDate(b[0]))}px;width:${xs(sDate(b[1]))-xs(sDate(b[0]))+dw}px"></div>`:''}
-        <div class="s-gb ${done?'done':isCrit?'crit':''}" style="left:${L}px;width:${Wd}px" title="${esc(a.name)} ${sMD(sDate(r.es))}~${sMD(sDate(r.ef))} · 여유 ${r.tf}"><i class="pf" style="width:${pct}%"></i>${Wd>=30?`<span>${a.dur}일</span>`:''}</div>
+        <div class="s-gb ${done?'done':isCrit?'crit':''}" style="left:${L}px;width:${Wd}px" title="${esc(a.name)} ${sMD(sDate(r.es))}${hf.s?' 오후':''}~${sMD(sDate(r.ef))}${hf.f?' 오전':''} · 여유 ${r.tf}"><i class="pf" style="width:${pct}%"></i>${Wd>=30?`<span>${sDurTxt(a)}</span>`:''}</div>
         ${vv&&vv.df?`<span class="s-vtag ${vv.df>0?'late':'early'}" style="left:${L+Wd+3}px">${sVarShort(vv.df)}</span>`:''}</div></div>`; });
   });
   $('gant').style.width=(LW+W)+'px';
@@ -4938,7 +4973,7 @@ function sGantt(){
 }
 function sList(){
   const C=sCalc;
-  $('gvList').innerHTML=S_PHASES.map(p=>{
+  $('gvList').innerHTML=(isEditor()?'<div class="s-listtop"><button class="mini-btn s-addbtn" id="lAddAct">＋ 공정 추가</button></div>':'')+S_PHASES.map(p=>{
     const as=sPlan.acts.filter(a=>a.phase===p.id&&C.R[a.id]).sort((a,b)=>C.R[a.id].es-C.R[b.id].es); if(!as.length) return '';
     const phx=sPhaseInfo().find(q=>q.p.id===p.id)||{};
     return `<details class="s-phase" open><summary><span>${p.name} <small style="color:var(--steel)">${as.length}개</small> ${phx.df!=null?`<span class="s-var ${phx.df>0?'late':phx.df<0?'early':'ok'}">${phx.df>0?`▲${phx.df}일 늦음`:phx.df<0?`▼${-phx.df}일 빠름`:'기준대로'}</span>`:''}</span><span style="font-family:var(--num);font-size:.74rem;color:var(--steel)">${sMD(sDate(Math.min(...as.map(a=>C.R[a.id].es))))}~${sMD(sDate(Math.max(...as.map(a=>C.R[a.id].ef))))}</span></summary>
@@ -4946,11 +4981,12 @@ function sList(){
       ${as.map(a=>{ const r=C.R[a.id], vv=sVar(a.id), col=/^done/.test(r.state)?'var(--steel)':r.crit?'var(--s-crit)':'var(--s-norm)';
         return `<tr data-act="${a.id}"><td><small class="gid">${a.id}</small>${sStateLabel(r)}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}<b style="color:${r.crit||r.critPast?'var(--s-crit)':'var(--ink)'}">${esc(a.name)}</b>
           <div style="font-size:.64rem;color:var(--steel)">${(a.preds||[]).map(x=>sA(x.id)?`← ${x.id} ${esc(sA(x.id).name.slice(0,10))} <b>${sRelTxt(x)}</b>`:'').filter(Boolean).join(' · ')||'시작'}</div></td>
-          <td class="s-num" style="color:var(--steel)">${vv?`${sMD(vv.bs)}<br>~${sMD(vv.bf)}`:'—'}</td><td class="s-num">${sMD(sDate(r.es))}<br>~${sMD(sDate(r.ef))}<div style="font-size:.6rem;color:var(--steel)">${a.dur}일</div>${(()=>{ const ac=sAct[a.id]; return ac&&(ac.s||ac.f)?`<div class="s-actt">실적 ${ac.s?sMDT(ac.s):'—'}<br>~${ac.f?sMDT(ac.f):'진행'}</div>`:''; })()}</td>
+          <td class="s-num" style="color:var(--steel)">${vv?`${sMD(vv.bs)}<br>~${sMD(vv.bf)}`:'—'}</td><td class="s-num">${sMD(sDate(r.es))}${sHalf(a).s?'<small> 오후</small>':''}<br>~${sMD(sDate(r.ef))}${sHalf(a).f?'<small> 오전</small>':''}<div style="font-size:.6rem;color:var(--steel)">${sDurTxt(a)}</div>${(()=>{ const ac=sAct[a.id]; return ac&&(ac.s||ac.f)?`<div class="s-actt">실적 ${ac.s?sMDT(ac.s):'—'}<br>~${ac.f?sMDT(ac.f):'진행'}</div>`:''; })()}</td>
           <td class="s-num">${vv?`<span class="s-var ${vv.df>0?'late':vv.df<0?'early':'ok'}">${sVarShort(vv.df)}</span>${vv.ds!==vv.df?`<div style="font-size:.6rem;color:var(--steel)">착수 ${sVarShort(vv.ds)}</div>`:''}`:'—'}</td>
           <td class="s-num" style="color:${col};font-weight:800">${/^done/.test(r.state)?'—':r.tf}</td></tr>`; }).join('')}
       </table></div></details>`; }).join('');
   $('gvList').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
+  if($('lAddAct')) $('lAddAct').onclick=()=>sEdit(null);
 }
 /* 주간 공정: 일요일 시작 주 기준 금주 | 차주 14일 판. 두 주에 걸치는 작업은 막대가 경계를 넘어 이어짐 */
 // v6.20.0: ◀ ▶ 화살표는 2주씩 넘김(금주 왼쪽 ◀ · 차주 오른쪽 ▶). 범위 = 첫 공정 착수 주 ~ 화입(마지막 공정) 주
@@ -5124,10 +5160,15 @@ function sEdit(id){
   if(!isEditor()) return; // 공정 세부 창은 관리자만 (일반 사용자는 눌러도 열리지 않음 — 사용자 결정 2026-11-21)
   sEditId=id||null; const a=id?sA(id):null; if(id&&!a) return;
   $('aTitle').textContent=a?(a.cp?'🔴 크리티컬 패스 공정':'공정 수정'):'＋ 공정 추가 (neck 작업)';
-  $('aDesc').textContent=a?`${a.id} · 날짜는 기간과 선후행으로 자동 계산됩니다`:'기간과 "어느 공정에 붙는지"만 넣으면 날짜·여유일이 자동 계산됩니다. 화입일 영향을 보려면 후행 공정(이 작업이 끝나야 시작할 수 있는 공정)도 넣으세요.';
+  $('aDesc').textContent=a?`${a.id} · 날짜는 기간과 선후행으로 자동 계산됩니다`:'쉬운 입력에 한 줄로 쓰거나, 📅 날짜(오전/오후 반나절 가능) 또는 ⏱ 기간·선행으로 넣으세요. 화입일 영향을 보려면 후행 공정(이 작업이 끝나야 시작할 수 있는 공정)도 넣으세요.';
   $('aName').value=a?a.name:''; $('aDur').value=a?a.dur:'';
+  $('aEasy').value=''; sEasyShow(null);
+  const fx=a&&a.fix||{}; $('aFs').value=fx.s||''; $('aFsh').value=fx.sh||''; $('aFf').value=fx.f||''; $('aFfh').value=fx.fh||'';
+  sPhaseTouched=!!a;
+  $('aEasyBox').style.display=isEditor()?'':'none';
+  sHowMode(a?(a.fix?'date':'dur'):'date');
   $('aPhase').innerHTML=S_PHASES.map(p=>`<option value="${p.id}" ${a&&a.phase===p.id?'selected':''}>${p.name}</option>`).join('');
-  $('aCls').innerHTML='<option value="">(없음)</option>'+Object.keys(CLASS_NAMES).map(c=>`<option value="${c}" ${a&&a.cls===c?'selected':''}>${c} ${CLASS_NAMES[c]}</option>`).join('');
+  $('aCls').innerHTML='<option value="">— Class 고르기 —</option>'+Object.keys(CLASS_NAMES).map(c=>`<option value="${c}" ${a&&a.cls===c?'selected':''}>${c} ${CLASS_NAMES[c]}</option>`).join('');
   $('aPreds').innerHTML=''; $('aSuccs').innerHTML='';
   (a?a.preds||[]:[]).forEach(p=>sPredRow('aPreds',p));
   if(!a) sPredRow('aPreds',null);
@@ -5156,12 +5197,103 @@ function sAddMode(m){
   $('aSave').style.display=m==='one'&&isEditor()?'':'none';
   if(m==='many') sBulkPreview('aBulk','aBulkPrev','aBulkAdd');
 }
+/* ---- v6.21.0: 날짜로 입력(오전/오후 반나절) · 쉬운 입력 ---- */
+let sHow='dur', sPhaseTouched=false;
+function sHowMode(m){
+  sHow=m; document.querySelectorAll('#aHow [data-ah]').forEach(x=>x.classList.toggle('on',x.dataset.ah===m));
+  $('aDateBox').style.display=m==='date'?'':'none'; $('aDurBox').style.display=m==='date'?'none':'';
+  $('aPredBox').style.display=m==='date'?'none':'';
+  sFixShow();
+}
+// 날짜 칸 → {s,f,sh,fh,dur,days} 또는 {err}
+function sFixRead(){
+  const s=$('aFs').value, f=$('aFf').value, sh=$('aFsh').value, fh=$('aFfh').value;
+  if(!s||!f) return {err:'시작일과 완료일을 넣으세요'};
+  if(f<s) return {err:'완료일이 시작일보다 앞입니다'};
+  if(s===f&&sh==='pm'&&fh==='am') return {err:'같은 날 오후부터 오전까지는 안 됩니다'};
+  const C=sCalc, i0=C.wi(s), i1=C.wiF(f);
+  if(i0==null||i1==null||i1<i0) return {err:'작업일이 없습니다(전부 휴일)'};
+  const dur=i1-i0+1, days=dur-(sh==='pm'?.5:0)-(fh==='am'?.5:0);
+  return {s,f,sh,fh,dur,days};
+}
+const sHalfTxt=(d,h,end)=>`${sFmt(d)} ${end?(h==='am'?'오전까지':'하루 종일'):(h==='pm'?'오후부터':'아침부터')}`;
+function sFixShow(){
+  const o=$('aFixOut'); if(!o) return; if(sHow!=='date'){ o.textContent=''; return; }
+  const x=sFixRead(); if(x.err){ o.innerHTML=$('aFs').value||$('aFf').value?`<span style="color:var(--red)">${esc(x.err)}</span>`:''; return; }
+  const hol=sDiff(x.s,x.f)+1-x.dur;
+  o.innerHTML=`→ ${sHalfTxt(x.s,x.sh)} ~ ${sHalfTxt(x.f,x.fh,true)} · <b>${x.days}일</b>${hol>0?` <small style="color:var(--steel)">(휴일 ${hol}일 빼고)</small>`:''}`;
+  if(!sPhaseTouched){ const ph=sPhaseByDate(x.s); if(ph) $('aPhase').value=ph; }
+}
+// 그 날짜에 진행 중인(또는 가장 가까운) 크리티컬 패스 공정의 단계
+function sPhaseByDate(d){
+  const C=sCalc; if(!C) return ''; const i=C.wi(d); let best=null, bd=1e9;
+  sPlan.acts.filter(a=>a.cp&&C.R[a.id]).forEach(a=>{ const r=C.R[a.id], dd=i<r.es?r.es-i:i>r.ef?i-r.ef:0; if(dd<bd){ bd=dd; best=a; } });
+  return best?best.phase:'';
+}
+// 쉬운 입력 한 줄 → {name,s,sh,f,fh,cls,clsGuess,err}
+function sEasyParse(text){
+  let t=String(text||'').replace(/\s+/g,' ').trim(); if(!t) return null;
+  const ref=sSD(), refN=sDN(ref), ry=+ref.slice(0,4), rm=+ref.slice(5,7);
+  const pad=n=>String(n).padStart(2,'0'), mk=(y,m,d)=>{ while(m>12){m-=12;y++;} while(m<1){m+=12;y--;} return `${y}-${pad(m)}-${pad(d)}`; };
+  const okD=s=>{ const [y,m,d]=s.split('-').map(Number), dt=new Date(Date.UTC(y,m-1,d)); return dt.getUTCMonth()===m-1&&dt.getUTCDate()===d; };
+  let cls='', mm;
+  // Class: 1000~9000 숫자(앞뒤가 숫자가 아님), 또는 'class/클래스 이름'
+  if((mm=t.match(/(?:class|클래스|cls)?\s*#?\b([1-9])000\b(?:번)?/i))){ cls=mm[1]+'000'; t=t.replace(mm[0],' '); }
+  const CN=[[/(?:class|클래스)\s*:?\s*본체/i,'1000'],[/(?:class|클래스)\s*:?\s*노정/i,'2000'],[/(?:class|클래스)\s*:?\s*주상/i,'3000'],[/(?:class|클래스)\s*:?\s*열풍로/i,'4000'],[/(?:class|클래스)\s*:?\s*청정/i,'5000'],[/(?:class|클래스)\s*:?\s*원료/i,'6000'],[/(?:class|클래스)\s*:?\s*전기/i,'7000'],[/(?:class|클래스)\s*:?\s*(?:토목|건축)/i,'8000'],[/(?:class|클래스)\s*:?\s*(?:utility|유틸)/i,'9000']];
+  if(!cls) for(const [re,c] of CN) if((mm=t.match(re))){ cls=c; t=t.replace(mm[0],' '); break; }
+  // 날짜 찾기: [YYYY.][M/ 또는 M월 ]D[.5][일][ 오전|오후]
+  const RE=/(?:(\d{4})\s*[.\-\/년]\s*)?(?:(1[0-2]|0?[1-9])\s*(?:\/|월\s*|\.(?=\d)|-(?=\d)))?([0-3]?\d)(\.5(?!\d))?(\s*일)?(\s*(?:오전|오후))?/g;
+  const pts=[]; let m;
+  while((m=RE.exec(t))){ if(!m[0].trim()){ RE.lastIndex++; continue; }
+    const after=t.slice(m.index+m[0].length).trimStart(), before=t.slice(0,m.index).trimEnd();
+    let d=+m[3], mo=m[2]?+m[2]:null, half=!!m[4];
+    if(!m[1]&&mo&&!half&&/^\s*\d{1,2}\.5(?!\d)/.test(m[0])){ d=mo; mo=null; half=true; } // 연도 없는 'N.5' = N일 반나절
+    if(d<1||d>31) continue;
+    const strong=mo||half||m[5]||m[6]||/^(부터|까지|~|∼|에서|-)/.test(after)||/(~|∼|-|부터)$/.test(before);
+    if(!strong) continue;
+    pts.push({i:m.index,len:m[0].length,y:m[1]?+m[1]:null,mo,d,half,ap:m[6]?m[6].trim():''});
+    if(pts.length>=2) break; }
+  // 날짜 글자 지우고 남은 것 = 공정명
+  let name=t; pts.slice().reverse().forEach(p=>{ name=name.slice(0,p.i)+' '+name.slice(p.i+p.len); });
+  name=name.replace(/부터|까지|에서|하루\s*종일|종일|오전|오후|[~∼]/g,' ').replace(/\s[-·,]\s|^[\s\-·,:]+|[\s\-·,:]+$/g,' ').replace(/\s+/g,' ').trim();
+  const out={name,cls,clsGuess:cls?'':guessCls(name)};
+  if(!pts.length) return {...out,err:'날짜를 못 찾았습니다 — 예: 24일 오후부터 26일까지 · 12/3~12/5 오전'};
+  // 월·연 정하기: 시작은 기준일에 가장 가까운 달, 끝은 시작 이후
+  const pick=(p,after)=>{ let best=null, bd=1e9;
+    const ys=p.y?[p.y]:[ry-1,ry,ry+1], ms=p.mo?[p.mo]:null;
+    ys.forEach(y=>(ms||[rm-1,rm,rm+1,rm+2].map(x=>x)).forEach(mo0=>{ const s=p.mo?`${y}-${pad(mo0)}-${pad(p.d)}`:mk(p.y||ry,mo0,p.d); if(!okD(s)) return;
+      const n=sDN(s); if(after&&n<sDN(after)) return; const dd=after?n-sDN(after):Math.abs(n-refN); if(dd<bd){ bd=dd; best=s; } }));
+    return best; };
+  const p0=pts[0], p1=pts[1]||null;
+  const s=pick(p0,null); if(!s) return {...out,err:'날짜가 올바르지 않습니다'};
+  let f=p1?(p1.mo||p1.y?pick(p1,null):pick(p1,s)):s; if(!f) return {...out,err:'끝 날짜가 올바르지 않습니다'};
+  let sh='', fh='';
+  if(p1){ sh=(p0.half||p0.ap==='오후')?'pm':''; fh=(p1.half||p1.ap==='오전')?'am':''; }
+  else { if(p0.ap==='오전') fh='am'; else if(p0.ap==='오후'||p0.half) sh='pm'; }
+  if(f<s) return {...out,s,f,err:'끝 날짜가 시작보다 앞입니다'};
+  return {...out,s,f,sh,fh};
+}
+function sEasyShow(x){
+  const o=$('aEasyOut'); if(!x){ o.className='a-easy-out'; return; }
+  const c=x.cls||x.clsGuess;
+  if(x.err){ o.className='a-easy-out err'; o.innerHTML=esc(x.err); return; }
+  o.className='a-easy-out';
+  o.innerHTML=`✓ <b>${esc(x.name||'(공정명 없음)')}</b> · ${sHalfTxt(x.s,x.sh)} ~ ${sHalfTxt(x.f,x.fh,true)} · Class ${c?`${c} ${esc(CLASS_NAMES[c]||'')}${x.cls?'':' <small>(이름으로 추정 — 맞는지 확인)</small>'}`:'<span style="color:var(--red)">없음 — 아래에서 고르세요</span>'}`;
+}
+function sEasyApply(){
+  const x=sEasyParse($('aEasy').value); sEasyShow(x); if(!x) return;
+  if(x.name) $('aName').value=x.name;
+  if(x.s){ $('aFs').value=x.s; $('aFf').value=x.f||x.s; $('aFsh').value=x.sh||''; $('aFfh').value=x.fh||''; sHowMode('date'); }
+  const c=x.cls||x.clsGuess; if(c) $('aCls').value=c;
+}
 async function sSaveEdit(){
-  const name=$('aName').value.trim(), dur=parseInt($('aDur').value,10);
+  const name=$('aName').value.trim(); let dur=parseInt($('aDur').value,10), fix=null;
+  if(sHow==='date'){ const x=sFixRead(); if(x.err){ toast(x.err); return; } dur=x.dur; fix={s:x.s,f:x.f,sh:x.sh,fh:x.fh}; }
   if(!name||!(dur>=1)){ toast('공정명과 기간(1일 이상)을 넣으세요'); return; }
-  const preds=sReadRows('aPreds'), succs=sReadRows('aSuccs');
+  if(!$('aCls').value){ toast('설비 Class를 고르세요 (1000~9000)'); $('aCls').focus(); return; }
+  const preds=fix?[]:sReadRows('aPreds'), succs=sReadRows('aSuccs');
   const old=sEditId?sA(sEditId):null;
-  const planChanged=!old||old.name!==name||old.dur!==dur||old.phase!==$('aPhase').value||(old.cls||'')!==$('aCls').value||JSON.stringify(old.preds||[])!==JSON.stringify(preds)
+  const planChanged=!old||old.name!==name||old.dur!==dur||JSON.stringify(old.fix||null)!==JSON.stringify(fix)||old.phase!==$('aPhase').value||(old.cls||'')!==$('aCls').value||JSON.stringify(old.preds||[])!==JSON.stringify(preds)
     ||JSON.stringify(sPlan.acts.filter(s=>(s.preds||[]).some(p=>p.id===old.id)).map(s=>s.id).sort())!==JSON.stringify(succs.map(s=>s.id).sort());
   const btn=$('aSave'); btn.disabled=true;
   try{
@@ -5169,7 +5301,7 @@ async function sSaveEdit(){
       const snapshot=JSON.stringify(sPlan);
       const id=old?old.id:'A'+(sPlan.seq||500);
       if(!old) sPlan.seq=(sPlan.seq||500)+10;
-      const a=old||{id,cp:false}; Object.assign(a,{name,dur,phase:$('aPhase').value,cls:$('aCls').value,preds});
+      const a=old||{id,cp:false}; Object.assign(a,{name,dur,phase:$('aPhase').value,cls:$('aCls').value,preds}); if(fix) a.fix=fix; else delete a.fix;
       if(!old) sPlan.acts.push(a);
       sPlan.acts.forEach(s=>{ if(s.id===id) return; s.preds=(s.preds||[]).filter(p=>p.id!==id); const m=succs.find(x=>x.id===s.id); if(m) s.preds.push({id,type:m.type,lag:m.lag}); });
       const test=sRun(sPlan,sAct); if(test.cyc){ sPlan=JSON.parse(snapshot); toast('선후행이 순환합니다(서로가 서로의 선행) — 저장하지 않았습니다'); return; }
@@ -5215,6 +5347,11 @@ document.querySelectorAll('#gSeg [data-gv]').forEach(b=>b.onclick=()=>{ sGv=b.da
 document.querySelectorAll('#gZoom [data-z]').forEach(b=>b.onclick=()=>{ sZoom=+b.dataset.z; document.querySelectorAll('#gZoom [data-z]').forEach(x=>x.classList.toggle('on',x===b)); sGantt(); });
 $('gCritOnly').onchange=()=>{ sCritOnly=$('gCritOnly').checked; sGantt(); };
 $('sAddAct').onclick=()=>sEdit(null);
+$('gAddAct').onclick=()=>sEdit(null);
+document.querySelectorAll('#aHow [data-ah]').forEach(b=>b.onclick=()=>sHowMode(b.dataset.ah));
+['aFs','aFf','aFsh','aFfh'].forEach(id=>$(id).addEventListener('change',sFixShow));
+$('aPhase').addEventListener('change',()=>{ sPhaseTouched=true; });
+{ let tm=null; $('aEasy').addEventListener('input',()=>{ clearTimeout(tm); tm=setTimeout(sEasyApply,250); }); }
 $('sBaseBtn').onclick=sSaveBase;
 $('cfSave').onclick=sSaveConfig;
 $('cfBulk').addEventListener('input',()=>sBulkPreview('cfBulk','cfBulkPrev','cfBulkAdd'));
