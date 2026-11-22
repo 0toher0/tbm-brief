@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.9.0',
+        version: '3.10.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -350,6 +350,7 @@ const SNAP_DEF = {
   'progress-map-delete': { t: 'progress_map', k: [['day', SNAP_K.day]] },
   'report': { t: 'site_daily', k: [['day', SNAP_K.day]] },
   'report-delete': { t: 'site_daily', k: [['day', SNAP_K.day]] },
+  'daily-mark': { t: 'daily_mark', k: [['day', SNAP_K.day], ['k', b => String(b.k || '').slice(0, 80)]] },
 };
 const snapWhere = keys => keys.map(([c]) => c + '=?').join(' AND ');
 // 행 내용 지문(SHA-256) — 고친 뒤 상태와 지금 상태가 같은지(그 뒤 또 바뀌었는지) 비교. 시간은 분 단위라 못 씀
@@ -409,6 +410,7 @@ async function subSummary(db, route, b, prev) {
     case 'progress-img-delete': return `진행률 그림 ${b.day} 삭제`;
     case 'report': return `일일 현황 ${b.day} ${prev ? '교체' : '저장'}`;
     case 'report-delete': return `일일 현황 ${b.day} 삭제`;
+    case 'daily-mark': return `일일작업 ${b.day} 형광펜 ${b.c ? '표시' : '지움'} — ${String(b.t || '').slice(0, 50)}`;
   }
   return route;
 }
@@ -459,6 +461,8 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS sub_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, day TEXT, who TEXT, route TEXT, keyj TEXT, summary TEXT, before TEXT, after_at TEXT, restored_at TEXT)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_sub_log_day ON sub_log(day)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS app_kv (key TEXT PRIMARY KEY, json TEXT NOT NULL, updated_at TEXT)`),
+    // v3.10.0: 일일작업 주요 작업 형광펜 — 날짜·작업키당 1건(c=y|g|p)
+    db.prepare(`CREATE TABLE IF NOT EXISTS daily_mark (day TEXT NOT NULL, k TEXT NOT NULL, c TEXT NOT NULL, t TEXT, updated_at TEXT, PRIMARY KEY(day, k))`),
   ]);
   // v3.5.0: 예전 manpower(시공사 구분 없음) → manpower_co 로 옮김(시공사는 내용으로 추정)
   try {
@@ -688,7 +692,7 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok: !!role, role }, role ? 200 : 401, cors);
   }
   // 쓰기는 관리자·부관리자만 (읽기는 누구나)
-  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST', 'progress-map': 'POST', 'progress-map-delete': 'POST', 'meeting': 'POST', 'meeting-delete': 'POST' };
+  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST', 'progress-map': 'POST', 'progress-map-delete': 'POST', 'meeting': 'POST', 'meeting-delete': 'POST', 'daily-mark': 'POST' };
   if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) {
     if (request.headers.get('X-Editor-Pass')) await new Promise(r => setTimeout(r, 1200)); // 틀린 암호로 두드리기 느리게
     return json({ error: 'editor_required' }, 403, cors);
@@ -848,6 +852,19 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok: true, restored: h.reason, from: h.updated_at }, 200, cors);
   }
 
+  // ---- v3.10.0 일일작업 형광펜: GET ?from=&to= 목록 / POST {day,k,c,t} (c 비우면 지움) ----
+  if (sub === 'daily-mark') {
+    if (request.method === 'POST') {
+      const day = String(body.day || ''), k = String(body.k || '').slice(0, 80), c = String(body.c || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !k || (c && !['y', 'g', 'p'].includes(c))) return json({ error: 'bad_payload' }, 400, cors);
+      if (!c) await db.prepare(`DELETE FROM daily_mark WHERE day=? AND k=?`).bind(day, k).run();
+      else await db.prepare(`INSERT INTO daily_mark(day,k,c,t,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day,k) DO UPDATE SET c=excluded.c, t=excluded.t, updated_at=excluded.updated_at`).bind(day, k, c, String(body.t || '').slice(0, 200), now.ts).run();
+      return json({ ok: true }, 200, cors);
+    }
+    const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+    const r = await db.prepare(`SELECT day, k, c FROM daily_mark WHERE day BETWEEN ? AND ? LIMIT 6000`).bind(from, to).all();
+    return json({ items: r.results }, 200, cors);
+  }
   // ---- 일일 출력인원 (카톡 보고: 정규/연장/철야) — 앱이 파싱해 보냄. 날짜·근무조·메인 시공사당 1건 ----
   if (sub === 'manpower') {
     if (request.method === 'POST') {

@@ -534,6 +534,53 @@ table.s-t tr[data-act]{cursor:pointer}
 .d-tm ul{margin:6px 0 0 18px;padding:0;font-size:.76rem;line-height:1.5;color:var(--ink2)}
 .d-orig{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px;margin-top:6px;background:#fff}
 .d-orig img{width:100%;display:block}
+/* v6.23.0 일일작업: 미리보기 · 정리/원본/주간 보기 · 작업 카드(왼쪽 작업·오른쪽 위험성평가) · 형광펜 */
+.dp-card{border:2px solid var(--accent);border-radius:12px;padding:10px 12px;margin-top:10px;background:#fffaf5}
+.dp-card .h{font-weight:800;font-size:.86rem}
+.dp-card .s{font-size:.74rem;color:var(--ink2);margin-top:4px;line-height:1.5}
+.dp-card table{font-size:.7rem;margin-top:6px}
+.d-nav{display:flex;align-items:center;gap:8px}
+.d-nav .mini-btn{font-weight:900}
+.d-view{display:flex;gap:4px;margin-top:10px}
+.d-view button{flex:1;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 4px;font-size:.76rem;font-weight:800;color:var(--steel)}
+.d-view button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.d-pv{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.d-pv span{font-size:.72rem;border-radius:6px;padding:3px 8px;font-weight:800}
+.d-pv .ok{background:#ebfbee;color:#2b8a3e} .d-pv .nw{background:#e7f5ff;color:#1864ab} .d-pv .no{background:#fff4e6;color:#d9480f}
+.dk{display:grid;grid-template-columns:1fr;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;background:#fff;position:relative}
+@media(min-width:720px){ .dk{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)} }
+.dk.mk-y{background:#fff9c4;border-color:#ffd43b} .dk.mk-g{background:#e6fcf5;border-color:#63e6be} .dk.mk-p{background:#fff0f6;border-color:#faa2c1}
+.dk-t{font-weight:800;font-size:.86rem;line-height:1.45}
+.dk-m{font-size:.7rem;color:var(--steel);margin-top:3px;line-height:1.5}
+.dk-b{display:inline-block;font-size:.6rem;font-weight:900;border-radius:5px;padding:1px 6px;margin-right:4px;vertical-align:1px}
+.dk-b.plan{background:#ebfbee;color:#2b8a3e} .dk-b.new{background:#e7f5ff;color:#1864ab} .dk-b.tm{background:#f3f0ff;color:#5f3dc4}
+.dk-pg{height:6px;background:#f1f3f5;border-radius:4px;margin-top:6px;overflow:hidden} .dk-pg i{display:block;height:100%;background:#4dabf7}
+.dk-r{font-size:.74rem;line-height:1.5;border-top:1px dashed var(--line);padding-top:6px}
+@media(min-width:720px){ .dk-r{border-top:none;border-left:1px dashed var(--line);padding:0 0 0 10px} }
+.dk-r .hz{background:#fff4e6;border-radius:8px;padding:5px 8px}
+.dk-r ul{margin:5px 0 0 16px;padding:0;color:var(--ink2)}
+.dk-r .src{font-size:.6rem;color:var(--steel);font-weight:700;margin-bottom:3px}
+.dk-rc{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.dk-rc span{font-size:.62rem;font-weight:800;background:#fff0f0;color:#c92a2a;border-radius:5px;padding:1px 6px}
+.dk-ref summary{font-size:.68rem;font-weight:800;color:#1864ab;cursor:pointer;margin-top:6px}
+.rr-h{font-size:.66rem;font-weight:900;color:var(--steel);margin:6px 0 2px}
+.rr-k,.rr-l{font-size:.7rem;line-height:1.5;margin-bottom:4px}
+.rr-l a,.rr-k a{color:#1864ab}
+.dk-pen{position:absolute;right:8px;top:8px;display:flex;gap:3px}
+.dk-pen button{width:22px;height:22px;border-radius:50%;border:1px solid #ced4da;font-size:.62rem;padding:0;background:#fff}
+.dk-pen .y{background:#ffe066} .dk-pen .g{background:#96f2d7} .dk-pen .p{background:#fcc2d7}
+.dk.ed .dk-t{padding-right:92px}
+.dw-board{overflow-x:auto}
+.dw-t{border-collapse:collapse;width:100%;table-layout:fixed;font-size:.66rem}
+.dw-t th,.dw-t td{border-bottom:1px solid #f1f3f5;padding:4px 2px;text-align:center}
+.dw-t th:first-child,.dw-t td.n{width:38%}
+.dw-t td.n{text-align:left;font-weight:700;line-height:1.35;word-break:break-all}
+@media(min-width:720px){ .dw-t th:first-child,.dw-t td.n{width:44%} .dw-t{font-size:.72rem} }
+.dw-t th.today{background:var(--red);color:#fff;border-radius:5px}
+.dw-c{display:block;border-radius:4px;padding:3px 0;font-weight:800;font-size:.6rem}
+.dw-c.a{background:#4dabf7;color:#fff} .dw-c.p{background:repeating-linear-gradient(135deg,#dee2e6 0 3px,#fff 3px 6px);color:#868e96}
+.dw-cls td{background:#f8f9fa;text-align:left!important;font-weight:900;color:#2f4bb0}
+tr.mk-y td.n{background:#fff9c4} tr.mk-g td.n{background:#e6fcf5} tr.mk-p td.n{background:#fff0f6}
 /* v6.2 공정: 진행 막대·단계 카드·현장 입력·간트(날짜 축) */
 .s-stripcard{margin-top:10px}
 .s-strip{position:relative;height:30px;background:#f1f3f5;border-radius:8px;overflow:visible;margin-top:14px}
@@ -981,6 +1028,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
       <label class="btn ghost" style="text-align:center">📷 표 촬영<input type="file" id="dCam" accept="image/*" capture="environment" hidden></label>
     </div>
     <div class="paste-hint" id="dStatus" style="margin-top:8px"></div>
+    <div id="dPrev"></div>
   </div>
   <div id="dDayChips" class="date-chips" style="margin-top:12px"></div>
   <div id="dBody"></div>
@@ -1508,7 +1556,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.22.3',
+  version : '6.23.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -1860,6 +1908,10 @@ function parseSdDaily(text){
     const p=j.match(/공사\s*진도[^=]*=\s*([\d.]+)\s*%\s*\/\s*([\d.]+)\s*%/); if(p) overall={actual:+p[1],plan:+p[2]};
   }
   const hi=R.findIndex(r=>r.some(c=>/금\s*일\s*작\s*업/.test(c))&&r.some(c=>/명\s*일\s*작\s*업/.test(c)));
+  // v6.23: 연도 없는 날짜 / [D+n]만 있는 표도 날짜 계산
+  if(!date){ for(const r of R.slice(0,8)){ const j=r.join(' ');
+    const dp=j.match(/\[\s*D\s*\+\s*(\d+)\s*\]/); if(dp){ const t=new Date(Date.parse(SD_DAY1+'T00:00:00Z')+(+dp[1]-1)*86400e3); date=`${t.getUTCFullYear()}.${pad(t.getUTCMonth()+1)}.${pad(t.getUTCDate())}`; break; }
+    const md=j.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/); if(md){ date=`${new Date(Date.now()+9*3600e3).getUTCFullYear()}.${pad(md[1])}.${pad(md[2])}`; break; } } }
   if(hi<0||!date) return null;
   const h1=R[hi], h2=R[hi+1]||[];
   const find=(row,re,from=0)=>{ for(let i=from;i<row.length;i++) if(re.test(row[i])) return i; return -1; };
@@ -1937,7 +1989,7 @@ function sdReconcile(list){
   list.forEach(p=>{ if(p.kind==='명일') p.merged=false; });
   list.forEach(p=>{
     if(p.kind!=='명일') return;
-    const a=list.find(x=>x.kind==='금일'&&x.date===p.date&&x.subcon===p.subcon&&nk(x.task)===nk(p.task));
+    const a=list.find(x=>x.kind==='금일'&&x.date===p.date&&x.subcon===p.subcon&&(nk(x.task)===nk(p.task)||dSim(x.task,p.task)>=0.5)); // v6.23: 낱말 절반 이상 같으면 같은 작업
     if(!a) return;
     if(!a.hazard){ a.hazard=p.hazard; a.safety=p.safety; a.manager=p.manager; a.risks=RISK_ORDER.filter(k=>(a.risks||[]).includes(k)||(p.risks||[]).includes(k)); a.risk=a.risks.join(', '); }
     p.merged=true;
@@ -2435,6 +2487,8 @@ function renderHazard(t){
     </div>`;
   });
   if(t.safety) s+=renderSafetyChecks(t);
+  // v6.23: 관련 핵심 기준·법령(안전 탭 기준·법률 자료와 연동)
+  const rr=riskRefHtml(t.risks); if(rr) s+=`<details class="hz-block dk-ref"><summary>📚 관련 기준·법령</summary>${rr}</details>`;
   return s;
 }
 
@@ -4343,7 +4397,7 @@ setInterval(()=>saCheck(),60e3);
 
 /* ---- 부관리자 모니터링 탭 (관리자만): 알람 설정 + 일별 활동 이력·복원 ---- */
 let smAlerts=null, smLog=null, smDays=14;
-const SM_ROUTE={sched:'공정표','sched-actual':'실적','sched-actual-undo':'실적',daily:'일일작업','daily-delete':'일일작업','daily-edit':'일일작업','daily-undo':'일일작업',manpower:'출력인원','manpower-delete':'출력인원',meeting:'회의결과','meeting-delete':'회의결과','progress-img':'공정 그림','progress-img-delete':'공정 그림','progress-map':'모식도','progress-map-delete':'모식도',report:'일일 현황','report-delete':'일일 현황'};
+const SM_ROUTE={'daily-mark':'일일작업',sched:'공정표','sched-actual':'실적','sched-actual-undo':'실적',daily:'일일작업','daily-delete':'일일작업','daily-edit':'일일작업','daily-undo':'일일작업',manpower:'출력인원','manpower-delete':'출력인원',meeting:'회의결과','meeting-delete':'회의결과','progress-img':'공정 그림','progress-img-delete':'공정 그림','progress-map':'모식도','progress-map-delete':'모식도',report:'일일 현황','report-delete':'일일 현황'};
 async function smRender(reload){
   const box=$('smBox'); if(!isOwner()){ box.innerHTML='<div class="k-empty">총괄 관리자만 볼 수 있습니다.</div>'; return; }
   if(reload||!smAlerts||!smLog){ box.innerHTML='<div class="k-empty">불러오는 중…</div>';
@@ -5616,18 +5670,24 @@ async function dOnPaste(e){
     if(html){ const st=$('mStage'); st.innerHTML=html; const t=st.querySelector('table'); grid=t?mExtractTable(t):null; st.innerHTML=''; }
     if(!grid&&plain.indexOf('\t')>=0) grid=mTsvToGrid(plain);
     if(!grid){ if(file) return await dAnalyzeImage(await mFileToDataUrl(file)); dStatus('표를 찾지 못했습니다 — 엑셀에서 범위를 복사했는지 확인하세요','err'); return; }
-    const text=plain&&plain.indexOf('\t')>=0?plain:mTsv(grid);
-    const sd=parseSdDaily(text);
-    if(sd&&sd.length){ dStatus('표 분석 중…'); return await dSave('excel',{grid:{grid:grid.grid,widths:grid.widths,rows:grid.rows,cols:grid.cols}},dFromSdRows(sd),'parser'); }
+    // v6.23: 글자(탭) → 실패하면 서식 표에서 만든 글자로 다시 인식 · 저장 전에 미리보기
+    const pack=dGridPack(grid);
+    let sd=plain&&plain.indexOf('\t')>=0?parseSdDaily(plain):null;
+    if(!sd||!sd.length) sd=parseSdDaily(mTsv(grid));
+    if(sd&&sd.length) return dPreview('excel',{grid:pack},dFromSdRows(sd),'parser');
     dStatus('정해진 양식과 달라 AI가 표를 읽는 중… (1~2분)');
+    const text=plain&&plain.indexOf('\t')>=0?plain:mTsv(grid);
     const r=await kApi('daily-ai',{text}); if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
-    await dSave('excel',{grid:{grid:grid.grid,widths:grid.widths,rows:grid.rows,cols:grid.cols}},dFromAi(r.result),'ai');
+    dPreview('excel',{grid:pack},dFromAi(r.result),'ai');
   }catch(err){ dStatus(err.message==='too_large'?'원본이 너무 큽니다 — 범위를 나눠 붙이거나 이미지로 올려 주세요':(err.data?kErr(err):err.message),'err'); }
 }
 let dDeleted=[], dEditDay=null;
 const D_REASON={replace:'다시 올리기 전',edit:'수정 전',delete:'삭제 전'};
 async function dLoad(){
-  try{ const r=await kApi('daily'); dList=r.items||[]; dDeleted=r.deleted||[]; if(!dSel||!dList.some(x=>x.day===dSel)) dSel=dList[0]&&dList[0].day; }
+  try{ const from=sISO(Date.now()+9*3600e3-120*sDAY);
+    const [r,mk]=await Promise.all([kApi('daily'),kApi('daily-mark?from='+from).catch(()=>({items:[]})),ensureLegal().catch(()=>{}),ensureReferenceData().catch(()=>{})]);
+    dList=r.items||[]; dDeleted=r.deleted||[]; dMarks={}; (mk.items||[]).forEach(x=>{ (dMarks[x.day]=dMarks[x.day]||{})[x.k]=x.c; });
+    if(!dSel||!dList.some(x=>x.day===dSel)) dSel=dList[0]&&dList[0].day; dAutoTbm(); }
   catch(e){ $('dBody').innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
   $('dDayChips').innerHTML=dList.slice(0,40).map(x=>`<button class="dchip ${x.day===dSel?'on':''}" data-dd="${x.day}">${x.day===rToday()?'오늘':sMD(x.day)} <small class="dplus">${dPlus(x.day)}</small><span class="dc-cnt">${(x.analysis&&x.analysis.today||[]).length}</span></button>`).join('');
   $('dDayChips').querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{ dSel=b.dataset.dd; dEditDay=null; dLoad(); });
@@ -5640,46 +5700,6 @@ async function dLoad(){
 async function dUndo(day){
   try{ const r=await kApi('daily-undo',{day}); dSel=day; dEditDay=null; toast(`↩ 되돌렸습니다 (${D_REASON[r.restored]||'이전'} 상태)`); await dLoad(); }
   catch(e){ toast(e.message==='nothing_to_undo'?'되돌릴 이전 상태가 없습니다':kErr(e)); }
-}
-function dRender(it){
-  if(dEditDay===it.day) return dEditRender(it);
-  const a=it.analysis||{}, T=a.today||[], M=a.tomorrow||[], P=a.people||[], ed=isEditor();
-  const tot=P.find(x=>x.company==='합계');
-  const byCls={}; T.forEach(x=>(byCls[x.cls||'기타']=byCls[x.cls||'기타']||[]).push(x));
-  const tm=sISO(sT(it.day)+sDAY);
-  let h=`<div class="card" style="margin-top:10px">
-    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:1.05rem">${sFmt(it.day)}</b><span class="dplus">${dPlus(it.day)}</span>
-      <span style="margin-left:auto;font-size:.66rem;color:var(--steel)">${it.kind==='image'?'🖼️ 이미지':'📊 엑셀'} · ${a.src==='ai'?'AI 분석':a.src==='edit'?'직접 수정':'양식 인식'} · ${esc((it.updated_at||'').slice(5))}</span></div>
-    <div class="d-sum">${a.overall&&a.overall.actual?`<span>공사진도 ${esc(a.overall.actual)}% / ${esc(a.overall.plan)}%</span>`:''}<span>금일 ${T.length}건</span><span>명일 ${M.length}건</span>${tot?`<span>인원 주간 ${esc(tot.day)}·야간 ${esc(tot.night)}·철야 ${esc(tot.overnight)}</span>`:''}</div>
-    ${a.src==='ai'?'<div class="paste-hint" style="margin-top:6px">⚠ AI가 이미지를 읽은 결과입니다. 틀린 곳은 ✎ 수정으로 고치세요.</div>':''}
-    ${ed?`<div class="btn-row"><button class="btn ghost" id="dEdit">✎ 수정</button><button class="btn ghost" id="dUndoBtn" ${+it.hist?'':'disabled'}>↩ 되돌리기${+it.hist?` (${it.hist})`:''}</button><button class="btn ghost" id="dDel" style="color:var(--red)">삭제</button></div>`:''}
-    <div class="btn-row" style="margin-top:6px"><button class="btn primary" id="dToTbm">🦺 안전(TBM) 작업에 반영</button></div>
-  </div>`;
-  h+=`<div class="s-sec">금일 작업 <small>${sMD(it.day)} · Class별</small></div><div class="card">`;
-  Object.keys(byCls).sort().forEach(c=>{ h+=`<div class="d-cls">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${byCls[c].length}건</div>
-    <div style="overflow-x:auto"><table class="s-t"><tr><th>작업</th><th>업체</th><th class="s-num">진도</th><th>일정</th></tr>
-    ${byCls[c].map(x=>`<tr><td>${x.gong?`<span class="s-pill asm">${esc(x.gong)}</span>`:''}${esc(x.task)}${x.equip?`<div style="font-size:.64rem;color:var(--steel)">🏗 ${esc(x.equip)}</div>`:''}${x.shift?`<div style="font-size:.64rem;color:var(--steel)">공정 ${esc(x.shift)}</div>`:''}</td><td style="white-space:nowrap">${esc(x.company)}</td><td class="s-num">${esc(x.progress)}</td><td style="font-size:.66rem;white-space:nowrap">${esc(x.period)}</td></tr>`).join('')}
-    </table></div>`; });
-  if(!T.length) h+='<div class="paste-hint">금일 작업 없음</div>';
-  h+=`</div><div class="s-sec">명일 작업 <small>${sMD(tm)} ${dPlus(tm)} · 위험요인·대책</small></div>`;
-  h+=M.map(x=>`<div class="d-tm"><div class="t">${x.cls?`<span class="s-pill cls">${esc(x.cls)}</span>`:''}${esc(x.task)}</div>
-    <div class="meta">${esc(x.company)}${x.equip?` · 🏗 ${esc(x.equip)}`:''}${x.manager?` · ${esc(x.manager)}`:''}</div>
-    ${x.hazard?`<div class="hz">⚠ ${esc(x.hazard)}</div>`:''}
-    ${x.measures?`<ul>${String(x.measures).split('\n').filter(Boolean).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}</div>`).join('')||'<div class="card paste-hint">명일 작업 없음</div>';
-  if(P.length) h+=`<div class="s-sec">인원</div><div class="card"><table class="s-t"><tr><th>업체</th><th class="s-num">주간</th><th class="s-num">야간</th><th class="s-num">철야</th></tr>
-    ${P.map(x=>`<tr style="${x.company==='합계'?'font-weight:800;background:#f7f8f9':''}"><td>${esc(x.company)}</td><td class="s-num">${esc(x.day)}</td><td class="s-num">${esc(x.night)}</td><td class="s-num">${esc(x.overnight)}</td></tr>`).join('')}</table>
-    ${a.notes?`<div class="paste-hint" style="white-space:pre-wrap;margin-top:6px">${esc(a.notes)}</div>`:''}</div>`;
-  h+=`<details class="k-more" id="dOrigBox"><summary>원본 보기 (${it.kind==='image'?'이미지':'엑셀 표'})</summary><div class="d-orig" id="dOrig">불러오는 중…</div></details>`;
-  $('dBody').innerHTML=h;
-  $('dOrigBox').addEventListener('toggle',async e=>{ if(!e.target.open) return;
-    try{ const r=await kApi('daily?day='+it.day); const p=r.item&&r.item.payload;
-      $('dOrig').innerHTML=!p?'(원본 없음)':p.img?`<img src="${p.img}" alt="원본">`:p.grid?mTableHtml(p.grid):'(원본 없음)'; }
-    catch(err){ $('dOrig').textContent=kErr(err); } });
-  if($('dDel')) $('dDel').onclick=async()=>{ if(!confirm(`${it.day} 일일작업을 삭제할까요?\n(삭제 후에도 '되돌리기'로 살릴 수 있습니다)`)) return;
-    try{ await kApi('daily-delete',{day:it.day}); dSel=null; await dLoad(); dStatus(`${it.day} 삭제했습니다 — <button class="mini-btn" onclick="dUndo('${it.day}')">↩ 되돌리기</button>`); toast('삭제했습니다'); }catch(e){ toast(kErr(e)); } };
-  if($('dUndoBtn')) $('dUndoBtn').onclick=()=>{ if(confirm('바로 이전 상태(다시 올리기·수정 전)로 되돌릴까요?')) dUndo(it.day); };
-  if($('dEdit')) $('dEdit').onclick=()=>{ dEditDay=it.day; dRender(it); window.scrollTo({top:$('dBody').offsetTop-80,behavior:'smooth'}); };
-  $('dToTbm').onclick=()=>dToTbm(it);
 }
 /* ---- 일일작업 직접 수정 ---- */
 const deCls=c=>'<option value="">-</option>'+Object.keys(CLASS_NAMES).map(k=>`<option ${k===String(c||'')?'selected':''}>${k}</option>`).join('');
@@ -5717,8 +5737,156 @@ function dEditRender(it){
     catch(e){ toast(kErr(e)); b.disabled=false; }
   };
 }
+/* ================= v6.23.0 일일작업: 미리보기 · 정리/원본/주간 보기 · 계획(전날 명일)↔실제(금일) · 위험성평가·기준·법령 · 형광펜 ================= */
+let dPending=null, dView='sum', dWkOff=0, dMarks={};
+// 서식 표가 너무 크면(행 1.9MB 제한) 테두리 → 서식 순으로 덜어냄
+function dGridPack(g){
+  let p={grid:g.grid,widths:g.widths,rows:g.rows,cols:g.cols};
+  const size=()=>JSON.stringify(p).length;
+  if(size()>1300000) p.grid=p.grid.map(r=>r.map(c=>c&&({v:c.v,cs:c.cs,rs:c.rs,b:c.b,bg:c.bg,al:c.al,th:c.th})));
+  if(size()>1300000) p.grid=p.grid.map(r=>r.map(c=>c&&({v:c.v,cs:c.cs,rs:c.rs})));
+  return p;
+}
+function dPreview(kind,payload,an,src){
+  dPending={kind,payload,an,src}; dStatus('');
+  const day=an.date||rToday(), ex=dList.some(x=>x.day===day), T=an.today||[], M=an.tomorrow||[];
+  const tot=(an.people||[]).find(x=>x.company==='합계');
+  const cls={}; T.forEach(x=>{ cls[x.cls||'-']=(cls[x.cls||'-']||0)+1; });
+  const noHz=M.filter(x=>!x.hazard).length;
+  $('dPrev').innerHTML=`<div class="dp-card"><div class="h">📋 인식 결과 — ${sFmt(day)} ${dPlus(day)}${src==='ai'?' <span style="color:var(--amber)">(AI 분석)</span>':''}</div>
+    <div class="s">금일(실제) <b>${T.length}</b>건 · 명일(계획) <b>${M.length}</b>건${an.overall&&an.overall.actual?` · 공사진도 ${esc(an.overall.actual)}% / ${esc(an.overall.plan)}%`:''}${tot?` · 인원 주간 ${esc(tot.day)}·야간 ${esc(tot.night)}·철야 ${esc(tot.overnight)}`:''}</div>
+    <div class="s">Class별 ${Object.keys(cls).sort().map(c=>`${c==='-'?'없음':esc(clsLabel(c))} ${cls[c]}`).join(' · ')}${noHz?` · <span style="color:var(--red)">명일 위험요인 빈 칸 ${noHz}건</span>`:''}</div>
+    ${ex?`<div class="s" style="color:var(--amber);font-weight:800">⚠ ${sMD(day)} 기존 일일작업을 새 내용으로 바꿉니다 (↩ 되돌리기 가능)</div>`:''}
+    <div style="overflow-x:auto"><table class="s-t"><tr><th>금일 작업(앞 5건)</th><th>업체</th><th>진도</th></tr>${T.slice(0,5).map(x=>`<tr><td>${esc(x.task)}</td><td>${esc(x.company)}</td><td>${esc(x.progress)}</td></tr>`).join('')}</table></div>
+    <div class="btn-row"><button class="btn ghost" id="dpCancel">취소</button><button class="btn primary" id="dpSave">💾 이대로 저장</button></div></div>`;
+  $('dpCancel').onclick=()=>{ dPending=null; $('dPrev').innerHTML=''; dStatus('취소했습니다'); };
+  $('dpSave').onclick=async()=>{ const p=dPending; if(!p) return; $('dpSave').disabled=true;
+    try{ await dSave(p.kind,p.payload,p.an,p.src); dPending=null; $('dPrev').innerHTML=''; }catch(err){ $('dpSave').disabled=false; dStatus(err.message==='too_large'?'원본이 너무 큽니다 — 범위를 나눠 붙이거나 이미지로 올려 주세요':(err.data?kErr(err):err.message),'err'); } };
+  $('dPrev').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+// 작업 같음 판정: 같은 업체 + 작업명 낱말이 절반 이상 겹침(괄호 안 설명은 빼고)
+const dNk=s=>String(s||'').toLowerCase().replace(/\(.*?\)|（.*?）/g,' ').replace(/[^0-9a-z가-힣]+/g,' ').trim();
+const dCo=s=>String(s||'').replace(/\s+|㈜|\(주\)/g,'');
+function dSim(a,b){ const na=dNk(a), nb=dNk(b); if(na&&na===nb) return 1;
+  const A=new Set(na.split(' ').filter(w=>w.length>1)), B=new Set(nb.split(' ').filter(w=>w.length>1)); if(!A.size||!B.size) return 0;
+  let n=0; A.forEach(w=>{ if(B.has(w)) n++; }); return n/Math.max(A.size,B.size); }
+function dMatch(x,list){ let best=null, bs=0; (list||[]).forEach(y=>{ if(dCo(y.company)!==dCo(x.company)) return; const s=dSim(x.task,y.task); if(s>bs){ bs=s; best=y; } }); return bs>=0.5?best:null; }
+const dKey=(kind,x)=>(kind+'|'+dCo(x.company)+'|'+dNk(x.task)).slice(0,80);
+const dRec=day=>dList.find(x=>x.day===day);
+const dPrevDay=day=>sISO(sT(day)-sDAY);
+const dCats=(x)=>{ const s=[...kwRisks(String(x.task||'')+' '+String(x.hazard||''),x.equip), ...normalizeRisk(x.hazard)]; return RISK_ORDER.filter(k=>s.includes(k)); };
+// 관련 기준(법령정리 핵심 기준) · 법령 조문 — 안전 탭 기준·법률과 같은 자료
+function riskRefHtml(cats){
+  cats=(cats||[]).filter(Boolean); if(!cats.length) return '';
+  const keys=((LEGAL&&LEGAL.key)||[]).filter(k=>(k.cats||[]).some(c=>cats.includes(c)));
+  const laws=[]; cats.forEach(c=>(LAWS[c]||[]).forEach(l=>{ if(!laws.some(y=>y.법령명===l.법령명&&y.조문===l.조문)) laws.push(l); }));
+  if(!keys.length&&!laws.length) return '<div class="rr-k" style="color:var(--steel)">기준·법령을 불러오는 중입니다 — 잠시 뒤 다시 열어 주세요</div>';
+  return (keys.length?'<div class="rr-h">핵심 기준 (고로 개수 현장)</div>'+keys.map(k=>`<div class="rr-k"><b>${esc(k.title)}</b> — ${esc(k.duty)} ${lgRefs(k.refs)}</div>`).join(''):'')
+    +(laws.length?'<div class="rr-h">관련 법령</div>'+laws.map(l=>`<div class="rr-l">${l.원문링크?`<a href="${esc(l.원문링크)}" target="_blank" rel="noopener">⚖ ${esc(l.법령명)} ${esc(l.조문)}</a>`:`${esc(l.법령명)} ${esc(l.조문)}`} — ${esc(l.요약||'')}</div>`).join(''):'');
+}
+function dRiskPanel(src,ra,cats){
+  const ms=String(ra&&ra.measures||'').split('\n').filter(Boolean);
+  return `<div class="dk-r">${ra&&ra.hazard?`<div class="src">${esc(src)}</div><div class="hz">⚠ ${esc(ra.hazard)}</div>${ms.length?`<ul>${ms.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}${ra.manager?`<div class="dk-m">👷 ${esc(ra.manager)}</div>`:''}`:'<div class="src">P-E&C 위험성평가 없음 — 아래 위험유형 기준 참고</div>'}
+    ${cats.length?`<div class="dk-rc">${cats.map(c=>`<span>${esc(RISK_TYPES[c]?RISK_TYPES[c].short:c)}</span>`).join('')}</div>
+      <details class="dk-ref"><summary>📚 위험유형 조치·기준·법령</summary>${cats.map(c=>RISK_TYPES[c]?`<div class="rr-h">${esc(c)} — ${esc(RISK_TYPES[c].hazard)}</div><ul style="margin:2px 0 0 16px">${RISK_TYPES[c].acts.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:'').join('')}${riskRefHtml(cats)}</details>`:''}</div>`;
+}
+function dCard(day,kind,x,o){
+  const k=dKey(kind,x), mk=(dMarks[day]||{})[k]||'', ed=isEditor();
+  const pct=parseInt(String(x.progress||'').replace(/[^\d]/g,''),10);
+  const badge=o.badge?`<span class="dk-b ${o.badge[0]}">${o.badge[1]}</span>`:'';
+  return `<div class="dk ${mk?'mk-'+mk:''} ${ed?'ed':''}" data-mk="${esc(k)}" data-day="${day}" data-t="${esc(String(x.task||'').slice(0,80))}">
+    ${ed?`<div class="dk-pen" title="주요 작업 형광펜"><button class="y" data-c="y">🖍</button><button class="g" data-c="g"></button><button class="p" data-c="p"></button><button data-c="">✕</button></div>`:''}
+    <div><div class="dk-t">${badge}${x.gong?`<span class="s-pill asm">${esc(x.gong)}</span>`:''}${esc(x.task)}</div>
+      <div class="dk-m">🏢 ${esc(x.company||'-')}${x.equip?` · 🏗 ${esc(x.equip)}`:''}${x.period?` · 📅 ${esc(x.period)}`:''}${x.shift?` · 공정 ${esc(x.shift)}`:''}${x.progress?` · 진도 <b>${esc(x.progress)}</b>`:''}</div>
+      ${!isNaN(pct)?`<div class="dk-pg"><i style="width:${Math.min(100,pct)}%"></i></div>`:''}${o.note?`<div class="dk-m">${o.note}</div>`:''}</div>
+    ${dRiskPanel(o.src,o.ra,dCats({task:x.task,hazard:o.ra&&o.ra.hazard,equip:x.equip}))}</div>`;
+}
+function dByCls(list){ const g={}; list.forEach(x=>{ (g[x.cls||'기타']=g[x.cls||'기타']||[]).push(x); }); return Object.keys(g).sort().map(c=>[c,g[c].sort((a,b)=>String(a.company).localeCompare(String(b.company)))]); }
+function dRender(it){
+  if(dEditDay===it.day) return dEditRender(it);
+  const a=it.analysis||{}, T=a.today||[], M=a.tomorrow||[], P=a.people||[], ed=isEditor();
+  const tot=P.find(x=>x.company==='합계'), tm=sISO(sT(it.day)+sDAY);
+  const prev=dRec(dPrevDay(it.day)), plan=prev?((prev.analysis||{}).tomorrow||[]):null;
+  const days=dList.map(x=>x.day).sort(), di=days.indexOf(it.day);
+  const st=T.map(x=>{ const p=plan?dMatch(x,plan):null; return {x,p,same:dMatch(x,M)}; });
+  const unexec=plan?plan.filter(p=>!T.some(x=>dMatch(x,[p]))):[];
+  const nPlan=st.filter(s=>s.p).length, nNew=plan?st.length-nPlan:0;
+  let h=`<div class="card" style="margin-top:10px">
+    <div class="d-nav"><button class="mini-btn" id="dPrevD" ${di<=0?'disabled':''}>◀</button><div style="flex:1;text-align:center"><b style="font-size:1.05rem">${sFmt(it.day)}</b> <span class="dplus">${dPlus(it.day)}</span></div><button class="mini-btn" id="dNextD" ${di<0||di>=days.length-1?'disabled':''}>▶</button></div>
+    <div class="d-sum">${a.overall&&a.overall.actual?`<span>공사진도 ${esc(a.overall.actual)}% / ${esc(a.overall.plan)}%</span>`:''}<span>금일(실제) ${T.length}건</span><span>명일(계획) ${M.length}건</span>${tot?`<span>인원 주간 ${esc(tot.day)}·야간 ${esc(tot.night)}·철야 ${esc(tot.overnight)}</span>`:''}</div>
+    ${plan?`<div class="d-pv"><span class="ok">✓ 어제 계획대로 ${nPlan}</span><span class="nw">＋ 계획 외 ${nNew}</span><span class="no">✕ 계획했으나 미실시 ${unexec.length}</span></div>`:'<div class="paste-hint" style="margin-top:4px">전날 표가 없어 계획 대비 비교는 생략합니다</div>'}
+    <div style="font-size:.64rem;color:var(--steel);margin-top:6px">${it.kind==='image'?'🖼️ 이미지':'📊 엑셀'} · ${a.src==='ai'?'AI 분석':a.src==='edit'?'직접 수정':'양식 인식'} · ${esc((it.updated_at||'').slice(5))}</div>
+    ${a.src==='ai'?'<div class="paste-hint" style="margin-top:6px">⚠ AI가 읽은 결과입니다. 틀린 곳은 ✎ 수정으로 고치세요.</div>':''}
+    ${ed?`<div class="btn-row"><button class="btn ghost" id="dEdit">✎ 수정</button><button class="btn ghost" id="dUndoBtn" ${+it.hist?'':'disabled'}>↩ 되돌리기${+it.hist?` (${it.hist})`:''}</button><button class="btn ghost" id="dDel" style="color:var(--red)">삭제</button></div>`:''}
+    <div class="d-view"><button data-dv="sum" class="${dView==='sum'?'on':''}">📋 정리</button><button data-dv="orig" class="${dView==='orig'?'on':''}">📊 원본 엑셀</button><button data-dv="week" class="${dView==='week'?'on':''}">🗓 주간 작업판</button></div>
+  </div><div id="dVBox"></div>`;
+  $('dBody').innerHTML=h;
+  const box=$('dVBox');
+  if(dView==='sum'){
+    let s=`<div class="s-sec">금일 작업 (실제) <small>${sMD(it.day)} · Class별 · 오른쪽은 P-E&C 위험성평가</small></div>`;
+    dByCls(st.map(z=>Object.assign({},z.x,{_z:z}))).forEach(([c,L])=>{ s+=`<div class="d-cls">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${L.length}건</div>`+L.map(x=>{ const z=x._z;
+      const ra=z.p&&z.p.hazard?z.p:(z.same&&z.same.hazard?z.same:null);
+      return dCard(it.day,'t',x,{badge:plan?(z.p?['plan','계획대로']:['new','계획 외']):null,ra,src:ra===z.p?`어제(${sMD(dPrevDay(it.day))}) 표의 위험성평가`:'오늘 표 명일 위험성평가(같은 작업)'}); }).join(''); });
+    if(!T.length) s+='<div class="card paste-hint">금일 작업 없음</div>';
+    if(unexec.length) s+=`<details class="k-more" style="margin-top:10px"><summary>✕ 어제 계획했으나 오늘 표에 없는 작업 ${unexec.length}건</summary>${unexec.map(p=>`<div class="d-tm"><div class="t">${p.cls?`<span class="s-pill cls">${esc(p.cls)}</span>`:''}${esc(p.task)}</div><div class="meta">${esc(p.company)}</div></div>`).join('')}</details>`;
+    s+=`<div class="s-sec">명일 작업 (계획) <small>${sMD(tm)} ${dPlus(tm)} · 위험요인·대책</small></div>`;
+    dByCls(M).forEach(([c,L])=>{ s+=`<div class="d-cls">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${L.length}건</div>`+L.map(x=>dCard(it.day,'m',x,{badge:['tm','계획'],ra:x,src:'P-E&C 위험성평가'})).join(''); });
+    if(!M.length) s+='<div class="card paste-hint">명일 작업 없음</div>';
+    if(P.length) s+=`<div class="s-sec">인원</div><div class="card"><table class="s-t"><tr><th>업체</th><th class="s-num">주간</th><th class="s-num">야간</th><th class="s-num">철야</th></tr>
+      ${P.map(x=>`<tr style="${x.company==='합계'?'font-weight:800;background:#f7f8f9':''}"><td>${esc(x.company)}</td><td class="s-num">${esc(x.day)}</td><td class="s-num">${esc(x.night)}</td><td class="s-num">${esc(x.overnight)}</td></tr>`).join('')}</table>
+      ${a.notes?`<div class="paste-hint" style="white-space:pre-wrap;margin-top:6px">${esc(a.notes)}</div>`:''}</div>`;
+    s+=`<div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dToTbm">🦺 안전(TBM)에 다시 반영</button></div><div class="paste-hint">새로 올린 일일작업은 자동으로 안전(TBM) 탭에 반영됩니다(이 기기).</div>`;
+    box.innerHTML=s;
+    box.querySelectorAll('.dk-pen [data-c]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const card=b.closest('.dk'); dMarkSet(card.dataset.day,card.dataset.mk,b.dataset.c,card.dataset.t); });
+    $('dToTbm').onclick=()=>dToTbm(it);
+  } else if(dView==='orig'){
+    box.innerHTML=`<div class="card"><div class="btn-row" style="margin-top:0"><button class="btn ghost" id="dCopyX">📋 엑셀로 복사 (서식 그대로)</button></div><div class="d-orig" id="dOrig" style="max-height:70vh">불러오는 중…</div></div>`;
+    kApi('daily?day='+it.day).then(r=>{ const p=r.item&&r.item.payload; const g=p&&p.grid&&(p.grid.grid?p.grid:null);
+      $('dOrig').innerHTML=!p?'(원본 없음)':p.img?`<img src="${p.img}" alt="원본">`:g?mTableHtml(g):'(원본 없음)';
+      $('dCopyX').style.display=g?'':'none';
+      $('dCopyX').onclick=async()=>{ const ok=await mCopy(mTableHtml(g),mTsv(g)); toast(ok?'복사했습니다 — 엑셀에 붙여넣으면 서식이 유지됩니다':'복사 실패 — 표를 길게 눌러 복사하세요'); }; })
+      .catch(err=>{ $('dOrig').textContent=kErr(err); });
+  } else dWeekRender(it.day,box);
+  document.querySelectorAll('.d-view [data-dv]').forEach(b=>b.onclick=()=>{ dView=b.dataset.dv; dWkOff=0; dRender(it); });
+  $('dPrevD').onclick=()=>{ if(di>0){ dSel=days[di-1]; dRender(dRec(dSel)); dChipsOn(); } };
+  $('dNextD').onclick=()=>{ if(di<days.length-1){ dSel=days[di+1]; dRender(dRec(dSel)); dChipsOn(); } };
+  if($('dDel')) $('dDel').onclick=async()=>{ if(!confirm(`${it.day} 일일작업을 삭제할까요?\n(삭제 후에도 '되돌리기'로 살릴 수 있습니다)`)) return;
+    try{ await kApi('daily-delete',{day:it.day}); dSel=null; await dLoad(); dStatus(`${it.day} 삭제했습니다 — <button class="mini-btn" onclick="dUndo('${it.day}')">↩ 되돌리기</button>`); toast('삭제했습니다'); }catch(e){ toast(kErr(e)); } };
+  if($('dUndoBtn')) $('dUndoBtn').onclick=()=>{ if(confirm('바로 이전 상태(다시 올리기·수정 전)로 되돌릴까요?')) dUndo(it.day); };
+  if($('dEdit')) $('dEdit').onclick=()=>{ dEditDay=it.day; dRender(it); window.scrollTo({top:$('dBody').offsetTop-80,behavior:'smooth'}); };
+}
+function dChipsOn(){ document.querySelectorAll('#dDayChips [data-dd]').forEach(b=>b.classList.toggle('on',b.dataset.dd===dSel)); const on=document.querySelector('#dDayChips .on'); if(on) on.scrollIntoView({block:'nearest',inline:'center'}); }
+async function dMarkSet(day,k,c,t){
+  try{ await kApi('daily-mark',{day,k,c,t}); if(!dMarks[day]) dMarks[day]={}; if(c) dMarks[day][k]=c; else delete dMarks[day][k];
+    const card=document.querySelector(`.dk[data-mk="${CSS.escape(k)}"][data-day="${day}"]`); if(card){ card.classList.remove('mk-y','mk-g','mk-p'); if(c) card.classList.add('mk-'+c); }
+    toast(c?'🖍 주요 작업으로 표시했습니다':'형광펜을 지웠습니다'); }catch(e){ toast(kErr(e)); }
+}
+// 주간 작업판: 일~토 7일 × 작업(실제 금일 기준). 칸 = 그날 실제(진도) / 계획만(전날 명일) / 없음. ◀ ▶ 한 주씩
+function dWeekRender(day,box){
+  const base=sT(day)-new Date(sT(day)).getUTCDay()*sDAY+dWkOff*7*sDAY, ds=[...Array(7)].map((_,i)=>sISO(base+i*sDAY)), td=rToday();
+  const rows=[]; // {cls,company,task,cells:{d:{a:x}|{p:x}}, mk}
+  const find=x=>rows.find(r=>dCo(r.company)===dCo(x.company)&&dSim(r.task,x.task)>=0.6);
+  ds.forEach(d=>{ const rec=dRec(d); ((rec&&rec.analysis&&rec.analysis.today)||[]).forEach(x=>{ let r=find(x); if(!r){ r={cls:x.cls||'기타',company:x.company,task:x.task,cells:{},mk:''}; rows.push(r); } r.cells[d]={a:x}; const m=(dMarks[d]||{})[dKey('t',x)]; if(m) r.mk=m; }); });
+  ds.forEach(d=>{ const pr=dRec(dPrevDay(d)); ((pr&&pr.analysis&&pr.analysis.tomorrow)||[]).forEach(x=>{ const r=find(x); if(r&&!r.cells[d]) r.cells[d]={p:x}; }); });
+  const g={}; rows.forEach(r=>{ (g[r.cls]=g[r.cls]||[]).push(r); });
+  const nm=dWkOff===0?'이번 주':dWkOff<0?`${-dWkOff}주 전`:`${dWkOff}주 뒤`;
+  box.innerHTML=`<div class="card"><div class="wk-nav"><button class="mini-btn" id="dwPrev">◀ 지난 주</button><b style="font-size:.8rem">${nm} ${sMD(ds[0])}~${sMD(ds[6])}</b><button class="mini-btn" id="dwNext">다음 주 ▶</button></div>
+    <div class="paste-hint" style="margin-top:4px">칸 = 그날 표의 <b>금일(실제)</b> 진도 · 빗금 = 전날 표에서 <b>계획</b>만 있었던 날 · 🖍 형광펜 작업은 이름에 색</div>
+    <div class="dw-board"><table class="dw-t"><tr><th style="text-align:left">작업</th>${ds.map(d=>`<th class="${d===td?'today':''}">${+d.slice(8)}<br><small>${'일월화수목금토'[new Date(sT(d)).getUTCDay()]}</small></th>`).join('')}</tr>
+    ${Object.keys(g).sort().map(c=>`<tr class="dw-cls"><td colspan="8">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${g[c].length}</td></tr>`+g[c].map(r=>`<tr class="${r.mk?'mk-'+r.mk:''}"><td class="n">${esc(r.task)}<div style="font-weight:500;color:var(--steel)">${esc(r.company)}</div></td>${ds.map(d=>{ const z=r.cells[d]; return `<td>${z&&z.a?`<span class="dw-c a">${esc(z.a.progress||'실시')}</span>`:z&&z.p?'<span class="dw-c p">계획</span>':''}</td>`; }).join('')}</tr>`).join('')).join('')||'<tr><td colspan="8" class="paste-hint" style="padding:14px">이 주에 올린 일일작업이 없습니다</td></tr>'}
+    </table></div></div>`;
+  $('dwPrev').onclick=()=>{ dWkOff--; dWeekRender(day,box); };
+  $('dwNext').onclick=()=>{ dWkOff++; dWeekRender(day,box); };
+}
+// 새로 올린(또는 바뀐) 최근 이틀치 일일작업을 이 기기 안전(TBM) 작업에 자동 반영 — 전날 명일의 위험요인·대책이 오늘 금일에 이어짐(sdReconcile)
+function dAutoTbm(){
+  const LS='tbm3_dauto', done=loadJSON(LS,{}); let n=0;
+  const recent=dList.slice().sort((a,b)=>a.day<b.day?-1:1).filter(x=>x.day<=sISO(Date.now()+9*3600e3+sDAY)).slice(-2);
+  recent.forEach(it=>{ if(done[it.day]!==it.updated_at&&it.analysis){ try{ dToTbm(it,true); done[it.day]=it.updated_at; n++; }catch(e){} } });
+  if(n){ saveJSON(LS,done); if(typeof wx!=='undefined'&&wx) renderToday(); }
+}
 // 분석 결과를 안전(TBM) 작업 목록 형식으로 → 같은 표 날짜는 교체(sd|날짜)
-function dToTbm(it){
+function dToTbm(it,quiet){
   const a=it.analysis, D=it.day.replace(/-/g,'.'), D2=sISO(sT(it.day)+sDAY).replace(/-/g,'.'), grp=`sd|${D}`;
   const tot=(a.people||[]).find(x=>x.company==='합계'), num=v=>parseInt(String(v||'').replace(/[^\d]/g,''),10)||0;
   const sdHead=tot?{주간:num(tot.day),야간:num(tot.night),철야:num(tot.overnight)}:null;
@@ -5734,9 +5902,12 @@ function dToTbm(it){
   if(!rows.length){ toast('반영할 작업이 없습니다'); return; }
   if(!contractors.includes('P-E&C')){ contractors.push('P-E&C'); saveJSON(LS_CONS,contractors); }
   inputData['P-E&C']=mergeByShift(inputData['P-E&C'], rows); saveJSON(LS_INPUT,inputData);
-  if(wx) renderToday();
-  toast(`안전(TBM) 작업에 반영: 금일 ${(a.today||[]).length} · 명일 ${(a.tomorrow||[]).length}건 (이 기기)`);
+  if(wx&&!quiet) renderToday();
+  if(!quiet) toast(`안전(TBM) 작업에 반영: 금일 ${(a.today||[]).length} · 명일 ${(a.tomorrow||[]).length}건 (이 기기)`);
 }
+// 앱을 열 때 최근 일일작업을 안전(TBM)에 자동 반영하고, 기준·법령 자료를 미리 받아 둠
+setTimeout(()=>{ ensureLegal().catch(()=>{}); ensureReferenceData().catch(()=>{});
+  kApi('daily').then(r=>{ if(!dList.length){ dList=r.items||[]; } dAutoTbm(); }).catch(()=>{}); },1500);
 $('dZone').innerHTML=dHint();
 $('dZone').addEventListener('paste',dOnPaste);
 $('dZone').addEventListener('focus',()=>$('dZone').classList.add('focus'));
