@@ -762,6 +762,11 @@ body.editor .mt-body .mt-mk{cursor:pointer}
 .wk-hd{display:grid;grid-template-columns:1fr 1fr;margin-bottom:2px}
 .wk-hn{text-align:center;font-weight:800;font-size:.74rem;padding:3px 0;border-radius:6px 6px 0 0}
 .wk-hn.w0{background:var(--ink);color:#fff} .wk-hn.w1{background:#d0ebff;color:#1864ab}
+.wk-hn{position:relative;display:flex;align-items:center;justify-content:center;min-height:28px}
+.wk-arr{position:absolute;top:2px;bottom:2px;border:none;border-radius:6px;padding:0 10px;font-size:.8rem;font-weight:900;cursor:pointer;line-height:1}
+.wk-arr.l{left:3px;background:rgba(255,255,255,.18);color:#fff} .wk-arr.r{right:3px;background:#1864ab;color:#fff}
+.wk-arr:disabled{opacity:.3;cursor:default}
+.wk-pos{font-family:var(--num);font-size:.66rem;color:var(--steel);align-self:center}
 .wk-days{display:grid;grid-template-columns:repeat(14,1fr);border-bottom:1px solid var(--line)}
 .wk-d{text-align:center;padding:3px 0;font-family:var(--num);line-height:1.1}
 .wk-d b{display:block;font-size:.68rem} .wk-d i{font-style:normal;font-size:.54rem;color:var(--steel)}
@@ -1439,7 +1444,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.19.0',
+  version : '6.20.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4948,10 +4953,16 @@ function sList(){
   $('gvList').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
 }
 /* 주간 공정: 일요일 시작 주 기준 금주 | 차주 14일 판. 두 주에 걸치는 작업은 막대가 경계를 넘어 이어짐 */
+// v6.20.0: ◀ ▶ 화살표는 2주씩 넘김(금주 왼쪽 ◀ · 차주 오른쪽 ▶). 범위 = 첫 공정 착수 주 ~ 화입(마지막 공정) 주
 let sWeekOff=0;
 function sLook(){
   const C=sCalc, sd=sSD(), sdN=sDN(sd);
-  const w0=sdN-new Date(sT(sd)).getUTCDay()+sWeekOff*7, w1=w0+7, wEnd=w0+13; // 금주 일요일 · 차주 일요일
+  const base=sdN-new Date(sT(sd)).getUTCDay(); // 금주 일요일
+  const w0=base+sWeekOff*7, w1=w0+7, wEnd=w0+13; // 보는 판의 앞 주 일요일 · 뒤 주 일요일
+  const spans=sPlan.acts.filter(a=>C.R[a.id]).map(a=>[sDN(sDate(C.R[a.id].es)), sDN(sDate(C.R[a.id].ef))]);
+  const pStart=spans.length?Math.min(...spans.map(x=>x[0])):w0, pEnd=Math.max(sDN(S_FIRE), ...spans.map(x=>x[1]));
+  const canPrev=w0>pStart, canNext=wEnd<pEnd;
+  const pg0=Math.floor((pStart-base)/14), pgN=Math.floor((pEnd-base)/14), pgI=Math.floor(sWeekOff/2); // 2주 판 번호
   const ds=n=>sISO(n*sDAY), md=n=>sMD(ds(n)), P=n=>(n-w0)/14*100;
   const nm0=sWeekOff===0?'금주':sWeekOff===-1?'지난주':`${sWeekOff>0?sWeekOff+'주 뒤':(-sWeekOff)+'주 전'}`;
   const nm1=sWeekOff===0?'차주':sWeekOff===-1?'금주':`${sWeekOff+1>0?(sWeekOff+1)+'주 뒤':(-sWeekOff-1)+'주 전'}`;
@@ -4973,20 +4984,22 @@ function sLook(){
     const cls=done?'done':(r.crit||r.critPast)?'crit':'';
     const ac=sAct[a.id], pct=done?100:r.state==='run'&&ac&&ac.pct!=null?ac.pct:r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0;
     return `<div class="wk-row" data-act="${a.id}">
-      <div class="wk-nm"><small class="gid">${a.id}</small>${esc(a.name)} ${done?sStateLabel(r):r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}</span>`}${vv&&vv.df?` ${sVarChip(vv,done)}`:''}${cross?' <span class="wk-x">금주→차주 이어짐</span>':''}</div>
+      <div class="wk-nm"><small class="gid">${a.id}</small>${esc(a.name)} ${done?sStateLabel(r):r.crit?'<span class="s-pill crit">크리티컬</span>':`<span class="s-pill flt">여유 ${r.tf}</span>`}${vv&&vv.df?` ${sVarChip(vv,done)}`:''}${cross?` <span class="wk-x">${nm0}→${nm1} 이어짐</span>`:''}</div>
       <div class="wk-tr">${bg}<div class="wk-bar ${cls} ${cut0?'c0':''} ${cut1?'c1':''}" style="left:${P(L)}%;width:${P(R+1)-P(L)}%"><i class="pf" style="width:${pct}%"></i><span>${cut0?'◀ ':''}${md(s)}~${md(e)}${cut1?' ▶':''}</span></div></div>
     </div>`; }).join('');
-  $('gvLook').innerHTML=`<div class="wk-nav"><button class="mini-btn" id="wkPrev">◀ 이전 주</button><button class="mini-btn" id="wkNow" ${sWeekOff===0?'disabled':''}>금주로</button><button class="mini-btn" id="wkNext">다음 주 ▶</button></div>
+  $('gvLook').innerHTML=`<div class="wk-nav"><button class="mini-btn" id="wkPrev" ${canPrev?'':'disabled'}>◀ 2주 전</button><span class="wk-pos">${md(w0)}~${md(wEnd)} · ${pgI-pg0+1}/${pgN-pg0+1}</span><button class="mini-btn" id="wkNow" ${sWeekOff===0?'disabled':''}>금주로</button><button class="mini-btn" id="wkNext" ${canNext?'':'disabled'}>2주 뒤 ▶</button></div>
     <div class="wk-sums">${card(nm0,w0,S0,'w0')}${card(nm1,w1,S1,'w1')}</div>
     <div class="card wk-board">
-      <div class="wk-hd"><div class="wk-hn w0">${nm0}</div><div class="wk-hn w1">${nm1}</div></div>
+      <div class="wk-hd"><div class="wk-hn w0"><button class="wk-arr l" data-wk="-2" ${canPrev?'':'disabled'} title="2주 전">◀</button>${nm0}</div><div class="wk-hn w1">${nm1}<button class="wk-arr r" data-wk="2" ${canNext?'':'disabled'} title="2주 뒤">▶</button></div></div>
       <div class="wk-days">${head}</div>
       ${rows||'<div class="paste-hint" style="padding:12px 0">이 두 주에 걸친 공정이 없습니다</div>'}
       <div class="s-legend" style="margin-top:8px"><span><i style="background:var(--s-crit)"></i>크리티컬</span><span><i style="background:var(--s-norm)"></i>그 외</span><span><i style="background:#adb5bd"></i>완료</span><span>◀ ▶ 두 주 밖으로 이어짐</span></div>
     </div>`;
   $('gvLook').querySelectorAll('[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
-  $('wkPrev').onclick=()=>{ sWeekOff--; sLook(); };
-  $('wkNext').onclick=()=>{ sWeekOff++; sLook(); };
+  const go=d=>{ sWeekOff+=d; sLook(); const b=$('gvLook').querySelector('.wk-board'); if(b&&b.getBoundingClientRect().top<0) b.scrollIntoView({block:'start'}); };
+  $('wkPrev').onclick=()=>go(-2);
+  $('wkNext').onclick=()=>go(2);
+  $('gvLook').querySelectorAll('[data-wk]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); go(+b.dataset.wk); });
   $('wkNow').onclick=()=>{ sWeekOff=0; sLook(); };
 }
 
