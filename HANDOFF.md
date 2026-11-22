@@ -447,3 +447,9 @@ const APP = {
 - 앱 `parseManpower`: 메인 시공사 직영 줄(■P-이앤씨/■플랜텍/■포스코DX: n명) → `pec`, ■협력사/하도사 → `partner`(+[직종]·[취약작업자]), '■구역_플랜텍' 머리 → 업체 `area`, ○/□ 작업시간·작업내용, '장비: …' 줄(대수 합). `co`는 자동 판별 + 저장 옆 선택칸. 예전 저장분은 `mpFix`가 보정.
 - 화면: 현장 전체 출력인원(근무조 × 시공사, 직영·협력, 현장 합계·미입력 표시) → 업체별(시공사 묶음) → 근무조 선택 후 시공사별 칸(구역별 업체 카드, 시공사별 삭제).
 - 미검증: 포스코DX 실제 보고 형식(플랜텍과 비슷하다고 가정).
+
+## 33. 휴대폰 홈 화면 앱 설치 (PWA, 앱 v6.12.0, 2026-11-22)
+- `manifest.webmanifest`(이름 'G2R2 공정', standalone, start_url/scope `./`), `icons/`(192·512·maskable-512·apple-touch 180·favicon 32 — 진한 배경+주황 고로+G2R2, PowerShell System.Drawing으로 생성), `sw.js`(같은 주소 GET만 네트워크 먼저·끊기면 캐시, Worker API·CDN은 손대지 않음, 캐시 이름 `g2r2-shell-v1`).
+- 앱: 첫 화면 위 `#instBar`(설치 안 된 휴대폰에서만, ✕는 14일 숨김 `tbm_inst_hide`), 설정 창 `#instSet`, 안내 창 `#instModal`. 안드로이드는 `beforeinstallprompt`로 바로 설치 창, 아이폰은 공유→홈 화면에 추가 안내, 카카오톡 등 앱 안 브라우저는 `kakaotalk://web/openExternal?url=`로 외부 브라우저 열기 + 메뉴 안내.
+- 아이폰 홈 화면 앱은 사파리와 저장소가 따로라 관리자 로그인을 다시 해야 함(안내 문구에 있음).
+- 미검증: 실기기 설치 창·카톡 외부 열기 동작.

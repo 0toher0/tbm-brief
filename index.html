@@ -10,6 +10,11 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>G2R2 공정관리 · 광양 2고로 개수</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="G2R2 공정">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -698,6 +703,16 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 .mp-area{font-size:.74rem;font-weight:800;color:var(--steel);margin:10px 0 2px}
 .mp-tasks.open li.more{display:list-item}
 .h-admin.on{background:#2b8a3e;border-color:#2b8a3e;color:#fff}
+.inst-bar{display:none;align-items:center;gap:8px;background:#fff4e6;border:1px solid #ffd8a8;border-radius:10px;padding:8px 10px;margin:8px 0 2px;font-size:.78rem;color:var(--ink)}
+.inst-bar.show{display:flex}
+.inst-bar img{width:30px;height:30px;border-radius:7px;flex:none}
+.inst-bar .t{flex:1;line-height:1.3}
+.inst-bar .t small{display:block;color:var(--steel);font-size:.66rem}
+.inst-bar .go{background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:.74rem;padding:7px 10px;white-space:nowrap}
+.inst-bar .x{background:none;border:none;color:var(--steel);font-size:1rem;padding:2px 4px}
+.inst-steps{margin:10px 0 0;padding-left:20px;font-size:.84rem;line-height:1.7;color:var(--ink)}
+.inst-steps b{color:var(--accent)}
+.inst-key{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;background:#f8f9fa;font-weight:700}
 </style>
 </head>
 <body>
@@ -715,6 +730,8 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 </header>
 
 <main>
+<!-- 📲 홈 화면에 앱 아이콘 추가 안내 (설치 안 된 브라우저에서만) -->
+<div class="inst-bar" id="instBar"><img src="icons/icon-192.png" alt=""><div class="t"><b>휴대폰 홈 화면에 앱 아이콘 추가</b><small>현장에서 한 번에 열기 · 주소창 없이 앱처럼</small></div><button class="go" id="instGo">📲 설치</button><button class="x" id="instX" title="닫기">✕</button></div>
 <!-- 그룹 하위 탭 (일일작업 · 현장 · 안전) -->
 <div class="grp-bar" id="grpBar" style="display:none"></div>
 
@@ -1194,6 +1211,14 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 
 <div class="undo-bar" id="undoBar"></div>
 <!-- 관리자 로그인 -->
+<div class="modal-bg" id="instModal">
+  <div class="modal">
+    <h2>📲 홈 화면에 앱 아이콘 추가</h2>
+    <div id="instBody"></div>
+    <div class="btn-row"><button class="btn ghost" onclick="closeModal('instModal')">닫기</button></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="adminModal">
   <div class="modal">
     <h2>관리자 로그인</h2>
@@ -1286,6 +1311,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
       <button class="btn ghost" onclick="closeModal('modalBg')">닫기</button>
       <button class="btn primary" onclick="saveSettings()">저장하고 불러오기</button>
     </div>
+    <button class="btn ghost" id="instSet" style="width:100%;margin-top:12px">📲 휴대폰 홈 화면에 앱 아이콘 추가</button>
     <div class="f-hint" id="buildInfo" style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"></div>
   </div>
 </div>
@@ -1308,7 +1334,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.11.0',
+  version : '6.12.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -2755,6 +2781,61 @@ async function renderInfo(){
 /* ================= 설정 ================= */
 function openModal(id){ $(id).classList.add('show'); }
 function closeModal(id){ $(id).classList.remove('show'); }
+
+/* ================= 📲 홈 화면 설치 (PWA: manifest.webmanifest + sw.js) =================
+   안드로이드 크롬·삼성인터넷: 브라우저 설치 창(beforeinstallprompt) / 아이폰: 공유 → 홈 화면에 추가 안내
+   카카오톡 등 앱 안 브라우저는 설치가 안 되므로 외부 브라우저로 열기 */
+let instEvt=null;
+const INST_LS='tbm_inst_hide';
+const instUA=navigator.userAgent||'';
+const instIOS=/iPhone|iPad|iPod/i.test(instUA)||(/Macintosh/.test(instUA)&&navigator.maxTouchPoints>1);
+const instAndroid=/Android/i.test(instUA);
+const instKakao=/KAKAOTALK/i.test(instUA);
+const instInApp=instKakao||/NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp|BAND\//i.test(instUA);
+function instStandalone(){ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
+function instShowBar(){
+  const hid=+(localStorage.getItem(INST_LS)||0);
+  const on=!instStandalone()&&(instIOS||instAndroid||instEvt)&&Date.now()-hid>14*864e5;
+  $('instBar').classList.toggle('show',!!on);
+  $('instSet').style.display=instStandalone()?'none':'';
+}
+async function instOpen(){
+  if(instStandalone()){ toast('이미 홈 화면 앱으로 실행 중입니다'); return; }
+  if(instEvt&&!instInApp){ // 안드로이드 크롬·삼성인터넷·PC 크롬/엣지: 바로 설치 창
+    const e=instEvt; instEvt=null;
+    try{ e.prompt(); const r=await e.userChoice; if(r&&r.outcome==='accepted'){ toast('홈 화면에 G2R2 공정 아이콘을 추가했습니다'); $('instBar').classList.remove('show'); } }catch(err){ instGuide(); }
+    return;
+  }
+  instGuide();
+}
+function instGuide(){
+  const url=location.href.split('#')[0];
+  let h='';
+  if(instInApp){
+    h=`<div class="desc">${instKakao?'카카오톡':'앱'} 안에서 열린 화면은 홈 화면에 추가할 수 없습니다. 먼저 <b>${instIOS?'사파리':'크롬이나 삼성 인터넷'}</b>에서 열어 주세요.</div>
+      ${instKakao?`<button class="btn primary" id="instExt" style="width:100%;margin-top:10px">🌐 외부 브라우저로 열기</button>`:''}
+      <ol class="inst-steps"><li>${instKakao?'버튼이 안 되면 ':''}화면 ${instIOS?'아래':'위/아래'}의 <span class="inst-key">⋮</span> 또는 <span class="inst-key">⋯</span> 메뉴 → <b>다른 브라우저로 열기</b></li><li>열린 브라우저에서 다시 <b>⚙ 설정 → 📲 홈 화면에 앱 아이콘 추가</b></li></ol>`;
+  }else if(instIOS){
+    const chrome=/CriOS/i.test(instUA);
+    h=`<div class="desc">아이폰·아이패드는 아래 순서로 추가합니다 (${chrome?'크롬':'사파리'} 기준).</div>
+      <ol class="inst-steps"><li>${chrome?'주소창 오른쪽':'화면 아래'}의 <b>공유 버튼</b> <span class="inst-key">⬆︎</span> 누르기</li><li>목록을 올려 <b>홈 화면에 추가</b> 누르기</li><li>이름 'G2R2 공정' 확인 후 오른쪽 위 <b>추가</b></li></ol>
+      <div class="f-hint" style="margin-top:8px">홈 화면의 G2R2 아이콘으로 열면 주소창 없이 앱처럼 열립니다. 관리자 로그인은 아이콘으로 연 화면에서 한 번 더 해 주세요.</div>`;
+  }else{
+    h=`<div class="desc">브라우저 메뉴에서 추가합니다.</div>
+      <ol class="inst-steps"><li>오른쪽 위(삼성 인터넷은 아래) <span class="inst-key">⋮</span> 또는 <span class="inst-key">≡</span> 메뉴</li><li><b>홈 화면에 추가</b> 또는 <b>앱 설치</b> 누르기</li><li><b>설치</b>/<b>추가</b> 확인</li></ol>
+      <div class="f-hint" style="margin-top:8px">메뉴에 없으면 크롬에서 이 주소를 열어 주세요. 관리자 로그인은 아이콘으로 연 화면에서 한 번 더 해 주세요.</div>`;
+  }
+  h+=`<div class="f-hint" style="margin-top:10px;word-break:break-all">주소: ${esc(url)} <button class="mini-btn" id="instCopy">주소 복사</button></div>`;
+  $('instBody').innerHTML=h; $('instModal').classList.add('show');
+  if($('instExt')) $('instExt').onclick=()=>{ location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url); };
+  $('instCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText(url); toast('주소를 복사했습니다'); }catch(e){ toast(url); } };
+}
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); instEvt=e; instShowBar(); });
+window.addEventListener('appinstalled',()=>{ instEvt=null; $('instBar').classList.remove('show'); toast('홈 화면에 G2R2 공정 아이콘을 추가했습니다'); });
+$('instGo').onclick=instOpen; $('instSet').onclick=()=>{ closeModal('modalBg'); instOpen(); };
+$('instX').onclick=()=>{ try{ localStorage.setItem(INST_LS,String(Date.now())); }catch(e){} $('instBar').classList.remove('show'); toast('설정(⚙)에서 언제든 다시 추가할 수 있습니다'); };
+instShowBar();
+if('serviceWorker' in navigator&&/^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register('sw.js').catch(()=>{});
 function openSettings(){
   $('inNx').value=S.nx;$('inNy').value=S.ny;$('inSido').value=S.sido;$('inStations').value=S.stations;
   $('buildInfo').innerHTML=`버전 v${APP.version} · 채널 ${APP.channel} · 데이터소스 <b>${APP.dataSource}</b><br>프록시: ${APP.proxyBase}`;
