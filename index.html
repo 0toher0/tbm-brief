@@ -123,12 +123,19 @@ section{margin-top:16px}
 /* 작업 목록 (오늘 탭) */
 .tasklist{display:flex;flex-direction:column;gap:8px}
 .taskrow{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden}
-.taskrow-head{display:flex;align-items:center;gap:9px;padding:11px 13px;cursor:pointer}
+/* v6.25.3: 휴대폰에서 작업명이 잘리던 문제 — 윗줄 작업명 전체(줄바꿈), 아랫줄 Class·업체·공정률·날짜 + 위험요인 */
+.taskrow-head{display:block;padding:10px 12px;cursor:pointer}
+.tr-top{display:flex;align-items:flex-start;gap:7px}
+.tr-top .tr-con{margin-top:2px}
+.tr-top .pin-btn{flex:none;margin-top:1px}
+.tr-top .tr-caret{margin-top:3px}
+.tr-bot{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:5px}
+.tr-bot .tr-meta{margin-top:0;line-height:1.5}
 .taskrow-head:active{background:#fafafa}
 .tr-con{font-size:.64rem;font-weight:800;padding:2px 6px;border-radius:5px;color:#fff;flex:none}
 .tr-con.c-posco{background:var(--posco)} .tr-con.c-plantec{background:#5f3dc4} .tr-con.c-dx{background:#0b7285} .tr-con.c-etc{background:var(--steel)}
 .tr-main{flex:1;min-width:0}
-.tr-task{font-size:.86rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-task{flex:1;min-width:0;font-size:.86rem;font-weight:700;line-height:1.4;word-break:keep-all;overflow-wrap:anywhere}
 .tr-meta{font-size:.68rem;color:var(--steel);margin-top:1px}
 .cls-badge{display:inline-block;font-size:.6rem;font-weight:800;padding:0 5px;border-radius:4px;margin-right:4px;background:#e8eefc;color:#2f4bb0;font-family:var(--num);vertical-align:1px}
 .src-badge.plan{background:#fff1c2;color:#8a6100}
@@ -1611,7 +1618,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.25.2',
+  version : '6.25.3',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -2467,14 +2474,16 @@ function renderTaskList(){
     el.className='taskrow'+(i===openTaskIdx?' open':'');
     el.innerHTML=`
       <div class="taskrow-head">
-        <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
-        <div class="tr-main">
+        <div class="tr-top">
+          <span class="tr-con ${conClass(t.contractor)}">${esc(shortCon(t.contractor))}</span>
           <div class="tr-task">${srcBadge}${t.kind==='명일'?'<span class="src-badge plan">예정</span>':''}${esc(firstTaskLine(t.task))}</div>
-          <div class="tr-meta">${taskCls(t)?`<span class="cls-badge">${taskCls(t)}</span>`:''}${t.shift?`<span class="shift-badge s-${esc(t.shift)}">${esc(t.shift)}</span>`:''}${esc(t.subcon||'-')}${t.src==='sd'?(t.progress?` · ${esc(t.progress)}`:'')+(t.period?` · ${esc(t.period)}`:''):` · ${t.headcountN}명`}${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager&&t.src!=='sd'?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
+          ${pinBtn(dotToDash(t.date||todayDot()),'task',t._id,firstTaskLine(t.task),[t.shift,t.contractor,t.subcon,t.headcountN?t.headcountN+'명':''].filter(Boolean).join(' · '))}
+          <span class="tr-caret">▶</span>
         </div>
-        <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
-        ${pinBtn(dotToDash(t.date||todayDot()),'task',t._id,firstTaskLine(t.task),[t.shift,t.contractor,t.subcon,t.headcountN?t.headcountN+'명':''].filter(Boolean).join(' · '))}
-        <span class="tr-caret">▶</span>
+        <div class="tr-bot">
+          <div class="tr-meta">${taskCls(t)?`<span class="cls-badge">${taskCls(t)}</span>`:''}${t.shift?`<span class="shift-badge s-${esc(t.shift)}">${esc(t.shift)}</span>`:''}${esc(t.subcon||'-')}${t.src==='sd'?(t.progress?` · ${esc(t.progress)}`:'')+(t.period?` · ${esc(t.period)}`:''):` · ${t.headcountN}명`}${t.vuln?.total?` · 취약 ${t.vuln.total}`:''}${t.manager&&t.src!=='sd'?` · ${esc(t.manager.split(' ')[0])}`:''}</div>
+          <div class="tr-risks">${risksTags||'<span class="tr-meta">위험분류 없음</span>'}</div>
+        </div>
       </div>
       <div class="taskrow-detail">${renderHazard(t)}
         <div class="task-actions">
