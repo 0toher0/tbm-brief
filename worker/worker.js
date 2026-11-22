@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.10.0',
+        version: '3.11.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -1015,7 +1015,7 @@ async function handleKakao(request, env, url, cors) {
   if (sub === 'patrol-photo') {
     if (request.method === 'POST') {
       const item = parseInt(body.item_id, 10), data = String(body.data || '');
-      if (!item || !/^data:image\//.test(data)) return json({ error: 'bad_payload' }, 400, cors);
+      if (!item || !/^data:(image|audio)\//.test(data)) return json({ error: 'bad_payload' }, 400, cors); // v3.11.0: 고위험작업 항목에 음성 녹음도
       if (data.length > 1400000) return json({ error: 'too_large' }, 400, cors);
       const r = await db.prepare(`INSERT INTO patrol_photos(item_id,data,created_at) VALUES(?,?,?)`).bind(item, data, now.ts).run();
       return json({ ok: true, id: r.meta && r.meta.last_row_id }, 200, cors);
@@ -1486,8 +1486,9 @@ async function handleMemo(request, env, url, cors) {
   if (sub === 'block') {
     const e = needPost(); if (e) return e;
     const noteId = parseInt(body.note_id, 10);
-    const kind = ['table', 'image', 'text'].includes(body.kind) ? body.kind : null;
+    const kind = ['table', 'image', 'text', 'audio'].includes(body.kind) ? body.kind : null; // v3.11.0: audio = 점검메모 음성 녹음
     if (!noteId || !kind || !body.payload) return json({ error: 'bad_payload' }, 400, cors);
+    if (kind === 'audio' && !/^data:audio\//.test(String(body.payload.data || ''))) return json({ error: 'bad_payload' }, 400, cors);
     const payload = JSON.stringify(body.payload);
     if (payload.length > MEMO_MAX_PAYLOAD) return json({ error: 'too_large', bytes: payload.length, max: MEMO_MAX_PAYLOAD }, 413, cors);
     const mx = await db.prepare(`SELECT COALESCE(MAX(ord),0) AS m FROM memo_blocks WHERE note_id=?`).bind(noteId).first();

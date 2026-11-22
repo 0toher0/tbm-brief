@@ -306,7 +306,7 @@ details.k-more summary{font-size:.8rem;font-weight:800;cursor:pointer;padding:6p
 .lg-row:first-of-type{border-top:none}
 .lg-kv{font-size:.78rem;color:var(--ink2);padding:3px 0;line-height:1.55}
 .lg-foot{margin-top:12px;font-size:.7rem;color:var(--steel);line-height:1.5}
-/* ===== 순시메모 ===== */
+/* ===== 점검메모 ===== */
 .m-item{padding:11px 12px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
 .m-item:last-child{border-bottom:none}
 .m-item:active{background:#f6f7f7}
@@ -392,9 +392,9 @@ table.ma-table th{background:#f2f3f5;font-weight:600}
 .r-diff{font-family:var(--num);font-weight:700}
 .r-diff.up{color:var(--green)} .r-diff.dn{color:var(--red)}
 .r-grp{margin-top:12px}
-/* 📌 순회 체크 */
-.pin-btn{border:none;background:none;font-size:1.05rem;line-height:1;padding:2px 3px;filter:grayscale(1);opacity:.35}
-.pin-btn.on{filter:none;opacity:1}
+/* ⚠ 고위험작업 */
+.pin-btn{border:1px solid #ced4da;background:#fff;color:#868e96;font-size:.62rem;font-weight:800;line-height:1.3;border-radius:6px;padding:2px 6px;white-space:nowrap}
+.pin-btn.on{background:#fa5252;border-color:#fa5252;color:#fff}
 .p-badge{display:inline-block;min-width:16px;font-size:.62rem;background:var(--red);color:#fff;border-radius:8px;padding:0 4px}
 .p-badge:empty{display:none}
 .p-progbar{height:8px;background:#e4e6e8;border-radius:4px;overflow:hidden;margin-top:10px}
@@ -570,6 +570,59 @@ table.s-t tr[data-act]{cursor:pointer}
 .dk-pen button{width:22px;height:22px;border-radius:50%;border:1px solid #ced4da;font-size:.62rem;padding:0;background:#fff}
 .dk-pen .y{background:#ffe066} .dk-pen .g{background:#96f2d7} .dk-pen .p{background:#fcc2d7}
 .dk.ed .dk-t{padding-right:92px}
+/* v6.25 일일작업 새 디자인: 요약 카드 + 금일|명일 작업판 */
+.dh{background:linear-gradient(135deg,#1f3a5f,#2f5d8a);color:#fff;border-radius:16px;padding:12px 14px;margin-top:10px;box-shadow:0 6px 18px rgba(31,58,95,.18)}
+.dh .d-nav .mini-btn{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)}
+.dh-date{font-size:1.15rem;font-weight:900}
+.dh .dplus{background:rgba(255,255,255,.2);color:#fff}
+.dh-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+@media(max-width:520px){ .dh-kpi{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.dh-kpi>div{background:rgba(255,255,255,.12);border-radius:10px;padding:7px 9px;min-width:0}
+.dh-kpi .l{font-size:.6rem;opacity:.85;font-weight:700}
+.dh-kpi .v{font-size:1.1rem;font-weight:900;line-height:1.25;margin-top:2px}
+.dh-kpi .v small{font-size:.6rem;font-weight:700;opacity:.85}
+.dh-bar{height:5px;background:rgba(255,255,255,.22);border-radius:3px;margin-top:5px;position:relative}
+.dh-bar i{position:absolute;left:0;top:0;bottom:0;background:#69db7c;border-radius:3px}
+.dh-bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#ffd43b}
+.dh-pv{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.dh-pv span{font-size:.66rem;font-weight:800;border-radius:20px;padding:3px 9px;background:rgba(255,255,255,.15)}
+.dh-meta{font-size:.62rem;opacity:.78;margin-top:6px}
+.dh .btn-row{margin-top:8px}
+.dh .btn-row .btn{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3);padding:6px 8px;font-size:.74rem;min-height:0}
+.dg-flt{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.dg-flt button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:5px 10px;font-size:.7rem;font-weight:800;color:var(--ink2)}
+.dg-flt button.on{background:#1f3a5f;border-color:#1f3a5f;color:#fff}
+.dg-flt button b{font-weight:900;opacity:.75}
+.dg{background:#fff;border:1px solid var(--line);border-radius:14px;margin-top:8px;overflow:hidden}
+.dg-head,.dg-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr)}
+.dg-head{background:#f8f9fa;font-size:.68rem;font-weight:800;color:var(--ink2)}
+.dg-head>div{padding:8px}
+.dg-head small{font-weight:600;color:var(--steel)}
+.dg-head .td{color:#1864ab;border-left:1px solid var(--line);text-align:center} .dg-head .tm{color:#5f3dc4;border-left:1px solid var(--line);text-align:center}
+.dg-cls{display:flex;justify-content:space-between;padding:6px 10px;font-size:.66rem;font-weight:900;color:#495057;background:#f1f3f5;border-top:1px solid var(--line)}
+.dg-row{border-top:1px solid #f1f3f5;cursor:pointer;min-height:48px}
+.dg-row:hover{background:#fafbfc} .dg-row.open{background:#f3f8ff}
+.dg-n{padding:7px 8px;min-width:0}
+.dg-n .t{font-size:.76rem;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.dg-n .m{font-size:.62rem;color:var(--steel);margin-top:2px;line-height:1.5}
+.dg-n .rk{display:inline-block;font-size:.56rem;font-weight:900;color:#c92a2a;background:#fff0f0;border-radius:4px;padding:0 4px;margin-left:3px}
+.dg-pb{display:inline-block;font-size:.56rem;font-weight:900;border-radius:4px;padding:0 4px;margin-right:4px}
+.dg-pb.ok{background:#ebfbee;color:#2b8a3e} .dg-pb.nw{background:#e7f5ff;color:#1864ab}
+.dg-row.mk-y .dg-n .t{background:linear-gradient(transparent 50%,#ffe066 50%)} .dg-row.mk-g .dg-n .t{background:linear-gradient(transparent 50%,#96f2d7 50%)} .dg-row.mk-p .dg-n .t{background:linear-gradient(transparent 50%,#fcc2d7 50%)}
+.dg-tl{grid-column:2/4;display:grid;grid-template-columns:1fr 1fr;align-items:center;background:linear-gradient(90deg,transparent calc(50% - .5px),#e9ecef calc(50% - .5px),#e9ecef calc(50% + .5px),transparent calc(50% + .5px))}
+.dg-bar{position:relative;margin:0 5px;height:26px;border-radius:7px;display:flex;align-items:center;padding:0 8px;font-size:.62rem;font-weight:800;color:#fff;overflow:hidden;white-space:nowrap}
+.dg-bar.c{grid-column:1/3;background:linear-gradient(90deg,#1c7ed6,#7048e8);box-shadow:0 2px 6px rgba(76,110,245,.25)}
+.dg-bar.t{grid-column:1/2;background:#4dabf7}
+.dg-bar.m{grid-column:2/3;background:repeating-linear-gradient(135deg,#e5dbff 0 6px,#f3f0ff 6px 12px);color:#5f3dc4;border:1px dashed #9775fa}
+.dg-bar .pg{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.25)}
+.dg-bar span{position:relative;overflow:hidden;text-overflow:ellipsis}
+.dg-det{padding:0 8px 10px;background:#f3f8ff}
+.dg-det .dk{margin-top:0}
+.dg-lg{display:flex;gap:10px;flex-wrap:wrap;font-size:.6rem;color:var(--steel);padding:7px 10px;border-top:1px solid var(--line)}
+.dg-lg i{display:inline-block;width:18px;height:8px;border-radius:3px;vertical-align:middle;margin-right:3px}
+.m-aud{width:100%;margin-top:4px}
+.mini-btn.rec,.btn.rec{background:#fa5252!important;color:#fff!important;border-color:#fa5252!important}
+.p-ph.aud{width:100%;height:auto;display:flex;align-items:center;gap:4px} .p-ph.aud audio{flex:1;min-width:0}
 .dw-board{overflow-x:auto}
 .dw-t{border-collapse:collapse;width:100%;table-layout:fixed;font-size:.66rem}
 .dw-t th,.dw-t td{border-bottom:1px solid #f1f3f5;padding:4px 2px;text-align:center}
@@ -1312,10 +1365,10 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   </div>
 </div>
 
-<!-- ============ 순시메모 (관리자 전용) ============ -->
+<!-- ============ 점검메모 (관리자 전용) ============ -->
 <div class="pg" id="pgMemo">
   <div id="mLogin" class="card" style="display:none;margin-top:14px">
-    <div class="sec-t" style="margin-bottom:6px">순시메모 · 관리자 확인</div>
+    <div class="sec-t" style="margin-bottom:6px">점검메모 · 관리자 확인</div>
     <div class="paste-hint">관리자 암호가 있어야 볼 수 있습니다.</div>
     <div class="btn-row">
       <input class="f-input" id="mPass" type="password" placeholder="관리자 암호" style="flex:2">
@@ -1323,8 +1376,9 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
     </div>
   </div>
   <div id="mMain" style="display:none">
-    <div class="k-seg" id="mSeg"><button class="on" data-mv2="memo">📝 메모</button><button data-mv2="patrol">📌 순회 체크 <span id="pBadge" class="p-badge"></span></button></div>
-    <!-- 📌 순회 체크: 고른 항목만 모아 현장 확인 · 상태 · 음성 메모 · 사진 -->
+    <div class="paste-hint" style="margin:8px 0 6px">🦺 담당자가 현장을 방문해 실제로 어떻게 관리되는지 점검하고 남기는 기록입니다. <b>오늘 TBM</b>에서 <b>⚠ 고위험</b>으로 표시한 작업이 <b>고위험작업</b>에 모입니다.</div>
+    <div class="k-seg" id="mSeg"><button class="on" data-mv2="memo">📝 점검메모</button><button data-mv2="patrol">⚠ 고위험작업 <span id="pBadge" class="p-badge"></span></button></div>
+    <!-- ⚠ 고위험작업: 고른 항목만 모아 현장 확인 · 상태 · 음성 메모 · 사진 -->
     <div id="pView" style="display:none">
       <div id="pDayChips" class="date-chips"></div>
       <div id="pProg"></div>
@@ -1336,13 +1390,13 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
       <div id="pList"></div>
       <div class="btn-row" style="margin-top:14px">
         <button class="btn done" id="pShare">📤 결과 공유 (카톡)</button>
-        <button class="btn ghost" id="pToMemo">📝 순시메모로 저장</button>
+        <button class="btn ghost" id="pToMemo">📝 점검메모로 저장</button>
       </div>
       <div class="paste-hint" style="margin-top:8px">🎤 음성 입력은 <b>크롬</b>에서 됩니다. 카톡 안에서 연 화면은 음성 인식이 막혀 있을 수 있어요 — 그때는 키보드의 마이크 버튼을 쓰거나 크롬으로 여세요.</div>
     </div>
     <div id="mListView">
       <section style="margin-top:4px">
-        <div class="sec-h"><div class="sec-t">순시메모 <small>날짜별 · 엑셀 표·사진 첨부</small></div></div>
+        <div class="sec-h"><div class="sec-t">점검메모 <small>날짜별 · 엑셀 표·사진 첨부</small></div></div>
         <div class="btn-row" style="margin-top:0">
           <input class="f-input" type="date" id="mDay" style="flex:1">
           <button class="btn primary" id="mNew" style="flex:1">+ 새 메모</button>
@@ -1370,7 +1424,8 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
           <div><label class="f-label" style="margin-top:0">제목</label><input class="f-input" id="mTitle" placeholder="예: 3층 BFG 라인 순시"></div>
         </div>
         <textarea class="f-input" id="mBody" placeholder="순시 메모 (자동 저장)"></textarea>
-        <button class="mini-btn" id="mBodyMic" style="margin-top:6px">🎤 말하기</button>
+        <button class="mini-btn" id="mBodyMic" style="margin-top:6px">🎤 말하기(글씨로)</button>
+        <button class="mini-btn" id="mBodyRec" style="margin-top:6px">🎙 음성 녹음</button>
         <div id="mSaveState"></div>
       </div>
       <section>
@@ -1399,7 +1454,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   <button class="tab-btn nav-btn on" data-grp="sched" data-pg="pgSched"><span class="ic">📈</span>공정</button>
   <button class="tab-btn nav-btn" data-grp="gantt" data-pg="pgGantt"><span class="ic">🗓</span>공정표</button>
   <button class="tab-btn nav-btn" data-grp="daily" data-pg="pgDaily"><span class="ic">📋</span>일일작업</button>
-  <button class="tab-btn nav-btn" data-grp="meet" data-pg="pgMtgS"><span class="ic">📝</span>회의결과</button>
+  <button class="tab-btn nav-btn" data-grp="meet" data-pg="pgMtgC"><span class="ic">📝</span>회의결과</button>
   <button class="tab-btn nav-btn" data-grp="safe" data-pg="pgToday"><span class="ic">🦺</span>안전</button>
   <button class="tab-btn nav-btn" data-grp="site" data-pg="pgKakao" id="navSite" style="display:none" title="관리자 전용"><span class="ic">💬</span>현장</button>
 </nav>
@@ -1410,7 +1465,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   <button class="tab-btn" data-pg="pgRecords"><span class="ic">▤</span>기록</button>
   <button class="tab-btn" data-pg="pgInfo"><span class="ic">§</span>기준</button>
   <button class="tab-btn" data-pg="pgKakao" id="tabKakao" style="display:none"><span class="ic">✉</span>현장톡</button>
-  <button class="tab-btn" data-pg="pgMemo" id="tabMemo" style="display:none"><span class="ic">✓</span>순시메모</button>
+  <button class="tab-btn" data-pg="pgMemo" id="tabMemo" style="display:none"><span class="ic">✓</span>점검메모</button>
 </div>
 
 <div class="undo-bar" id="undoBar"></div>
@@ -1556,7 +1611,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.24.0',
+  version : '6.25.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3704,7 +3759,7 @@ $('kImportBtn').onclick=kImport;
 $('kMsgsBox').addEventListener('toggle',()=>{ if($('kMsgsBox').open) kLoadMsgs().catch(e=>toast(kErr(e))); });
 $('kRawBox').addEventListener('toggle',()=>{ if($('kRawBox').open) kLoadRaw().catch(e=>toast(kErr(e))); });
 
-/* ================= 순시메모 (관리자 전용) =================
+/* ================= 점검메모 (관리자 전용) =================
  * GitHub 0toher0/memo(Streamlit memo_attach)의 붙여넣기·렌더 로직을 이 앱용으로 옮김.
  * - 엑셀 셀 범위 Ctrl+V → 배경색·글자색·굵기·정렬·테두리·병합·열너비 그대로 표로 저장/표시
  * - 이미지로 붙이기(화면 캡쳐·엑셀 범위를 그림으로) + 사진 파일/카메라 추가
@@ -4005,6 +4060,8 @@ function mBlockHtml(b,readonly){
     <button class="mini-btn" data-act="del" data-id="${b.id}" style="color:var(--red)">삭제</button>`}</div>`;
   if(b.kind==='table') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyx" data-id="${b.id}">📋 엑셀로 복사</button><button class="mini-btn" data-act="copyt" data-id="${b.id}">텍스트 복사</button>${readonly?'':`<button class="mini-btn" data-act="csv" data-id="${b.id}">⬇ CSV</button>`}`)}
     <div class="m-twrap" data-tbl="${b.id}">${mTableHtml(b.payload,!readonly)}</div>${readonly?'':'<div class="m-tip">칸을 누르면 값 수정(체크 표시 등) · 서식은 유지</div>'}</div>`;
+  if(b.kind==='audio') return `<div class="m-block">${cap}${tools(`<button class="mini-btn" data-act="saveA" data-id="${b.id}">⬇ 저장</button>`)}
+    ${/^data:audio\//.test(b.payload&&b.payload.data||'')?`<audio class="m-aud" controls preload="metadata" src="${esc(b.payload.data)}"></audio>`:'(녹음 파일 없음)'}</div>`;
   if(b.kind==='image') return `<div class="m-block">${cap}${tools(`<button class="mini-btn m-copy" data-act="copyi" data-id="${b.id}">📋 이미지 복사</button><button class="mini-btn" data-act="save" data-id="${b.id}">⬇ 저장</button>`)}
     <img class="m-img" src="${b.payload.data}" alt=""></div>`;
   return `<div class="m-block">${cap}${tools(`<button class="mini-btn" data-act="copyt" data-id="${b.id}">복사</button>`)}<pre class="m-text">${esc(b.payload.text||'')}</pre></div>`;
@@ -4019,6 +4076,7 @@ function mBindBlocks(root){
       else if(act==='csv'){ const q=v=>'"'+String(v).replace(/"/g,'""')+'"'; const csv=mTsv(b.payload).split('\n').map(l=>l.split('\t').map(q).join(',')).join('\r\n');
         const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download=(b.caption||$('mTitle').value||'표')+'.csv'; a.click(); }
       else if(act==='copyi'){ toast(await mCopyImage(b.payload.data)?'이미지 복사됨 — 붙일 곳에서 Ctrl+V':'이 브라우저는 이미지 복사를 지원하지 않습니다 — ⬇ 저장을 쓰세요'); }
+      else if(act==='saveA'){ const a=document.createElement('a'); a.href=b.payload.data; a.download=(b.caption||'점검녹음').replace(/[\\/:*?"<>|]/g,'_')+(/mp4/.test(b.payload.mime||'')?'.m4a':/ogg/.test(b.payload.mime||'')?'.ogg':'.webm'); a.click(); }
       else if(act==='save'){ const a=document.createElement('a'); a.href=b.payload.data; a.download=(b.caption||'현장사진')+(b.payload.mime==='image/png'?'.png':'.jpg'); a.click(); }
       else if(act==='cap'){ const c=prompt('설명(캡션)',b.caption||''); if(c===null) return; await mApi('block-update',{id:b.id,caption:c}); await mLoadNote(); }
       else if(act==='up'||act==='down'){ await mApi('block-move',{id:b.id,dir:act==='up'?-1:1}); await mLoadNote(); }
@@ -4089,18 +4147,20 @@ $('mLoginBtn').onclick=async()=>{ const p=$('mPass').value.trim(); if(!p) return
 
 /* ================= 네비/이벤트 ================= */
 
-/* ================= 📌 순회 체크 =================
+/* ================= ⚠ 고위험작업 =================
  * 오늘 탭 작업·현장톡 작업·이벤트에서 📌로 고른 항목만 모아 현장을 돌며 확인.
- * 항목마다 상태(양호/지적/조치완료) · 메모(🎤 말하면 글씨로) · 사진, 결과는 카톡 공유·순시메모 저장.
+ * 항목마다 상태(양호/지적/조치완료) · 메모(🎤 말하면 글씨로) · 사진, 결과는 카톡 공유·점검메모 저장.
  * 서버 D1 patrol_items / patrol_photos — 지우지 않는 한 남는다. */
 let pSet=new Set(), pAll=[], pDay=null, pMode='memo', pFilter='all';
 const pKey=(day,src,ref)=>`${day}|${src}|${ref}`;
 const dotToDash=d=>String(d||'').replace(/\./g,'-');
 const pHHMM=()=>new Date(Date.now()+9*3600e3).toISOString().slice(11,16);
 const P_SRC={task:'작업',work:'현장톡 작업',event:'현장톡 이벤트',free:'직접'};
+// v6.25: 📌 → '⚠ 고위험' 표시(관리자·부관리자만 누름, 그 외엔 표시된 것만 보임). 표시한 작업은 안전 > 점검메모 > 고위험작업에 모여 현장 점검 기록
 function pinBtn(day,src,ref,title,sub){
   const on=pSet.has(pKey(day,src,ref));
-  return `<button class="pin-btn ${on?'on':''}" data-pin="${esc(day)}|${src}|${esc(String(ref))}" data-t="${esc(title||'')}" data-s="${esc(sub||'')}" title="순회 체크에 담기">📌</button>`;
+  if(!isEditor()) return on?'<span class="pin-btn on" title="고위험작업">⚠ 고위험</span>':'';
+  return `<button class="pin-btn ${on?'on':''}" data-pin="${esc(day)}|${src}|${esc(String(ref))}" data-t="${esc(title||'')}" data-s="${esc(sub||'')}" title="고위험작업으로 표시 — 안전 > 점검메모에서 현장 점검">⚠ 고위험</button>`;
 }
 async function pRefresh(){
   const from=new Date(Date.now()+9*3600e3-90*86400e3).toISOString().slice(0,10);
@@ -4120,12 +4180,12 @@ async function pinToggle(btn, info){
     try{ await kApi('patrol-pin',{...info,on}); }
     catch(e){
       if(e.message!=='has_content') throw e;
-      if(!confirm('이 항목에 상태·메모·사진이 있습니다. 순회 체크에서 빼면 함께 지워집니다. 뺄까요?')) return;
+      if(!confirm('이 항목에 상태·메모·사진이 있습니다. 고위험작업에서 빼면 함께 지워집니다. 뺄까요?')) return;
       await kApi('patrol-pin',{...info,on:false,force:true});
     }
     on?pSet.add(k):pSet.delete(k);
     document.querySelectorAll('[data-pin]').forEach(b=>{ if(b.dataset.pin===btn.dataset.pin) b.classList.toggle('on',on); });
-    toast(on?'📌 순회 체크에 담았습니다 — 순시메모 탭 > 순회 체크':'순회 체크에서 뺐습니다');
+    toast(on?'⚠ 고위험작업으로 표시했습니다 — 안전 > 📝 점검메모 > 고위험작업에서 점검·기록':'고위험작업 표시를 뺐습니다');
     pRefresh().catch(()=>{});
   }catch(e){ toast(kErr(e)); }
 }
@@ -4208,9 +4268,10 @@ function pCard(x){
     <textarea class="p-memo" placeholder="메모 — 🎤를 누르고 말하면 글씨로 들어갑니다 (자동 저장)">${esc(x.memo||'')}</textarea>
     <div class="p-tools">
       <button class="mini-btn p-mic">🎤 말하기</button>
+      <button class="mini-btn p-rec">🎙 녹음</button>
       <label class="mini-btn p-cam">📷 사진<input type="file" accept="image/*" capture="environment" hidden></label>
       <span class="p-saved">${x.updated_at&&x.memo?'저장됨 '+esc(x.updated_at.slice(11)):''}</span>
-      <button class="mini-btn p-del" title="순회 체크에서 빼기">빼기</button>
+      <button class="mini-btn p-del" title="고위험작업에서 빼기">빼기</button>
     </div>
     <div class="p-photos">${(x.photo_ids||[]).map(id=>`<span class="p-ph" data-ph="${id}"><img alt=""><button class="p-phx" title="사진 삭제">×</button></span>`).join('')}</div>
   </div>`;
@@ -4233,6 +4294,11 @@ function pBind(el){
     await save({status:s}); pRender();
   });
   const mic=el.querySelector('.p-mic'); mic.onclick=()=>pVoice(ta,mic);
+  const recB=el.querySelector('.p-rec'); recB.onclick=()=>audioRecord(recB,async au=>{
+    saved.textContent='녹음 저장 중…';
+    try{ const r=await kApi('patrol-photo',{item_id:id,data:au.data}); pPhotoCache[r.id]=au.data; (it.photo_ids=it.photo_ids||[]).push(r.id); saved.textContent=`🎙 녹음 저장됨 (${au.sec}초)`; pRender(); }
+    catch(err){ saved.textContent='녹음 저장 실패'; toast(err.message==='too_large'?'녹음이 너무 깁니다 — 4분 안쪽으로 나눠 녹음해 주세요':kErr(err)); }
+  });
   el.querySelector('.p-cam input').onchange=async e=>{
     const f=e.target.files[0]; if(!f) return;
     saved.textContent='사진 저장 중…';
@@ -4244,10 +4310,10 @@ function pBind(el){
   };
   el.querySelectorAll('[data-ph]').forEach(ph=>{
     const pid=+ph.dataset.ph, img=ph.querySelector('img');
-    pPhoto(pid).then(d=>{ if(d) img.src=d; }).catch(()=>{});
+    pPhoto(pid).then(d=>{ if(!d) return; if(/^data:audio\//.test(d)){ const au=document.createElement('audio'); au.controls=true; au.preload='metadata'; au.src=d; ph.classList.add('aud'); img.replaceWith(au); } else img.src=d; }).catch(()=>{});
     img.onclick=()=>{ const o=document.createElement('div'); o.className='p-zoom'; o.innerHTML=`<img src="${img.src}">`; o.onclick=()=>o.remove(); document.body.appendChild(o); };
     ph.querySelector('.p-phx').onclick=async()=>{
-      if(!confirm('이 사진을 삭제할까요?')) return;
+      if(!confirm('이 사진·녹음을 삭제할까요?')) return;
       try{ await kApi('patrol-photo-delete',{id:pid}); it.photo_ids=it.photo_ids.filter(x=>x!==pid); pRender(); }catch(e){ toast(kErr(e)); }
     };
   });
@@ -4276,11 +4342,11 @@ function pReportText(){
   const dt=new Date(pDay+'T00:00:00'), wd=K_WD[dt.getDay()];
   const cnt=s=>items.filter(x=>x.status===s).length, done=items.filter(x=>x.status).length;
   const order={'지적':0,'조치완료':1,'':2,'양호':3};
-  const L=[`[순회 체크] ${+pDay.slice(5,7)}/${+pDay.slice(8)}(${wd}) ${dPlus(pDay)}`, `확인 ${done}/${items.length} · 양호 ${cnt('양호')} · 지적 ${cnt('지적')} · 조치완료 ${cnt('조치완료')}`, ''];
+  const L=[`[고위험작업] ${+pDay.slice(5,7)}/${+pDay.slice(8)}(${wd}) ${dPlus(pDay)}`, `확인 ${done}/${items.length} · 양호 ${cnt('양호')} · 지적 ${cnt('지적')} · 조치완료 ${cnt('조치완료')}`, ''];
   [...items].sort((a,b)=>order[a.status||'']-order[b.status||'']).forEach((x,i)=>{
     L.push(`${i+1}. [${x.status||'미확인'}] ${x.title}${x.sub?` (${x.sub})`:''}`);
     (x.memo||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(s=>L.push('   - '+s));
-    if((x.photo_ids||[]).length) L.push(`   📷 사진 ${x.photo_ids.length}장`);
+    if((x.photo_ids||[]).length) L.push(`   📎 사진·녹음 ${x.photo_ids.length}개`);
   });
   return L.join('\n');
 }
@@ -4293,7 +4359,7 @@ async function pShare(){
 }
 async function pToMemo(){
   if(!pAll.some(x=>x.day===pDay)){ toast('저장할 항목이 없습니다'); return; }
-  try{ await mApi('note',{day:pDay,title:`순회 체크 결과 ${pDay.slice(5).replace('-','/')}`,body:pReportText()}); toast('📝 순시메모에 저장했습니다 (사진은 순회 체크에 남아 있음)'); }
+  try{ await mApi('note',{day:pDay,title:`고위험작업 결과 ${pDay.slice(5).replace('-','/')}`,body:pReportText()}); toast('📝 점검메모에 저장했습니다 (사진은 고위험작업에 남아 있음)'); }
   catch(e){ toast(mErr(e)); }
 }
 $('pAddFree').onclick=()=>pAddFree(false);
@@ -4302,8 +4368,32 @@ $('pShare').onclick=pShare;
 $('pToMemo').onclick=pToMemo;
 $('pFilt').querySelectorAll('[data-pf]').forEach(b=>b.onclick=()=>{ pFilter=b.dataset.pf; pRender(); });
 document.querySelectorAll('#mSeg [data-mv2]').forEach(b=>b.onclick=()=>pSetMode(b.dataset.mv2));
-// 순시메모 본문에도 🎤
+// 점검메모 본문에도 🎤
 $('mBodyMic').onclick=()=>pVoice($('mBody'),$('mBodyMic'));
+/* v6.25 🎙 음성 녹음(MediaRecorder) — 소리 그대로 저장. 점검메모 본문(블록)·고위험작업 항목(사진과 같은 칸)에 붙음. 최대 4분 */
+let arRec=null;
+async function audioRecord(btn,onDone){
+  if(arRec){ arRec.stop(); return; }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ toast('이 브라우저는 녹음을 지원하지 않습니다 — 크롬(카톡 안이 아닌)에서 열어 주세요'); return; }
+  let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ toast('마이크 권한을 허용해 주세요 (주소창 옆 🔒 > 마이크)'); return; }
+  const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+  let rec; try{ rec=new MediaRecorder(stream,Object.assign({audioBitsPerSecond:24000},mime?{mimeType:mime}:{})); }catch(e){ rec=new MediaRecorder(stream); }
+  const chunks=[], t0=Date.now(), label=btn.innerHTML; let tick=0, cap=0;
+  rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  rec.onstop=async()=>{ clearInterval(tick); clearTimeout(cap); stream.getTracks().forEach(t=>t.stop()); arRec=null; btn.classList.remove('rec'); btn.innerHTML=label;
+    const type=String(rec.mimeType||mime||'audio/webm').split(';')[0], blob=new Blob(chunks,{type}), sec=Math.round((Date.now()-t0)/1000);
+    if(!blob.size||sec<1){ toast('녹음이 너무 짧습니다'); return; }
+    try{ onDone({data:await mFileToDataUrl(blob),mime:type,sec,at:pHHMM()}); }catch(e){ toast('녹음 파일을 만들지 못했습니다'); } };
+  rec.start(1000); arRec=rec; btn.classList.add('rec');
+  const show=()=>{ const s=Math.round((Date.now()-t0)/1000); btn.innerHTML=`■ 녹음 중 ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} (누르면 끝)`; }; show();
+  tick=setInterval(show,500);
+  cap=setTimeout(()=>{ if(rec.state!=='inactive'){ toast('녹음은 최대 4분 — 자동으로 멈추고 저장합니다'); rec.stop(); } },240000);
+}
+$('mBodyRec').onclick=()=>audioRecord($('mBodyRec'),async au=>{
+  mStatus('🎙 녹음 저장 중…');
+  try{ await mAddBlock('audio',au,`🎙 음성 녹음 ${au.at} · ${Math.floor(au.sec/60)}분 ${au.sec%60}초`); mStatus('🎙 녹음을 저장했습니다','ok'); }
+  catch(e){ mStatus(mErr(e),'err'); }
+});
 // 시작 시 📌 상태 불러와 오늘 탭 목록에 반영
 pRefresh().then(()=>{ if(wx) renderTaskList(); }).catch(()=>{});
 
@@ -4326,7 +4416,9 @@ function applyEditorUI(){
   if(typeof mpList!=='undefined'&&$('pgMan').classList.contains('show')&&mpDay) mpRender(mpDay);
   // v6.16: 현장 탭은 관리자만 — 로그아웃하면 숨기고 회의결과로
   if($('navSite')) $('navSite').style.display=isOwner()?'':'none'; // v6.22: 부관리자에게도 안 보임
-  try{ const cur=navCurPg(); if(!isOwner()&&PG_GROUP[cur]==='site') showPage('pgMtgS');
+  try{ const cur=navCurPg(); if(!isOwner()&&PG_GROUP[cur]==='site') showPage('pgMtgC');
+    else if(cur==='pgMemo'&&!isEditor()) showPage('pgToday');
+    else if(PG_GROUP[cur]==='safe'){ grpBarRender('safe',cur); if(cur==='pgToday'&&typeof wx!=='undefined'&&wx) renderTaskList(); } // 점검메모 탭·⚠ 고위험 버튼 보이기/숨기기
     else if(cur==='pgMtgS') mtgRender('safety'); else if(cur==='pgMtgC') mtgRender('cp'); else if(cur==='pgMtgO') mtgRenderOpen(); }catch(e){}
 }
 // 휴대폰·카톡 안 브라우저에서 prompt()가 막히는 경우가 있어 화면 안 입력창으로 로그인
@@ -5781,7 +5873,7 @@ function dEditRender(it){
   };
 }
 /* ================= v6.23.0 일일작업: 미리보기 · 정리/원본/주간 보기 · 계획(전날 명일)↔실제(금일) · 위험성평가·기준·법령 · 형광펜 ================= */
-let dPending=null, dView='sum', dWkOff=0, dMarks={};
+let dPending=null, dView='sum', dWkOff=0, dMarks={}, dFlt='all', dOpenAll=false;
 // 서식 표가 너무 크면(행 1.9MB 제한) 테두리 → 서식 순으로 덜어냄
 function dGridPack(g){
   let p={grid:g.grid,widths:g.widths,rows:g.rows,cols:g.cols};
@@ -5854,33 +5946,71 @@ function dRender(it){
   const st=T.map(x=>{ const p=plan?dMatch(x,plan):null; return {x,p,same:dMatch(x,M)}; });
   const unexec=plan?plan.filter(p=>!T.some(x=>dMatch(x,[p]))):[];
   const nPlan=st.filter(s=>s.p).length, nNew=plan?st.length-nPlan:0;
-  let h=`<div class="card" style="margin-top:10px">
-    <div class="d-nav"><button class="mini-btn" id="dPrevD" ${di<=0?'disabled':''}>◀</button><div style="flex:1;text-align:center"><b style="font-size:1.05rem">${sFmt(it.day)}</b> <span class="dplus">${dPlus(it.day)}</span></div><button class="mini-btn" id="dNextD" ${di<0||di>=days.length-1?'disabled':''}>▶</button></div>
-    <div class="d-sum">${a.overall&&a.overall.actual?`<span>공사진도 ${esc(a.overall.actual)}% / ${esc(a.overall.plan)}%</span>`:''}<span>금일(실제) ${T.length}건</span><span>명일(계획) ${M.length}건</span>${tot?`<span>인원 주간 ${esc(tot.day)}·야간 ${esc(tot.night)}·철야 ${esc(tot.overnight)}</span>`:''}</div>
-    ${plan?`<div class="d-pv"><span class="ok">✓ 어제 계획대로 ${nPlan}</span><span class="nw">＋ 계획 외 ${nNew}</span><span class="no">✕ 계획했으나 미실시 ${unexec.length}</span></div>`:'<div class="paste-hint" style="margin-top:4px">전날 표가 없어 계획 대비 비교는 생략합니다</div>'}
-    <div style="font-size:.64rem;color:var(--steel);margin-top:6px">${it.kind==='image'?'🖼️ 이미지':'📊 엑셀'} · ${a.src==='ai'?'AI 분석':a.src==='edit'?'직접 수정':'양식 인식'} · ${esc((it.updated_at||'').slice(5))}</div>
-    ${a.src==='ai'?'<div class="paste-hint" style="margin-top:6px">⚠ AI가 읽은 결과입니다. 틀린 곳은 ✎ 수정으로 고치세요.</div>':''}
-    ${ed?`<div class="btn-row"><button class="btn ghost" id="dEdit">✎ 수정</button><button class="btn ghost" id="dUndoBtn" ${+it.hist?'':'disabled'}>↩ 되돌리기${+it.hist?` (${it.hist})`:''}</button><button class="btn ghost" id="dDel" style="color:var(--red)">삭제</button></div>`:''}
-    <div class="d-view"><button data-dv="sum" class="${dView==='sum'?'on':''}">📋 정리</button><button data-dv="orig" class="${dView==='orig'?'on':''}">📊 원본 엑셀</button><button data-dv="week" class="${dView==='week'?'on':''}">🗓 주간 작업판</button></div>
-  </div><div id="dVBox"></div>`;
+  // v6.25: 위쪽 요약(진한 카드·숫자 타일) + 정리 보기 = 금일|명일 2칸 작업판(명일까지 이어지는 작업은 한 막대로 좌우에 걸침)
+  const usedM=new Set(), rows=[];
+  st.forEach(z=>{ const m=z.same; if(m) usedM.add(m); rows.push({kind:m?'c':'t',x:z.x,z,m}); });
+  M.filter(m=>!usedM.has(m)).forEach(m=>rows.push({kind:'m',x:m,m}));
+  const nC=rows.filter(r=>r.kind==='c').length, nT=rows.filter(r=>r.kind==='t').length, nM=rows.filter(r=>r.kind==='m').length;
+  const act=parseFloat(a.overall&&a.overall.actual), pln=parseFloat(a.overall&&a.overall.plan);
+  const wd=d=>'일월화수목금토'[new Date(sT(d)).getUTCDay()];
+  let h=`<div class="dh">
+    <div class="d-nav"><button class="mini-btn" id="dPrevD" ${di<=0?'disabled':''}>◀</button><div style="flex:1;text-align:center"><span class="dh-date">${sFmt(it.day)}</span> <span class="dplus">${dPlus(it.day)}</span></div><button class="mini-btn" id="dNextD" ${di<0||di>=days.length-1?'disabled':''}>▶</button></div>
+    <div class="dh-kpi">
+      <div><div class="l">공사진도 실적 / 계획</div><div class="v">${isNaN(act)?'-':act.toFixed(1)+'%'} <small>/ ${isNaN(pln)?'-':pln.toFixed(1)+'%'}</small></div>${!isNaN(act)?`<div class="dh-bar"><i style="width:${Math.min(100,act)}%"></i>${!isNaN(pln)?`<b style="left:${Math.min(100,pln)}%"></b>`:''}</div>`:''}</div>
+      <div><div class="l">금일 작업(실제)</div><div class="v">${T.length}<small>건 · 명일 계속 ${nC}</small></div></div>
+      <div><div class="l">명일 작업(계획)</div><div class="v">${M.length}<small>건 · 새로 ${nM}</small></div></div>
+      <div><div class="l">인원 주간</div><div class="v">${tot?esc(tot.day):'-'}<small>${tot?` · 야간 ${esc(tot.night)} · 철야 ${esc(tot.overnight)}`:''}</small></div></div>
+    </div>
+    ${plan?`<div class="dh-pv"><span>✓ 어제 계획대로 ${nPlan}</span><span>＋ 계획 외 ${nNew}</span><span>✕ 계획했으나 미실시 ${unexec.length}</span></div>`:'<div class="dh-meta">전날 표가 없어 계획 대비 비교는 생략합니다</div>'}
+    <div class="dh-meta">${it.kind==='image'?'🖼️ 이미지':'📊 엑셀'} · ${a.src==='ai'?'AI 분석 — 틀린 곳은 ✎ 수정':a.src==='edit'?'직접 수정':'양식 인식'} · ${esc((it.updated_at||'').slice(5))}</div>
+    ${ed?`<div class="btn-row"><button class="btn ghost" id="dEdit">✎ 수정</button><button class="btn ghost" id="dUndoBtn" ${+it.hist?'':'disabled'}>↩ 되돌리기${+it.hist?` (${it.hist})`:''}</button><button class="btn ghost" id="dDel">삭제</button></div>`:''}
+  </div>
+  <div class="d-view"><button data-dv="sum" class="${dView==='sum'?'on':''}">📋 작업판</button><button data-dv="orig" class="${dView==='orig'?'on':''}">📊 원본 엑셀</button><button data-dv="week" class="${dView==='week'?'on':''}">🗓 주간</button></div>
+  <div id="dVBox"></div>`;
   $('dBody').innerHTML=h;
   const box=$('dVBox');
   if(dView==='sum'){
-    let s=`<div class="s-sec">금일 작업 (실제) <small>${sMD(it.day)} · Class별 · 오른쪽은 P-E&C 위험성평가</small></div>`;
-    dByCls(st.map(z=>Object.assign({},z.x,{_z:z}))).forEach(([c,L])=>{ s+=`<div class="d-cls">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${L.length}건</div>`+L.map(x=>{ const z=x._z;
-      const ra=z.p&&z.p.hazard?z.p:(z.same&&z.same.hazard?z.same:null);
-      return dCard(it.day,'t',x,{badge:plan?(z.p?['plan','계획대로']:['new','계획 외']):null,ra,src:ra===z.p?`어제(${sMD(dPrevDay(it.day))}) 표의 위험성평가`:'오늘 표 명일 위험성평가(같은 작업)'}); }).join(''); });
-    if(!T.length) s+='<div class="card paste-hint">금일 작업 없음</div>';
+    const ord={c:0,t:1,m:2};
+    const mkOf=r=>(dMarks[it.day]||{})[dKey(r.kind==='m'?'m':'t',r.x)]||'';
+    const shown=rows.filter(r=>dFlt==='all'||(dFlt==='mk'?mkOf(r):r.kind===dFlt));
+    const nMk=rows.filter(mkOf).length;
+    const raOf=r=>r.kind==='m'?r.m:(r.z.p&&r.z.p.hazard?r.z.p:(r.m&&r.m.hazard?r.m:null));
+    const rowHtml=(r,i)=>{ const x=r.x, k=dKey(r.kind==='m'?'m':'t',x), mk=mkOf(r), ra=raOf(r);
+      const cats=dCats({task:x.task,hazard:ra&&ra.hazard,equip:x.equip});
+      const pct=parseInt(String(x.progress||'').replace(/[^\d]/g,''),10);
+      const lab=r.kind==='c'?`▶ 명일까지 계속${x.progress?' · '+esc(x.progress):''}`:r.kind==='t'?`금일${x.progress?' · '+esc(x.progress):''}`:'명일 착수';
+      const pb=r.kind==='m'?'':r.z.p?'<span class="dg-pb ok">계획대로</span>':plan?'<span class="dg-pb nw">계획 외</span>':'';
+      return `<div class="dg-row ${mk?'mk-'+mk:''}" data-gi="${i}" data-mk="${esc(k)}" data-day="${it.day}">
+        <div class="dg-n"><div class="t">${x.gong?`<span class="s-pill asm">${esc(x.gong)}</span>`:''}${esc(x.task)}</div>
+          <div class="m">${pb}${esc(x.company||'-')}${x.equip?` · ${esc(x.equip)}`:''}${cats.slice(0,2).map(c=>`<span class="rk">${esc(RISK_TYPES[c]?RISK_TYPES[c].short:c)}</span>`).join('')}</div></div>
+        <div class="dg-tl"><div class="dg-bar ${r.kind}">${!isNaN(pct)&&r.kind!=='m'?`<i class="pg" style="width:${Math.min(100,pct)}%"></i>`:''}<span>${lab}</span></div></div>
+      </div><div class="dg-det" data-gd="${i}" hidden></div>`; };
+    const g={}; shown.forEach(r=>{ const c=r.x.cls||'기타'; (g[c]=g[c]||[]).push(r); });
+    let s=`<div class="dg-flt">${[['all','전체',rows.length],['c','▶ 이어지는 작업',nC],['t','금일만',nT],['m','명일 새로',nM],['mk','🖍 주요',nMk]].map(([k,t,n])=>`<button data-df="${k}" class="${dFlt===k?'on':''}">${t} <b>${n}</b></button>`).join('')}<button id="dOpenAll">${dOpenAll?'모두 접기':'모두 펼치기'}</button></div>
+      <div class="dg">
+        <div class="dg-head"><div>작업 · 업체 <small>(누르면 위험성평가)</small></div><div class="td">금일 ${sMD(it.day)}(${wd(it.day)})</div><div class="tm">명일 ${sMD(tm)}(${wd(tm)})</div></div>`;
+    Object.keys(g).sort().forEach(c=>{ const L=g[c].sort((p,q)=>ord[p.kind]-ord[q.kind]||String(p.x.company).localeCompare(String(q.x.company)));
+      s+=`<div class="dg-cls"><span>${c==='기타'?'Class 없음':esc(clsLabel(c))}</span><span>${L.length}건</span></div>`+L.map(r=>rowHtml(r,rows.indexOf(r))).join(''); });
+    if(!shown.length) s+='<div class="paste-hint" style="padding:14px">해당하는 작업이 없습니다</div>';
+    s+=`<div class="dg-lg"><span><i style="background:linear-gradient(90deg,#1c7ed6,#7048e8)"></i>명일까지 이어짐</span><span><i style="background:#4dabf7"></i>금일만</span><span><i style="background:#e5dbff;border:1px dashed #9775fa"></i>명일 새로 시작</span><span>막대 안 밝은 부분 = 진도</span></div></div>`;
     if(unexec.length) s+=`<details class="k-more" style="margin-top:10px"><summary>✕ 어제 계획했으나 오늘 표에 없는 작업 ${unexec.length}건</summary>${unexec.map(p=>`<div class="d-tm"><div class="t">${p.cls?`<span class="s-pill cls">${esc(p.cls)}</span>`:''}${esc(p.task)}</div><div class="meta">${esc(p.company)}</div></div>`).join('')}</details>`;
-    s+=`<div class="s-sec">명일 작업 (계획) <small>${sMD(tm)} ${dPlus(tm)} · 위험요인·대책</small></div>`;
-    dByCls(M).forEach(([c,L])=>{ s+=`<div class="d-cls">${c==='기타'?'Class 없음':esc(clsLabel(c))} · ${L.length}건</div>`+L.map(x=>dCard(it.day,'m',x,{badge:['tm','계획'],ra:x,src:'P-E&C 위험성평가'})).join(''); });
-    if(!M.length) s+='<div class="card paste-hint">명일 작업 없음</div>';
-    if(P.length) s+=`<div class="s-sec">인원</div><div class="card"><table class="s-t"><tr><th>업체</th><th class="s-num">주간</th><th class="s-num">야간</th><th class="s-num">철야</th></tr>
+    if(P.length) s+=`<details class="k-more" style="margin-top:10px"><summary>👷 업체별 인원${tot?` — 주간 ${esc(tot.day)} · 야간 ${esc(tot.night)} · 철야 ${esc(tot.overnight)}`:''}</summary><div class="card" style="margin-top:6px"><table class="s-t"><tr><th>업체</th><th class="s-num">주간</th><th class="s-num">야간</th><th class="s-num">철야</th></tr>
       ${P.map(x=>`<tr style="${x.company==='합계'?'font-weight:800;background:#f7f8f9':''}"><td>${esc(x.company)}</td><td class="s-num">${esc(x.day)}</td><td class="s-num">${esc(x.night)}</td><td class="s-num">${esc(x.overnight)}</td></tr>`).join('')}</table>
-      ${a.notes?`<div class="paste-hint" style="white-space:pre-wrap;margin-top:6px">${esc(a.notes)}</div>`:''}</div>`;
+      ${a.notes?`<div class="paste-hint" style="white-space:pre-wrap;margin-top:6px">${esc(a.notes)}</div>`:''}</div></details>`;
     s+=`<div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dToTbm">🦺 안전(TBM)에 다시 반영</button></div><div class="paste-hint">새로 올린 일일작업은 자동으로 안전(TBM) 탭에 반영됩니다(이 기기).</div>`;
     box.innerHTML=s;
-    box.querySelectorAll('.dk-pen [data-c]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const card=b.closest('.dk'); dMarkSet(card.dataset.day,card.dataset.mk,b.dataset.c,card.dataset.t); });
+    const openRow=(row,force)=>{ const i=+row.dataset.gi, det=box.querySelector(`[data-gd="${i}"]`), r=rows[i]; if(!det||!r) return;
+      const on=force!=null?force:det.hidden; det.hidden=!on; row.classList.toggle('open',on); if(!on||det.dataset.ok) return;
+      const ra=raOf(r), kind=r.kind==='m'?'m':'t';
+      const src=r.kind==='m'?'P-E&C 위험성평가':ra&&ra===r.z.p?`어제(${sMD(dPrevDay(it.day))}) 표의 위험성평가`:'오늘 표 명일 위험성평가(같은 작업)';
+      const note=r.kind==='c'&&r.m?`➡ 명일: ${esc(r.m.task)}${r.m.period?` · 📅 ${esc(r.m.period)}`:''}`:'';
+      det.innerHTML=dCard(it.day,kind,r.x,{badge:r.kind==='m'?['tm','명일 계획']:plan?(r.z.p?['plan','계획대로']:['new','계획 외']):null,ra,src,note});
+      det.dataset.ok=1;
+      det.querySelectorAll('.dk-pen [data-c]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const card=b.closest('.dk'); dMarkSet(card.dataset.day,card.dataset.mk,b.dataset.c,card.dataset.t); }); };
+    box.querySelectorAll('.dg-row').forEach(row=>row.onclick=()=>openRow(row));
+    if(dOpenAll) box.querySelectorAll('.dg-row').forEach(row=>openRow(row,true));
+    box.querySelectorAll('[data-df]').forEach(b=>b.onclick=()=>{ dFlt=b.dataset.df; dRender(it); });
+    $('dOpenAll').onclick=()=>{ dOpenAll=!dOpenAll; dRender(it); };
     $('dToTbm').onclick=()=>dToTbm(it);
   } else if(dView==='orig'){
     box.innerHTML=`<div class="card"><div class="btn-row" style="margin-top:0"><button class="btn ghost" id="dCopyX">📋 엑셀로 복사 (서식 그대로)</button></div><div class="d-orig" id="dOrig" style="max-height:70vh">불러오는 중…</div></div>`;
@@ -5901,7 +6031,7 @@ function dRender(it){
 function dChipsOn(){ document.querySelectorAll('#dDayChips [data-dd]').forEach(b=>b.classList.toggle('on',b.dataset.dd===dSel)); const on=document.querySelector('#dDayChips .on'); if(on) on.scrollIntoView({block:'nearest',inline:'center'}); }
 async function dMarkSet(day,k,c,t){
   try{ await kApi('daily-mark',{day,k,c,t}); if(!dMarks[day]) dMarks[day]={}; if(c) dMarks[day][k]=c; else delete dMarks[day][k];
-    const card=document.querySelector(`.dk[data-mk="${CSS.escape(k)}"][data-day="${day}"]`); if(card){ card.classList.remove('mk-y','mk-g','mk-p'); if(c) card.classList.add('mk-'+c); }
+    document.querySelectorAll(`[data-mk="${CSS.escape(k)}"][data-day="${day}"]`).forEach(card=>{ card.classList.remove('mk-y','mk-g','mk-p'); if(c) card.classList.add('mk-'+c); });
     toast(c?'🖍 주요 작업으로 표시했습니다':'형광펜을 지웠습니다'); }catch(e){ toast(kErr(e)); }
 }
 // 주간 작업판: 일~토 7일 × 작업(실제 금일 기준). 칸 = 그날 실제(진도) / 계획만(전날 명일) / 없음. ◀ ▶ 한 주씩
@@ -6519,18 +6649,24 @@ async function mtgRenderOpen0(quiet){
 }
 
 /* ================= 하단 탭 5개 + 그룹 하위 탭 ================= */
-const PG_GROUP={pgMtgS:'meet',pgMtgC:'meet',pgMtgO:'meet',pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'site',pgSubMon:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
-const GROUP_SUBS={meet:[['pgMtgS','🦺 일일안전회의'],['pgMtgC','🧭 C.P회의'],['pgMtgO','⏳ 미결사항']],daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgMemo','✓ 순시메모'],['pgSubMon','👁 부관리자']],safe:[['pgToday','☀ 오늘 TBM'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
+const PG_GROUP={pgMtgS:'meet',pgMtgC:'meet',pgMtgO:'meet',pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'safe',pgSubMon:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
+// v6.25: 회의결과 C.P회의 → 일일안전회의 → 미결(보통 C.P만 올림) · 점검메모(옛 순시메모)는 안전 탭 오늘 TBM 옆(관리자·부관리자만)
+const GROUP_SUBS={meet:[['pgMtgC','🧭 C.P회의'],['pgMtgS','🦺 일일안전회의'],['pgMtgO','⏳ 미결사항']],daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgSubMon','👁 부관리자']],safe:[['pgToday','☀ 오늘 TBM'],['pgMemo','📝 점검메모'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
+const SUB_NEED={pgMemo:()=>isEditor()};
 const lastPg={};
+function grpBarRender(g,pg){
+  const subs=GROUP_SUBS[g], bar=$('grpBar');
+  if(subs){ bar.style.display='flex'; bar.innerHTML=subs.filter(([id])=>!SUB_NEED[id]||SUB_NEED[id]()).map(([id,t])=>`<button class="${id===pg?'on':''}" data-sp="${id}">${t}</button>`).join('');
+    bar.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>showPage(b.dataset.sp)); }
+  else bar.style.display='none';
+}
 function showPage(pg){
-  if(PG_GROUP[pg]==='site'&&!isOwner()) pg='pgMtgS'; // v6.16: 현장(현장톡·순시메모·부관리자 모니터링)은 총괄 관리자만(v6.22: 부관리자 제외)
+  if(PG_GROUP[pg]==='site'&&!isOwner()) pg='pgMtgC'; // v6.16: 현장(현장톡·부관리자 모니터링)은 총괄 관리자만(v6.22: 부관리자 제외)
+  if(SUB_NEED[pg]&&!SUB_NEED[pg]()){ pg='pgToday'; toast('점검메모는 관리자 로그인 후 쓸 수 있습니다'); }
   const g=PG_GROUP[pg]; lastPg[g]=pg;
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===pg));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.grp===g));
-  const subs=GROUP_SUBS[g], bar=$('grpBar');
-  if(subs){ bar.style.display='flex'; bar.innerHTML=subs.map(([id,t])=>`<button class="${id===pg?'on':''}" data-sp="${id}">${t}</button>`).join('');
-    bar.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>showPage(b.dataset.sp)); }
-  else bar.style.display='none';
+  grpBarRender(g,pg);
   if(pg==='pgSched') sLoad();
   if(pg==='pgGantt'){ sLoad().then(()=>sGanttView()); }
   if(pg==='pgDaily') dLoad();
@@ -6588,7 +6724,7 @@ window.addEventListener('popstate',e=>{
     const hh=decodeURIComponent(location.hash.slice(1));
     if(['gantt','list','look','config'].includes(hh)){ if(navCurPg()!=='pgGantt'||sGv!==hh){ sGv=hh; showPage('pgGantt'); } }
     else { const pg=Object.keys(PG_HASH).find(k=>PG_HASH[k]===hh)||'pgSched'; if(navCurPg()!==pg) showPage(pg); }
-    // 순시메모 읽기·수정 화면 → 한 단계 앞으로
+    // 점검메모 읽기·수정 화면 → 한 단계 앞으로
     if(navCurPg()==='pgMemo'&&typeof mView!=='undefined'&&mView!=='list'&&st.mv!==mView){
       if(mView==='edit'&&st.mv==='read') $('mBack').click(); else $('mReadBack').click();
     }

@@ -536,3 +536,13 @@ const APP = {
 - `dOnPaste`: getData 각각 try, 빈 클립보드 안내, 양식 인식 try, 단계(`표 읽기/양식 인식/AI 표 분석/AI 그림 분석/저장`)별 `dErrMsg`. 네트워크 실패(TypeError fetch·bad_response)는 회사 방화벽·DLP 가능성과 다른 망/IT 허용 요청 안내. 실패 시 `dDiagHtml` 진단 줄(클립보드 형식·HTML/글자 길이·그림·표 크기·인식 경로·브라우저).
 - `dZone` keydown: Shift+Insert 허용.
 - 보안 차단(DLP 등) 우회 기능은 넣지 않음 — 회사 정책 사안. 다음: 회사 PC 진단 줄 캡처를 받아 원인 확정.
+
+## 46. 일일작업 작업판 디자인 · 점검메모(옛 순시메모) 안전 탭 이동·음성 녹음 · 고위험작업 · 회의결과 순서 (앱 v6.25.0 / Worker v3.11.0, 2026-11-22)
+- 일일작업 `dRender`: 위쪽 `.dh` 요약 카드(날짜 이동·KPI 4칸: 공사진도 막대/계획선, 금일·명일 계속, 명일·새로, 인원 · 계획 대비 알약 · 수정/되돌리기/삭제). 보기 이름 📋 작업판 / 📊 원본 엑셀 / 🗓 주간.
+- 작업판(`.dg`): 줄 = 작업, 왼쪽 작업·업체·위험유형(최대 2), 오른쪽 금일|명일 2칸. 금일 작업이 오늘 표 명일과 `dMatch`되면 'c'(두 칸 걸친 막대), 아니면 't'(금일 칸), 짝 없는 명일은 'm'(명일 칸 빗금). 막대 안 밝은 부분 = 진도. 줄을 누르면 아래 `.dg-det`에 기존 `dCard`(위험성평가·기준·법령·형광펜). 필터 `dFlt`(all/c/t/m/mk) · `dOpenAll`. 인원표는 접기. `dMarkSet`은 같은 키의 카드·줄 모두 색 갱신.
+- 점검메모: '순시메모'→'점검메모', '순회 체크'→'고위험작업'(문구 일괄). `pgMemo`를 site → safe 그룹(오늘 TBM 옆)으로, `SUB_NEED.pgMemo=isEditor`(관리자·부관리자만 탭 보임·진입). `grpBarRender(g,pg)` 분리, 로그인 바뀌면 안전 탭 막대·TBM 목록 다시 그림. 상단 안내 문구 추가.
+- 고위험: `pinBtn`이 '⚠ 고위험' 글자 버튼(빨강=표시), 관리자·부관리자만 누름, 그 외엔 표시된 것만 배지. 데이터는 기존 patrol_items 그대로.
+- 🎙 녹음 `audioRecord(btn,onDone)`: MediaRecorder(webm/opus 우선, 24kbps), 최대 4분 자동 정지. 점검메모 본문 `#mBodyRec` → 메모 블록 kind 'audio'({data,mime,sec,at}, `<audio>` 재생·⬇ 저장). 고위험작업 항목 `.p-rec` → patrol_photos에 data:audio 저장(불러올 때 audio면 플레이어로).
+- Worker v3.11.0: memo `block` kind에 'audio'(data:audio/만), `patrol-photo`가 data:audio/도 허용.
+- 회의결과: 하위 탭 C.P회의 → 일일안전회의 → 미결, 하단 탭 기본 C.P회의.
+- 점검메모(/memo)·고위험작업(patrol)은 부관리자 활동 기록·복원 대상 아님. 실제 휴대폰 녹음 확인 전(카톡 내장 브라우저는 막힐 수 있음).
