@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.7.0',
+        version: '3.8.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -358,6 +358,8 @@ async function kakaoSchema(db) {
     }
   } catch (e) { /* 다음 기동 때 다시 시도 */ }
   // v2.5.0: ★주요 표시 컬럼 (이미 있으면 에러 → 무시)
+  // v3.8.0: 회의록 형광펜 [{t,n,c}]
+  try { await db.prepare(`ALTER TABLE meeting ADD COLUMN marks TEXT`).run(); } catch (e) { /* 이미 있음 */ }
   for (const t of ['kakao_works', 'kakao_events']) {
     try { await db.prepare(`ALTER TABLE ${t} ADD COLUMN starred INTEGER NOT NULL DEFAULT 0`).run(); } catch (e) { /* 이미 있음 */ }
   }
@@ -714,24 +716,30 @@ async function handleKakao(request, env, url, cors) {
       id: String(x.id || '').slice(0, 24), t: String(x.t || '').slice(0, 1000), who: String(x.who || '').slice(0, 60),
       due: /^\d{4}-\d{2}-\d{2}$/.test(String(x.due || '')) ? String(x.due) : '', done: !!x.done, doneAt: String(x.doneAt || '').slice(0, 20),
     })).filter(x => x.id && x.t);
+    const cleanMarks = a => (Array.isArray(a) ? a : []).slice(0, 300).map(x => ({ t: String(x.t || '').slice(0, 400), n: Math.max(0, parseInt(x.n, 10) || 0), c: ['y', 'g', 'p'].includes(x.c) ? x.c : 'y' })).filter(x => x.t);
     if (request.method === 'POST') {
+      // v3.8.0: raw·actions·marks 중 보낸 것만 바꿈. 없는 날에 액션만 보내면 회의록 없이 새로 만듦(미결사항 직접 추가)
       const day = String(body.day || ''), kind = String(body.kind || '');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !MK.includes(kind)) return json({ error: 'bad_payload' }, 400, cors);
-      const acts = JSON.stringify(cleanActs(body.actions));
-      const prev = await db.prepare(`SELECT raw FROM meeting WHERE day=? AND kind=?`).bind(day, kind).first();
-      if (body.raw == null) {
-        if (!prev) return json({ error: 'not_found' }, 404, cors);
-        await db.prepare(`UPDATE meeting SET actions=?, updated_at=? WHERE day=? AND kind=?`).bind(acts, now.ts, day, kind).run();
-        return json({ ok: true }, 200, cors);
+      const set = {};
+      if (body.raw != null) { const raw = String(body.raw); if (!raw.trim() || raw.length > 100000) return json({ error: 'bad_payload' }, 400, cors); set.raw = raw; }
+      if (body.actions != null) set.actions = JSON.stringify(cleanActs(body.actions));
+      if (body.marks != null) set.marks = JSON.stringify(cleanMarks(body.marks));
+      if (!Object.keys(set).length) return json({ error: 'bad_payload' }, 400, cors);
+      const prev = await db.prepare(`SELECT day FROM meeting WHERE day=? AND kind=?`).bind(day, kind).first();
+      if (!prev) {
+        await db.prepare(`INSERT INTO meeting(day,kind,raw,actions,marks,updated_at) VALUES(?,?,?,?,?,?)`)
+          .bind(day, kind, set.raw ?? null, set.actions ?? '[]', set.marks ?? '[]', now.ts).run();
+      } else {
+        const ks = Object.keys(set);
+        await db.prepare(`UPDATE meeting SET ${ks.map(k => k + '=?').join(', ')}, updated_at=? WHERE day=? AND kind=?`)
+          .bind(...ks.map(k => set[k]), now.ts, day, kind).run();
       }
-      const raw = String(body.raw); if (!raw.trim() || raw.length > 100000) return json({ error: 'bad_payload' }, 400, cors);
-      await db.prepare(`INSERT INTO meeting(day,kind,raw,actions,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day,kind) DO UPDATE SET raw=excluded.raw, actions=excluded.actions, updated_at=excluded.updated_at`)
-        .bind(day, kind, raw, acts, now.ts).run();
-      return json({ ok: true, replaced: !!prev }, 200, cors);
+      return json({ ok: true, replaced: !!prev && set.raw != null }, 200, cors);
     }
     if (body.day && body.kind) {
-      const r = await db.prepare(`SELECT day, kind, raw, actions, updated_at FROM meeting WHERE day=? AND kind=?`).bind(String(body.day), String(body.kind)).first();
-      return json({ today: now.day, item: r ? { ...r, actions: JSON.parse(r.actions || '[]') } : null }, 200, cors);
+      const r = await db.prepare(`SELECT day, kind, raw, actions, marks, updated_at FROM meeting WHERE day=? AND kind=?`).bind(String(body.day), String(body.kind)).first();
+      return json({ today: now.day, item: r ? { ...r, actions: JSON.parse(r.actions || '[]'), marks: JSON.parse(r.marks || '[]') } : null }, 200, cors);
     }
     const r = await db.prepare(`SELECT day, kind, actions, length(raw) AS len, updated_at FROM meeting ORDER BY day DESC LIMIT 2000`).all();
     return json({ today: now.day, items: r.results.map(x => ({ ...x, actions: JSON.parse(x.actions || '[]') })) }, 200, cors);

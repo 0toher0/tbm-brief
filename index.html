@@ -609,6 +609,19 @@ table.s-t tr[data-act]{cursor:pointer}
 .mt-tbl tr:first-child td{background:#f1f3f5;font-weight:700}
 .mt-tblw{overflow-x:auto}
 .mt-hot{color:var(--red);font-weight:800}
+/* 형광펜 · 고르면 뜨는 도구 막대 */
+.mt-mk{color:inherit;background:linear-gradient(transparent 38%,#ffe066 38%);border-radius:2px;padding:0 1px}
+.mt-mk.c-g{background:linear-gradient(transparent 38%,#b2f2bb 38%)}
+.mt-mk.c-p{background:linear-gradient(transparent 38%,#fcc2d7 38%)}
+body.editor .mt-body .mt-mk{cursor:pointer}
+.mt-selbar{position:fixed;z-index:60;display:none;gap:4px;align-items:center;background:var(--ink);border-radius:12px;padding:5px;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+.mt-selbar button{border:none;border-radius:8px;font-size:.74rem;font-weight:800;padding:8px 9px;cursor:pointer;background:#2c323a;color:#fff;white-space:nowrap}
+.mt-selbar button.hy{background:#ffe066;color:#5c4400}.mt-selbar button.hg{background:#b2f2bb;color:#1b4d25}.mt-selbar button.hp{background:#fcc2d7;color:#6b1236}
+.mt-selbar button.ad{background:var(--accent)}
+.mt-selhint{font-size:.66rem;color:var(--steel);margin-right:auto;align-self:center}
+.mo-add{display:grid;grid-template-columns:150px 140px 1fr;gap:5px;margin-top:8px}
+.mo-add2{display:grid;grid-template-columns:1fr 140px auto auto;gap:5px;margin-top:5px}
+@media(max-width:560px){.mo-add{grid-template-columns:1fr 1fr}.mo-add #moT{grid-column:1/-1}.mo-add2{grid-template-columns:1fr 1fr}}
 .mt-chip{display:inline-block;font-size:.66rem;font-weight:700;border-radius:5px;padding:0 5px;margin-left:3px;background:#e7f0fa;color:#1864ab;white-space:nowrap}
 .mt-acts{margin-top:10px}
 .mt-act{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;border-bottom:1px dashed var(--line)}
@@ -1412,7 +1425,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.16.0',
+  version : '6.17.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -5653,8 +5666,103 @@ async function mtgSaveActs(d,k,acts){
   if(it) it.actions=acts; const c=mtgCache[d+'|'+k]; if(c) c.actions=acts;
   try{ await kApi('meeting',{day:d,kind:k,actions:acts}); }
   catch(e){ if(it) it.actions=old; if(c) c.actions=old; toast(kErr(e)); throw e; }
+  if(!it){ mtgList.push({day:d,kind:k,actions:acts,len:null}); delete mtgCache[d+'|'+k]; } // 회의록 없는 날에 새로 생김
 }
-function mtgBindActs(root,after){
+// 형광펜 저장
+async function mtgSaveMarks(d,k,marks){
+  const c=mtgCache[d+'|'+k], old=c?c.marks:[]; if(c) c.marks=marks;
+  try{ await kApi('meeting',{day:d,kind:k,marks}); }catch(e){ if(c) c.marks=old; toast(kErr(e)); throw e; }
+}
+// '(담당: X)' · 'M/D까지' → 담당·기한
+function mtgParseAct(t,d){
+  t=String(t||'').replace(/\s+/g,' ').trim(); let who='', due='';
+  const mw=/[(（]\s*담당자?\s*[:：]\s*([^)）]{1,30})[)）]/.exec(t); if(mw){ who=mw[1].trim(); t=t.replace(mw[0],'').trim(); }
+  const md=/(\d{1,2})\s*[\/.월]\s*(\d{1,2})\s*일?\s*까지/.exec(t); if(md&&d){ let y=+d.slice(0,4); const mo=+md[1]; if(mo<+d.slice(5,7)-6) y++; due=y+'-'+String(mo).padStart(2,'0')+'-'+String(+md[2]).padStart(2,'0'); }
+  return {t:t.slice(0,1000),who,due};
+}
+/* ---- 형광펜: 화면의 글자 위치(같은 글이 몇 번째로 나오는지)로 저장 → 다시 그릴 때 같은 자리에 칠함 ---- */
+const MT_BLK='.mt-li,.mt-p,.mt-h,.mt-h2,.mt-note,td,.mt-title,.mt-info>b,.mt-info>span';
+function mtgTextNodes(root){ const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT); const full=[]; let n,pos=0; while((n=w.nextNode())){ full.push([n,pos]); pos+=n.data.length; } return full; }
+function mtgRangeParts(root,r){
+  const full=mtgTextNodes(root), txt=full.map(x=>x[0].data).join(''), parts=[];
+  for(const [node,off] of full){
+    if(!r.intersectsNode(node)) continue;
+    let s=0,e=node.data.length; if(node===r.startContainer) s=r.startOffset; if(node===r.endContainer) e=r.endOffset;
+    if(e<=s) continue;
+    const blk=node.parentElement.closest(MT_BLK)||root, last=parts[parts.length-1];
+    if(last&&last.blk===blk&&last.end===off+s) last.end=off+e; else parts.push({blk,start:off+s,end:off+e});
+  }
+  return parts.map(p=>{ const raw=txt.slice(p.start,p.end), t=raw.trim(); if(!t) return null; const st=p.start+(raw.length-raw.trimStart().length);
+    let n=0,i=-1; while((i=txt.indexOf(t,i+1))!==-1&&i<st) n++; return {t:t.slice(0,400),n}; }).filter(Boolean);
+}
+function mtgApplyMarks(root,marks){
+  (marks||[]).forEach(m=>{ if(!m.t) return;
+    const full=mtgTextNodes(root), txt=full.map(x=>x[0].data).join('');
+    let i=-1; for(let c=0;c<=(m.n||0);c++){ i=txt.indexOf(m.t,i+1); if(i<0) return; }
+    const s=i, e=i+m.t.length;
+    full.forEach(([node,off])=>{ const ns=Math.max(s,off), ne=Math.min(e,off+node.data.length); if(ne<=ns) return;
+      let tg=node; if(ns>off) tg=tg.splitText(ns-off); if(ne-ns<tg.data.length) tg.splitText(ne-ns);
+      const mk=document.createElement('mark'); mk.className='mt-mk c-'+(m.c||'y'); mk.dataset.t=m.t; mk.dataset.n=m.n||0;
+      tg.parentNode.insertBefore(mk,tg); mk.appendChild(tg); });
+  });
+}
+let mtgCtx=null, mtgSelT=0, mtgBarAt=0;
+function mtgBar(){ let b=$('mtSelBar'); if(!b){ b=document.createElement('div'); b.id='mtSelBar'; b.className='mt-selbar'; document.body.appendChild(b); } return b; }
+function mtgHideBar(){ const b=$('mtSelBar'); if(b) b.style.display='none'; mtgCtx=null; }
+function mtgShowBar(rect){
+  const b=mtgBar(), c=mtgCtx;
+  b.innerHTML=(c.mark?'<button data-b="un">🧽 형광펜 지우기</button>'
+    :'<button class="hy" data-b="y">🖍 노랑</button><button class="hg" data-b="g">🖍 초록</button><button class="hp" data-b="p">🖍 분홍</button>')
+    +'<button class="ad" data-b="act">➕ 미결 등록</button><button data-b="x">✕</button>';
+  b.style.display='flex'; b.style.visibility='hidden';
+  const bw=b.offsetWidth, bh=b.offsetHeight, vw=window.innerWidth, vh=window.innerHeight;
+  let top=rect.bottom+10; if(top+bh>vh-90) top=Math.max(8,rect.top-bh-10);
+  b.style.top=top+'px'; b.style.left=Math.max(8,Math.min(vw-bw-8,rect.left+rect.width/2-bw/2))+'px'; b.style.visibility='';
+  b.querySelectorAll('[data-b]').forEach(x=>{
+    const go=e=>{ e.preventDefault(); e.stopPropagation(); mtgBarAt=Date.now(); mtgBarDo(x.dataset.b); };
+    x.addEventListener('pointerdown',go); x.addEventListener('mousedown',e=>e.preventDefault()); });
+}
+async function mtgBarDo(cmd){
+  const c=mtgCtx; if(!c) return; mtgHideBar();
+  try{ window.getSelection().removeAllRanges(); }catch(e){}
+  if(cmd==='x') return;
+  const it=mtgCache[c.d+'|'+c.k]; if(!it) return;
+  const marks=(it.marks||[]).map(m=>({...m}));
+  if(cmd==='y'||cmd==='g'||cmd==='p'){
+    const nm=marks.filter(m=>!c.parts.some(p=>p.t===m.t&&p.n===(m.n||0)));
+    c.parts.forEach(p=>nm.push({t:p.t,n:p.n,c:cmd}));
+    try{ await mtgSaveMarks(c.d,c.k,nm); toast('형광펜을 칠했습니다'); }catch(e){} mtgRender(c.k,true); return;
+  }
+  if(cmd==='un'){
+    try{ await mtgSaveMarks(c.d,c.k,marks.filter(m=>!(m.t===c.parts[0].t&&(m.n||0)===c.parts[0].n))); toast('형광펜을 지웠습니다'); }catch(e){} mtgRender(c.k,true); return;
+  }
+  if(cmd==='act'){
+    const a=mtgParseAct(c.parts.map(p=>p.t).join(' '),c.d); if(!a.t) return;
+    const A=((mtgList.find(x=>x.day===c.d&&x.kind===c.k)||{}).actions||[]).map(x=>({...x}));
+    A.push({id:mtgId(),t:a.t,who:a.who,due:a.due,done:false,doneAt:''});
+    try{ await mtgSaveActs(c.d,c.k,A); toast('미결사항(액션 아이템)으로 등록했습니다'); }catch(e){} mtgRender(c.k,true);
+  }
+}
+function mtgOnSel(){
+  if(!isEditor()) return;
+  const s=window.getSelection();
+  if(!s||s.isCollapsed||!s.rangeCount){ if(mtgCtx&&!mtgCtx.mark&&Date.now()-mtgBarAt>700) mtgHideBar(); return; }
+  const r=s.getRangeAt(0), ca=r.commonAncestorContainer, el=ca.nodeType===1?ca:ca.parentElement;
+  const body=el&&el.closest('.mt-body[data-k]'); if(!body){ if(mtgCtx&&!mtgCtx.mark) mtgHideBar(); return; }
+  const parts=mtgRangeParts(body,r); if(!parts.length) return;
+  mtgCtx={k:body.dataset.k,d:body.dataset.d,parts,mark:false};
+  const rects=r.getClientRects(); mtgShowBar(rects.length?rects[rects.length-1]:r.getBoundingClientRect());
+}
+document.addEventListener('selectionchange',()=>{ clearTimeout(mtgSelT); mtgSelT=setTimeout(mtgOnSel,280); });
+window.addEventListener('scroll',()=>{ if(mtgCtx&&!mtgCtx.mark){ clearTimeout(mtgSelT); mtgSelT=setTimeout(mtgOnSel,150); } else if(mtgCtx&&mtgCtx.mark) mtgHideBar(); },{passive:true});
+document.addEventListener('click',e=>{
+  if(e.target.closest('#mtSelBar')) return;
+  const mk=e.target.closest('.mt-body[data-k] mark.mt-mk');
+  if(mk&&isEditor()&&window.getSelection().isCollapsed){ const body=mk.closest('.mt-body');
+    mtgCtx={k:body.dataset.k,d:body.dataset.d,parts:[{t:mk.dataset.t,n:+mk.dataset.n||0}],mark:true}; mtgShowBar(mk.getBoundingClientRect()); return; }
+  if(mtgCtx&&mtgCtx.mark) mtgHideBar();
+});
+function mtgBindActs(root,after,onEdit){
   root.querySelectorAll('.mt-act').forEach(row=>{
     const k=row.dataset.k, d=row.dataset.d, id=row.dataset.aid;
     const acts=()=>((mtgList.find(x=>x.day===d&&x.kind===k)||{}).actions||[]).map(a=>({...a}));
@@ -5662,13 +5770,16 @@ function mtgBindActs(root,after){
     cb.onchange=async()=>{ const A=acts(), a=A.find(x=>x.id===id); if(!a) return; a.done=cb.checked; a.doneAt=cb.checked?rToday():'';
       try{ await mtgSaveActs(d,k,A); toast(cb.checked?'완료로 표시했습니다':'미결로 되돌렸습니다'); }catch(e){ cb.checked=!cb.checked; } after(); };
     const x=row.querySelector('[data-ax]'); if(x) x.onclick=async()=>{ if(!confirm('이 액션 아이템을 지울까요?')) return; try{ await mtgSaveActs(d,k,acts().filter(a=>a.id!==id)); }catch(e){} after(); };
-    const e=row.querySelector('[data-ae]'); if(e) e.onclick=()=>{ const a=acts().find(x=>x.id===id); if(!a) return; mtgEdit[k]=id;
+    const e=row.querySelector('[data-ae]'); if(e) e.onclick=()=>{ const a=acts().find(x=>x.id===id); if(!a) return; if(onEdit){ onEdit(k,d,a); return; } mtgEdit[k]=id;
       const f=$('mtAddT_'+k); if(!f) return; f.value=a.t; $('mtAddW_'+k).value=a.who||''; $('mtAddD_'+k).value=a.due||''; $('mtAddB_'+k).textContent='수정 저장'; f.focus(); };
   });
 }
-async function mtgRender(k){
+// quiet: 저장 뒤 다시 그릴 때 — '불러오는 중'으로 비우지 않고 스크롤 자리 유지
+async function mtgRender(k,quiet){ const sy=window.scrollY; mtgHideBar();
+  await mtgRender0(k,quiet); if(quiet) window.scrollTo(0,sy); }
+async function mtgRender0(k,quiet){
   const M=MTG[k], box=$(M.el), ed=isEditor();
-  box.innerHTML='<div class="k-empty">불러오는 중…</div>';
+  if(!quiet) box.innerHTML='<div class="k-empty">불러오는 중…</div>';
   try{ await mtgLoadList(); }catch(e){ box.innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
   const items=mtgList.filter(x=>x.kind===k), days=items.map(x=>x.day).sort().reverse();
   if(!mtgSel[k]||!days.includes(mtgSel[k])) mtgSel[k]=days[0]||'';
@@ -5685,7 +5796,8 @@ async function mtgRender(k){
   else html+=`<div class="card paste-hint" style="margin-top:4px">🔒 회의록 올리기·액션 체크는 관리자만 할 수 있습니다. <button class="mini-btn" onclick="openAdminLogin()">관리자 로그인</button> · 올라온 회의록은 누구나 볼 수 있습니다.</div>`;
   html+=`<div class="date-chips" style="margin-top:12px">${days.slice(0,60).map(x=>{ const it=items.find(y=>y.day===x), n=it.actions.filter(a=>!a.done).length;
     return `<button class="dchip ${x===d?'on':''}" data-mday="${x}">${x===rToday()?'오늘':mtgDL(x)}${n?`<span class="mt-badge" title="미결 ${n}건">${n}</span>`:''}</button>`; }).join('')}</div>`;
-  html+=d?`<div id="mtDoc_${k}"><div class="k-empty">불러오는 중…</div></div>`:`<div class="k-empty" style="margin-top:10px">아직 올린 ${M.name} 회의록이 없습니다.</div>`;
+  const keepDoc=quiet&&$('mtDoc_'+k)&&d?$('mtDoc_'+k).innerHTML:'';
+  html+=d?`<div id="mtDoc_${k}" style="min-height:${quiet&&$('mtDoc_'+k)?$('mtDoc_'+k).offsetHeight:0}px">${keepDoc||'<div class="k-empty">불러오는 중…</div>'}</div>`:`<div class="k-empty" style="margin-top:10px">아직 올린 ${M.name} 회의록이 없습니다.</div>`;
   box.innerHTML=html;
   box.querySelectorAll('[data-mday]').forEach(b=>b.onclick=()=>{ mtgSel[k]=b.dataset.mday; mtgEdit[k]=null; mtgRender(k); });
   if(ed){
@@ -5710,7 +5822,8 @@ async function mtgRender(k){
   $('mtDoc_'+k).innerHTML=`<div class="card mt-doc">
       <div class="mt-head"><div class="t">${M.ic} ${M.name} · ${sFmt(d,true)} <small>${dPlus(d)} · 저장 ${esc(String(it.updated_at||'').slice(5,16))}</small></div><button class="mt-copy" id="mtCopy_${k}">📋 회의록 복사</button></div>
       ${ed?`<div class="mt-tools"><button class="mini-btn" id="mtEditRaw_${k}">회의록 고치기</button><button class="mini-btn" id="mtDel_${k}" style="color:var(--red)">삭제</button></div>`:''}
-      <div class="mt-body">${mtgFmt(it.raw)}</div>
+      ${ed&&it.raw?'<div class="mt-tools" style="padding-top:4px"><span class="mt-selhint">🖍 글자를 끌어서 고르면 형광펜·미결 등록 · 칠한 곳을 누르면 지우기</span></div>':''}
+      <div class="mt-body" id="mtBody_${k}" data-k="${k}" data-d="${d}">${it.raw?mtgFmt(it.raw):'<div class="k-empty">회의록 없이 미결사항만 등록된 날입니다</div>'}</div>
     </div>
     <div class="card mt-acts">
       <div class="sec-t">✅ 액션 아이템 <small>중요·조치 필요 · 미결 ${open} / ${acts.length}</small></div>
@@ -5718,11 +5831,13 @@ async function mtgRender(k){
       ${ed?`<div class="mt-add"><input class="f-input" id="mtAddT_${k}" placeholder="조치할 내용"><input class="f-input" id="mtAddW_${k}" placeholder="담당"><input type="date" class="f-input" id="mtAddD_${k}" title="기한"><button class="btn primary" id="mtAddB_${k}" style="padding:8px 12px">추가</button></div>
         <div class="mt-sug"><button class="mini-btn" id="mtSugB_${k}">🔎 회의록에서 후보 찾기</button><div id="mtSug_${k}"></div></div>`:''}
     </div>`;
-  $('mtCopy_'+k).onclick=()=>mtgCopyText(it.raw);
-  const rer=()=>mtgRender(k);
+  $('mtDoc_'+k).style.minHeight='';
+  if(it.raw) mtgApplyMarks($('mtBody_'+k),it.marks||[]);
+  $('mtCopy_'+k).onclick=()=>it.raw?mtgCopyText(it.raw):toast('회의록이 없습니다');
+  const rer=()=>mtgRender(k,true);
   mtgBindActs($('mtActs_'+k),rer);
   if(!ed) return;
-  $('mtEditRaw_'+k).onclick=()=>{ $('mtDay_'+k).value=d; $('mtRaw_'+k).value=it.raw; $('mtRaw_'+k).dispatchEvent(new Event('input')); window.scrollTo({top:0,behavior:'smooth'}); };
+  $('mtEditRaw_'+k).onclick=()=>{ $('mtDay_'+k).value=d; $('mtRaw_'+k).value=it.raw||''; $('mtRaw_'+k).dispatchEvent(new Event('input')); window.scrollTo({top:0,behavior:'smooth'}); };
   $('mtDel_'+k).onclick=async()=>{ if(!confirm(`${mtgDL(d)} ${M.name} 회의록과 액션 아이템 ${acts.length}건을 지울까요? 되돌릴 수 없습니다.`)) return;
     try{ await kApi('meeting-delete',{day:d,kind:k}); delete mtgCache[d+'|'+k]; mtgSel[k]=''; toast('지웠습니다'); rer(); }catch(e){ toast(kErr(e)); } };
   const addB=$('mtAddB_'+k);
@@ -5742,8 +5857,10 @@ async function mtgRender(k){
       add(t,who,due); }); };
 }
 // ⏳ 미결사항: 두 회의의 체크 안 된 액션 — 회의 후 경과일(D+n)별
-async function mtgRenderOpen(){
-  const box=$('mtgO'); box.innerHTML='<div class="k-empty">불러오는 중…</div>';
+let moEdit=null; // 미결사항 탭에서 고치는 중 {k,d,id}
+async function mtgRenderOpen(quiet){ const sy=window.scrollY; await mtgRenderOpen0(quiet); if(quiet) window.scrollTo(0,sy); }
+async function mtgRenderOpen0(quiet){
+  const box=$('mtgO'), ed=isEditor(); moEdit=null; if(!quiet) box.innerHTML='<div class="k-empty">불러오는 중…</div>';
   try{ await mtgLoadList(); }catch(e){ box.innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
   const all=[]; mtgList.forEach(it=>it.actions.forEach(a=>all.push({k:it.kind,d:it.day,a,n:mtgAge(it.day)})));
   const open=all.filter(x=>!x.a.done), cnt=k=>open.filter(x=>x.k===k).length, old=open.filter(x=>x.n>=7).length;
@@ -5751,19 +5868,40 @@ async function mtgRenderOpen(){
   let html=`<div class="card" style="margin-top:4px"><div class="sec-t">⏳ 미결사항 <small>회의 액션 아이템 중 체크 안 된 것 · D+n = 회의 후 지난 날수</small></div>
     <div class="mo-sum">${chip('all',`전체 ${open.length}`)}${chip('safety',`🦺 일일안전회의 ${cnt('safety')}`)}${chip('cp',`🧭 C.P회의 ${cnt('cp')}`)}</div>
     ${old?`<div class="paste-hint" style="margin-top:8px;color:var(--red);font-weight:700">⚠️ 회의 후 7일 넘게 미결인 것이 ${old}건 있습니다.</div>`:''}</div>`;
+  if(ed) html+=`<div class="card" style="margin-top:8px"><div class="sec-t" id="moTitle">➕ 미결사항 직접 추가</div>
+    <div class="mo-add"><select class="f-input" id="moK"><option value="safety">🦺 일일안전회의</option><option value="cp">🧭 C.P회의</option></select>
+      <input type="date" class="f-input" id="moDay" title="회의 날짜" value="${rToday()}"><input class="f-input" id="moT" placeholder="미결 내용"></div>
+    <div class="mo-add2"><input class="f-input" id="moW" placeholder="담당"><input type="date" class="f-input" id="moD" title="기한"><button class="btn ghost" id="moCancel" style="display:none;padding:8px 10px">취소</button><button class="btn primary" id="moAdd" style="padding:8px 14px">추가</button></div>
+    <div class="paste-hint" style="margin-top:6px">고른 회의·날짜의 액션 아이템으로 들어갑니다(그날 회의록이 없어도 됩니다). 아래 목록의 ✎로 고치고 ✕로 지웁니다.</div></div>`;
   const kinds=moFilter==='all'?['safety','cp']:[moFilter];
   kinds.forEach(k=>{ const M=MTG[k], L=open.filter(x=>x.k===k);
     html+=`<div class="mo-sec"><div class="sec-t">${M.ic} ${M.name} <small>미결 ${L.length}건</small></div>`;
     if(!L.length) html+='<div class="card k-empty">미결사항이 없습니다 👍</div>';
     [...new Set(L.map(x=>x.d))].sort().forEach(d=>{ const G=L.filter(x=>x.d===d), n=G[0].n;
-      html+=`<div class="card mo-grp"><div class="mo-gh"><span class="d ${n>=7?'r':n>=3?'w':''}">D+${n}</span><span>${mtgDL(d)} 회의 · ${G.length}건</span><a data-go="${k}|${d}">회의록 보기</a></div>${G.map(x=>mtgActRow(k,d,x.a,{noEdit:true})).join('')}</div>`; });
+      html+=`<div class="card mo-grp"><div class="mo-gh"><span class="d ${n>=7?'r':n>=3?'w':''}">D+${n}</span><span>${mtgDL(d)} 회의 · ${G.length}건</span><a data-go="${k}|${d}">회의록 보기</a></div>${G.map(x=>mtgActRow(k,d,x.a)).join('')}</div>`; });
     html+='</div>'; });
   const done=all.filter(x=>x.a.done&&x.a.doneAt&&mtgAge(x.a.doneAt)<=7&&kinds.includes(x.k)).sort((a,b)=>a.a.doneAt<b.a.doneAt?1:-1);
   if(done.length) html+=`<details class="mo-sec"><summary class="sec-t" style="cursor:pointer">✔ 최근 7일 완료 <small>${done.length}건</small></summary><div class="card mo-grp" style="margin-top:6px">${done.map(x=>mtgActRow(x.k,x.d,x.a,{noEdit:true,src:`<span class="mt-due">${MTG[x.k].ic} ${mtgDL(x.d)} 회의</span>`})).join('')}</div></details>`;
   box.innerHTML=html;
-  box.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{ moFilter=b.dataset.mf; mtgRenderOpen(); });
+  box.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{ moFilter=b.dataset.mf; mtgRenderOpen(true); });
   box.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{ const [k,d]=a.dataset.go.split('|'); mtgSel[k]=d; showPage(MTG[k].pg); });
-  mtgBindActs(box,()=>mtgRenderOpen());
+  const rer=()=>mtgRenderOpen(true);
+  mtgBindActs(box,rer,(k,d,a)=>{ moEdit={k,d,id:a.id}; $('moK').value=k; $('moDay').value=d; $('moK').disabled=$('moDay').disabled=true;
+    $('moT').value=a.t; $('moW').value=a.who||''; $('moD').value=a.due||''; $('moAdd').textContent='수정 저장'; $('moCancel').style.display='';
+    $('moTitle').textContent=`✎ 미결사항 고치기 · ${MTG[k].name} ${mtgDL(d)}`; $('moTitle').scrollIntoView({behavior:'smooth',block:'center'}); $('moT').focus(); });
+  if(!ed) return;
+  if(moFilter!=='all') $('moK').value=moFilter;
+  $('moCancel').onclick=()=>{ moEdit=null; rer(); };
+  $('moAdd').onclick=async()=>{
+    const k=$('moK').value, d=$('moDay').value, t=$('moT').value.replace(/\s+/g,' ').trim(), who=$('moW').value.trim(), due=$('moD').value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ toast('회의 날짜를 고르세요'); return; } if(!t){ toast('미결 내용을 넣으세요'); return; }
+    const A=((mtgList.find(x=>x.day===d&&x.kind===k)||{}).actions||[]).map(x=>({...x}));
+    if(moEdit){ const a=A.find(x=>x.id===moEdit.id); if(a){ a.t=t; a.who=who; a.due=due; } }
+    else A.push({id:mtgId(),t,who,due,done:false,doneAt:''});
+    $('moAdd').disabled=true;
+    try{ await mtgSaveActs(d,k,A); toast(moEdit?'고쳤습니다':'미결사항을 추가했습니다'); moEdit=null; rer(); }catch(e){ $('moAdd').disabled=false; }
+  };
+  $('moT').onkeydown=e=>{ if(e.key==='Enter'&&!e.isComposing) $('moAdd').click(); };
 }
 
 /* ================= 하단 탭 5개 + 그룹 하위 탭 ================= */
