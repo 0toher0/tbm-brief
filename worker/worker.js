@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.5.0',
+        version: '3.6.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -605,7 +605,7 @@ async function handleKakao(request, env, url, cors) {
   if (sub === 'sched-actual') {
     if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
     const id = String(body.id || ''); if (!id) return json({ error: 'bad_payload' }, 400, cors);
-    const dt = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null);
+    const dt = v => (/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(String(v || '')) ? String(v) : null); // v3.6.0: 시간(선택) 'YYYY-MM-DD HH:MM'
     // 바꾸기 전 상태를 이력에 남김(되돌리기) — 공정당 최근 20개
     const before = await db.prepare(`SELECT * FROM sched_actual WHERE id=?`).bind(id).first();
     await db.prepare(`INSERT INTO sched_actual_hist(id,existed,s,f,pct,note,updated_at,saved_at,what) VALUES(?,?,?,?,?,?,?,?,?)`)

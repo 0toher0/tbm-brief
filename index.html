@@ -577,6 +577,16 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-gh .gd span.t{color:#fff;background:var(--red);border-radius:3px}
 .s-gl{width:172px!important;position:sticky;left:0;z-index:3;background:#fff}
 .s-gl.corner{z-index:5;background:#f7f8f9!important}
+.a-dts{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+@media (max-width:560px){.a-dts{grid-template-columns:1fr}}
+.a-dt{display:flex;gap:4px}
+.a-dt input[type=date]{flex:1.4;min-width:0}
+.a-dt input[type=time]{flex:1;min-width:0}
+.a-tq{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.a-tq button{font-size:.66rem;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:6px;padding:3px 6px;cursor:pointer}
+.a-tq button[data-t=now]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.a-tq button[data-t=""]{color:var(--steel)}
+.s-actt{font-size:.6rem;color:#2b8a3e;font-weight:700;margin-top:2px}
 .s-gl .gnm{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .s-gl .gdur{flex:none;font-family:var(--num);font-size:.62rem;font-weight:700;color:var(--steel)}
 .s-gr.ph .s-gl .gdur{font-size:.66rem;color:var(--ink2)}
@@ -1270,10 +1280,11 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
     <div id="aSuccs"></div><button class="mini-btn" id="aAddSucc" style="margin-top:6px">＋ 후행 추가</button>
     <div id="aActBox" style="border-top:1px dashed var(--line);margin-top:14px;padding-top:4px">
       <label class="f-label">실적</label>
-      <div class="f-two">
-        <div><label class="f-label">착수일</label><input type="date" class="f-input" id="aS"></div>
-        <div><label class="f-label">완료일</label><input type="date" class="f-input" id="aF"></div>
+      <div class="a-dts">
+        <div><label class="f-label">착수일 · 시간</label><div class="a-dt"><input type="date" class="f-input" id="aS"><input type="time" class="f-input" id="aSt" step="600"></div><div class="a-tq" data-tq="S"><button type="button" data-t="now">지금</button><button type="button" data-t="07:00">07:00</button><button type="button" data-t="08:00">08:00</button><button type="button" data-t="13:00">13:00</button><button type="button" data-t="17:00">17:00</button><button type="button" data-t="19:00">19:00</button><button type="button" data-t="">시간 지움</button></div></div>
+        <div><label class="f-label">완료일 · 시간</label><div class="a-dt"><input type="date" class="f-input" id="aF"><input type="time" class="f-input" id="aFt" step="600"></div><div class="a-tq" data-tq="F"><button type="button" data-t="now">지금</button><button type="button" data-t="07:00">07:00</button><button type="button" data-t="08:00">08:00</button><button type="button" data-t="13:00">13:00</button><button type="button" data-t="17:00">17:00</button><button type="button" data-t="19:00">19:00</button><button type="button" data-t="">시간 지움</button></div></div>
       </div>
+      <div class="f-hint" style="margin-top:2px">시간은 선택 — 비우면 날짜만 저장합니다. '지금'은 오늘 날짜와 현재 시각을 함께 넣습니다.</div>
       <div class="f-two">
         <div><label class="f-label">진도율 %</label><input class="f-input" id="aPct" inputmode="decimal" placeholder="예: 40"></div>
         <div><label class="f-label">메모</label><input class="f-input" id="aNote"></div>
@@ -1337,7 +1348,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.14.0',
+  version : '6.15.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4703,9 +4714,9 @@ function sRecent(){
   const ed=isEditor();
   const list=Object.keys(sAct).filter(id=>sA(id)).sort((a,b)=>String(sAct[b].at||'').localeCompare(String(sAct[a].at||''))).slice(0,10);
   $('sRecent').innerHTML=list.length?list.map(id=>{ const a=sA(id), ac=sAct[id];
-    const st=ac.f?`<span class="s-pill ok">완료 ${sMD(ac.f)}</span>`:ac.s?`<span class="s-pill crit" style="background:#fff4e6;color:#e8590c">진행 ${ac.pct!=null?ac.pct+'%':''}</span>`:'<span class="s-pill asm">메모</span>';
+    const st=ac.f?`<span class="s-pill ok">완료 ${sMDT(ac.f)}</span>`:ac.s?`<span class="s-pill crit" style="background:#fff4e6;color:#e8590c">진행 ${ac.pct!=null?ac.pct+'%':''}</span>`:'<span class="s-pill asm">메모</span>';
     return `<div class="s-rc"><div class="m" data-act="${id}"><div class="nm"><small class="gid">${id}</small>${esc(a.name)} ${st}</div>
-      <div class="sub">착수 ${ac.s?sMD(ac.s):'—'} · 완료 ${ac.f?sMD(ac.f):'—'}${ac.at?` · ${esc(String(ac.at).slice(5))} 처리`:''}</div></div>
+      <div class="sub">착수 ${ac.s?sMDT(ac.s):'—'} · 완료 ${ac.f?sMDT(ac.f):'—'}${ac.at?` · ${esc(String(ac.at).slice(5))} 처리`:''}</div></div>
       ${ed?`<div class="b">${ac.f?`<button class="mini-btn" data-uncomplete="${id}">완료 취소</button>`:''}${sHist[id]?`<button class="mini-btn" data-undo-act="${id}">↩ 되돌리기</button>`:''}<button class="mini-btn" data-act="${id}">✎ 고치기</button></div>`:''}</div>`; }).join('')
     :'<div class="paste-hint">아직 실적을 넣은 공정이 없습니다</div>';
   $('sRecent').querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>sEdit(el.dataset.act));
@@ -4784,7 +4795,7 @@ function sList(){
       ${as.map(a=>{ const r=C.R[a.id], vv=sVar(a.id), col=/^done/.test(r.state)?'var(--steel)':r.crit?'var(--s-crit)':'var(--s-norm)';
         return `<tr data-act="${a.id}"><td><small class="gid">${a.id}</small>${sStateLabel(r)}${a.cls?`<span class="s-pill cls">${a.cls}</span>`:''}<b style="color:${r.crit||r.critPast?'var(--s-crit)':'var(--ink)'}">${esc(a.name)}</b>
           <div style="font-size:.64rem;color:var(--steel)">${(a.preds||[]).map(x=>sA(x.id)?`← ${x.id} ${esc(sA(x.id).name.slice(0,10))} <b>${sRelTxt(x)}</b>`:'').filter(Boolean).join(' · ')||'시작'}</div></td>
-          <td class="s-num" style="color:var(--steel)">${vv?`${sMD(vv.bs)}<br>~${sMD(vv.bf)}`:'—'}</td><td class="s-num">${sMD(sDate(r.es))}<br>~${sMD(sDate(r.ef))}<div style="font-size:.6rem;color:var(--steel)">${a.dur}일</div></td>
+          <td class="s-num" style="color:var(--steel)">${vv?`${sMD(vv.bs)}<br>~${sMD(vv.bf)}`:'—'}</td><td class="s-num">${sMD(sDate(r.es))}<br>~${sMD(sDate(r.ef))}<div style="font-size:.6rem;color:var(--steel)">${a.dur}일</div>${(()=>{ const ac=sAct[a.id]; return ac&&(ac.s||ac.f)?`<div class="s-actt">실적 ${ac.s?sMDT(ac.s):'—'}<br>~${ac.f?sMDT(ac.f):'진행'}</div>`:''; })()}</td>
           <td class="s-num">${vv?`<span class="s-var ${vv.df>0?'late':vv.df<0?'early':'ok'}">${sVarShort(vv.df)}</span>${vv.ds!==vv.df?`<div style="font-size:.6rem;color:var(--steel)">착수 ${sVarShort(vv.ds)}</div>`:''}`:'—'}</td>
           <td class="s-num" style="color:${col};font-weight:800">${/^done/.test(r.state)?'—':r.tf}</td></tr>`; }).join('')}
       </table></div></details>`; }).join('');
@@ -4963,7 +4974,7 @@ function sEdit(id){
   if(!a) sPredRow('aPreds',null);
   if(a) sPlan.acts.forEach(s=>(s.preds||[]).forEach(p=>{ if(p.id===a.id) sPredRow('aSuccs',{id:s.id,type:p.type,lag:p.lag}); }));
   const ac=(a&&sAct[a.id])||{};
-  $('aS').value=ac.s||''; $('aF').value=ac.f||''; $('aPct').value=ac.pct!=null?ac.pct:''; $('aNote').value=ac.note||''; $('aPctR').value=ac.pct!=null?ac.pct:0;
+  $('aS').value=String(ac.s||'').slice(0,10); $('aSt').value=String(ac.s||'').slice(11,16); $('aF').value=String(ac.f||'').slice(0,10); $('aFt').value=String(ac.f||'').slice(11,16); $('aPct').value=ac.pct!=null?ac.pct:''; $('aNote').value=ac.note||''; $('aPctR').value=ac.pct!=null?ac.pct:0;
   $('aUncomplete').style.display=ac.f?'':'none'; $('aUndoAct').style.display=a&&sHist[a.id]?'':'none'; $('aClearAct').style.display=a&&sAct[a.id]?'':'none';
   $('aUndoAct').textContent=a&&sHist[a.id]?`↩ 이전 상태로 (${sHist[a.id]})`:'↩ 이전 상태로';
   $('aActBox').style.display=a?'':'none';
@@ -5008,7 +5019,7 @@ async function sSaveEdit(){
       sEditId=id;
     }
     if(old){
-      const ac={s:$('aS').value,f:$('aF').value,pct:$('aPct').value,note:$('aNote').value.trim()}, prev=sAct[old.id]||{};
+      const ac={s:sDT('aS','aSt'),f:sDT('aF','aFt'),pct:$('aPct').value,note:$('aNote').value.trim()}, prev=sAct[old.id]||{};
       if(ac.s!==(prev.s||'')||ac.f!==(prev.f||'')||String(ac.pct)!==String(prev.pct==null?'':prev.pct)||ac.note!==(prev.note||'')){
         const rr=await kApi('sched-actual',{id:old.id,...ac,what:'실적 수정'});
         if(!ac.s&&!ac.f&&ac.pct===''&&!ac.note) delete sAct[old.id]; else sAct[old.id]={s:ac.s||null,f:ac.f||null,pct:ac.pct===''?null:+ac.pct,note:ac.note,at:rr.at};
@@ -5058,6 +5069,15 @@ $('aAddPred').onclick=()=>sPredRow('aPreds',null);
 $('aAddSucc').onclick=()=>sPredRow('aSuccs',null);
 $('aSave').onclick=sSaveEdit; $('aDel').onclick=sDelete;
 $('aPctR').oninput=()=>{ $('aPct').value=$('aPctR').value; };
+// 실적 날짜+시간: 날짜 칸이 비면 시간도 버림
+function sDT(d,t){ const dv=$(d).value, tv=$(t).value; return dv?(tv?dv+' '+tv.slice(0,5):dv):''; }
+// 날짜(+시간) 표시: 11/12 08:00
+const sMDT=s=>s?sMD(s)+(String(s).length>10?' '+String(s).slice(11,16):''):'';
+document.querySelectorAll('.a-tq').forEach(box=>box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  const k=box.dataset.tq, d=$('a'+k), t=$('a'+k+'t'), v=b.dataset.t;
+  if(v==='now'){ const n=new Date(Date.now()+9*3600e3).toISOString(); d.value=n.slice(0,10); t.value=n.slice(11,16); }
+  else { t.value=v; if(v&&!d.value) d.value=sSD(); }
+}));
 $('aPct').oninput=()=>{ $('aPctR').value=$('aPct').value||0; };
 $('aUncomplete').onclick=async()=>{ if(await sUncomplete(sEditId)) sEdit(sEditId); };
 $('aUndoAct').onclick=()=>sUndoActual(sEditId);
