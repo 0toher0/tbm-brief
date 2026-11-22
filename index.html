@@ -704,6 +704,19 @@ body.editor .mt-body .mt-mk{cursor:pointer}
 .pm-pick button{font-size:.7rem;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:4px}
 .pm-pick button.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
 .pm-hint{font-size:.7rem;color:var(--steel)}
+/* 모식도 편집용 전체 화면 확대 (v6.19.0) — 확대한 그림을 그대로 눌러 칠함 */
+.pmz-bg{align-items:stretch;background:#0f1216;z-index:85}
+.pmz{display:flex;flex-direction:column;width:100%;height:100%;background:#fff}
+.pmz-top{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px;border-bottom:1px solid var(--line);background:#fff}
+.pmz-top b{font-size:.8rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pmz-top .mini-btn{min-width:34px;font-weight:800}
+.pmz-pct{font-family:var(--num);font-size:.72rem;color:var(--steel);min-width:40px;text-align:center}
+.pmz-sc{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;background:#fbfbfc;overscroll-behavior:contain}
+.pmz-sc .pm-svg{width:100%;max-width:none}
+.pmz-bot{border-top:1px solid var(--line);padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 10px);background:#fff;max-height:38vh;overflow-y:auto}
+.pmz-bot .pm-pick{margin-top:0}
+.pmz-bot .pm-pick button{padding:7px 9px;font-size:.76rem}
+.pmz-bot .pimg-note{margin-top:4px}
 .pimg-h{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
 .pimg-h b{font-size:.8rem} .pimg-h small{font-family:var(--num);font-size:.68rem;color:var(--steel)}
 .pimg-view{margin-top:6px;background:#f6f7f7;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;position:relative}
@@ -1323,6 +1336,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 </div>
 
 <!-- 공정 추가·수정 -->
+<div class="modal-bg pmz-bg" id="pmZoom"></div>
 <div class="modal-bg pimg-bg" id="pimgModal">
   <div class="pimg-full">
     <div class="pimg-fh"><b id="pimgFT"></b><button class="mini-btn" id="pimgFX">✕ 닫기</button></div>
@@ -1425,7 +1439,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.18.0',
+  version : '6.19.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4492,7 +4506,7 @@ function pmRender(box){
   if(pmEdit){ // ---- 관리자 편집 ----
     const st=pmEdit.states, sel=pmSel||[], same=sel.length&&sel.every(i=>st[i]===st[sel[0]])?st[sel[0]]:null;
     box.innerHTML=`<div class="pimg-h">${pimgTabs()}<small>✎ 편집 · ${esc(pimgLabel(pmEdit.day))}</small></div>
-      <div class="pimg-adm" style="border:none;margin:0;padding:4px 0 0"><input type="date" id="pmDay" value="${pmEdit.day}"><span class="pm-hint">부위를 눌러 상태를 고르세요</span></div>
+      <div class="pimg-adm" style="border:none;margin:0;padding:4px 0 0"><input type="date" id="pmDay" value="${pmEdit.day}"><button class="mini-btn" id="pmZoomBtn" style="background:var(--ink);color:#fff">🔍 크게 보고 칠하기</button><span class="pm-hint">부위를 눌러 상태를 고르세요</span></div>
       <div class="pm-wrap">${pmSvg(st,pmSel,true)}</div>
       <div class="pm-pick">${sel.length?`<b>${esc(pmSelName)}</b>${PM_ORDER.map(k=>`<button class="${same===k?'on':''}" data-pst="${k}"><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</button>`).join('')}`:'<span class="pm-hint">↑ 실선으로 나뉜 칸(철피·Stave·내화물·Bunker 등)을 누르세요. 왼쪽 Shell 이름을 누르면 그 층 좌우 칸을 한꺼번에 고릅니다</span>'}</div>
       <div class="pimg-note">${pmCounts(st)}</div>
@@ -4500,17 +4514,20 @@ function pmRender(box){
         <button class="mini-btn" id="pmSave" style="background:var(--ink);color:#fff">💾 저장</button><button class="mini-btn" id="pmCancel">취소</button>
         ${pmList.some(x=>x.day===pmEdit.day)?'<button class="mini-btn" id="pmDel" style="color:var(--red)">이 날짜 삭제</button>':''}</div>`;
     pimgBindTabs(box);
+    box.querySelector('.pm-wrap').onclick=e=>{ if(!e.target.closest('[data-pm],[data-pmg]')) pmZoomOpen(); };
     box.querySelectorAll('[data-pm]').forEach(g=>g.onclick=()=>{ const id=g.dataset.pm; pmSel=[id]; pmSelName=(PM_PARTS.find(p=>p.id===id)||{}).name||id; pimgRender(); });
     box.querySelectorAll('[data-pmg]').forEach(g=>g.onclick=()=>{ const G=PM_GROUPS[g.dataset.pmg]; pmSel=[...G.ids]; pmSelName=`${G.name} 전체 (${G.ids.length}칸)`; pimgRender(); });
     box.querySelectorAll('[data-pst]').forEach(b=>b.onclick=()=>{ (pmSel||[]).forEach(i=>{ st[i]=b.dataset.pst; }); pimgRender(); });
     $('pmDay').onchange=e=>{ const d=e.target.value; if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; const ex=pmList.find(x=>x.day===d);
       pmEdit={day:d,states:pmBaseFor(d),note:ex?ex.data.note||'':''}; pimgRender(); };
     $('pmNote').oninput=e=>{ pmEdit.note=e.target.value; };
-    $('pmCancel').onclick=()=>{ pmEdit=null; pmSel=null; pimgRender(); };
+    $('pmCancel').onclick=()=>{ pmZoomClose(); pmEdit=null; pmSel=null; pimgRender(); };
     $('pmSave').onclick=async()=>{ try{ const r=await kApi('progress-map',{day:pmEdit.day,data:{states:pmEdit.states,note:pmEdit.note||''}});
-        toast(`${pimgLabel(pmEdit.day)} 모식도 ${r.replaced?'수정':'저장'} 완료`); const d=pmEdit.day; pmEdit=null; pmSel=null; await pmLoad(d); }catch(e){ toast(kErr(e)); } };
+        toast(`${pimgLabel(pmEdit.day)} 모식도 ${r.replaced?'수정':'저장'} 완료`); pmZoomClose(); const d=pmEdit.day; pmEdit=null; pmSel=null; await pmLoad(d); }catch(e){ toast(kErr(e)); } };
     if($('pmDel')) $('pmDel').onclick=async()=>{ if(!confirm(`${pimgLabel(pmEdit.day)} 모식도 기록을 삭제할까요?`)) return;
-      try{ await kApi('progress-map-delete',{day:pmEdit.day}); toast('삭제했습니다'); pmEdit=null; pmSel=null; await pmLoad(); }catch(e){ toast(kErr(e)); } };
+      try{ await kApi('progress-map-delete',{day:pmEdit.day}); toast('삭제했습니다'); pmZoomClose(); pmEdit=null; pmSel=null; await pmLoad(); }catch(e){ toast(kErr(e)); } };
+    $('pmZoomBtn').onclick=()=>pmZoomOpen();
+    if($('pmZoom').classList.contains('show')) pmZoomRender();
     return;
   }
   // ---- 보기·추이 ----
@@ -4538,6 +4555,54 @@ function pmRender(box){
   box.querySelector('.pm-wrap').onclick=()=>{ pmStop(); const s=box.querySelector('.pm-svg').outerHTML;
     $('pimgFI').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s); $('pimgFI').style.background='#fff';
     $('pimgFT').textContent=(x?pimgLabel(x.day)+' · ':'')+pmCounts(st); $('pimgFC').innerHTML=''; $('pimgModal').classList.add('show'); };
+}
+
+/* ===== 모식도 편집용 전체 화면 확대: 확대한 그림의 칸을 그대로 눌러 고르고, 아래 막대에서 상태를 칠함 =====
+ * 배율 pmZ(1~6): 버튼(－/＋/맞춤) · 두 손가락 벌리기/오므리기 · PC Ctrl+휠. 다시 그릴 때 스크롤 자리 유지. 뒤로가기=닫기(.modal-bg 감시자) */
+let pmZ=2.2, pmZPinch=null;
+function pmZoomOpen(){
+  const m=$('pmZoom'), first=!m.classList.contains('show');
+  m.classList.add('show'); pmZoomRender();
+  if(first) requestAnimationFrame(()=>{ const sc=m.querySelector('.pmz-sc'), s=m.querySelector('.pm-svg'); if(!sc||!s) return;
+    // 처음엔 고른 칸(없으면 노체 가운데)이 보이게
+    const g=pmSel&&pmSel.length?m.querySelector(`[data-pm="${pmSel[0]}"]`):null;
+    if(g){ const r=g.getBoundingClientRect(), R=sc.getBoundingClientRect(); sc.scrollLeft+=r.left+r.width/2-(R.left+R.width/2); sc.scrollTop+=r.top+r.height/2-(R.top+R.height/2); }
+    else { sc.scrollLeft=(s.clientWidth-sc.clientWidth)/2; sc.scrollTop=s.clientHeight*0.78-sc.clientHeight/2; } });
+}
+function pmZoomClose(){ const m=$('pmZoom'); if(m) m.classList.remove('show'); }
+function pmZoomApply(z, cx, cy){ // 배율을 바꾸면서 화면의 (cx,cy) 지점은 그대로
+  const m=$('pmZoom'), sc=m.querySelector('.pmz-sc'), s=m.querySelector('.pm-svg'); if(!sc||!s) return;
+  z=Math.max(1,Math.min(6,z)); const r=sc.getBoundingClientRect();
+  if(cx==null){ cx=r.left+r.width/2; cy=r.top+r.height/2; }
+  const px=(sc.scrollLeft+cx-r.left)/s.clientWidth, py=(sc.scrollTop+cy-r.top)/s.clientHeight;
+  pmZ=z; s.style.width=(z*100)+'%';
+  sc.scrollLeft=px*s.clientWidth-(cx-r.left); sc.scrollTop=py*s.clientHeight-(cy-r.top);
+  const p=m.querySelector('.pmz-pct'); if(p) p.textContent=Math.round(z*100)+'%';
+}
+function pmZoomRender(){
+  const m=$('pmZoom'); if(!pmEdit){ pmZoomClose(); return; }
+  const old=m.querySelector('.pmz-sc'), sl=old?old.scrollLeft:null, stp=old?old.scrollTop:null;
+  const st=pmEdit.states, sel=pmSel||[], same=sel.length&&sel.every(i=>st[i]===st[sel[0]])?st[sel[0]]:null;
+  m.innerHTML=`<div class="pmz"><div class="pmz-top"><b>✎ ${esc(pimgLabel(pmEdit.day))} 모식도</b>
+      <button class="mini-btn" data-z="-">－</button><span class="pmz-pct">${Math.round(pmZ*100)}%</span><button class="mini-btn" data-z="+">＋</button><button class="mini-btn" data-z="fit">맞춤</button>
+      <button class="mini-btn" id="pmzDone" style="background:var(--ink);color:#fff">완료</button></div>
+    <div class="pmz-sc">${pmSvg(st,pmSel,true)}</div>
+    <div class="pmz-bot"><div class="pm-pick">${sel.length?`<b>${esc(pmSelName)}</b>${PM_ORDER.map(k=>`<button class="${same===k?'on':''}" data-pst="${k}"><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</button>`).join('')}`:'<span class="pm-hint">칸을 눌러 고르세요 · 두 손가락으로 벌리면 더 크게 · 왼쪽 Shell 이름을 누르면 그 층 좌우 칸 한꺼번에</span>'}</div>
+      <div class="pimg-note">${pmCounts(st)} · 다 칠했으면 ‘완료’ 누른 뒤 아래 💾 저장</div></div></div>`;
+  const sc=m.querySelector('.pmz-sc'), s=m.querySelector('.pm-svg'); s.style.width=(pmZ*100)+'%';
+  if(sl!=null){ sc.scrollLeft=sl; sc.scrollTop=stp; }
+  m.querySelectorAll('[data-pm]').forEach(g=>g.onclick=e=>{ e.stopPropagation(); const id=g.dataset.pm; pmSel=[id]; pmSelName=(PM_PARTS.find(p=>p.id===id)||{}).name||id; pimgRender(); });
+  m.querySelectorAll('[data-pmg]').forEach(g=>g.onclick=e=>{ e.stopPropagation(); const G=PM_GROUPS[g.dataset.pmg]; pmSel=[...G.ids]; pmSelName=`${G.name} 전체 (${G.ids.length}칸)`; pimgRender(); });
+  m.querySelectorAll('[data-pst]').forEach(b=>b.onclick=()=>{ (pmSel||[]).forEach(i=>{ st[i]=b.dataset.pst; }); pimgRender(); });
+  m.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{ const k=b.dataset.z; if(k==='fit') pmZoomApply(1); else pmZoomApply(pmZ*(k==='+'?1.35:1/1.35)); });
+  $('pmzDone').onclick=()=>pmZoomClose();
+  // 두 손가락 확대·축소(페이지 전체가 아니라 그림만)
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  sc.addEventListener('touchstart',e=>{ if(e.touches.length===2){ pmZPinch={d:dist(e.touches),z:pmZ}; e.preventDefault(); } },{passive:false});
+  sc.addEventListener('touchmove',e=>{ if(pmZPinch&&e.touches.length===2){ e.preventDefault(); const t=e.touches;
+    pmZoomApply(pmZPinch.z*dist(t)/pmZPinch.d,(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2); } },{passive:false});
+  sc.addEventListener('touchend',e=>{ if(e.touches.length<2) pmZPinch=null; });
+  sc.addEventListener('wheel',e=>{ if(!e.ctrlKey) return; e.preventDefault(); pmZoomApply(pmZ*(e.deltaY<0?1.15:1/1.15),e.clientX,e.clientY); },{passive:false});
 }
 
 /* ===== 고로 진행률 그림 (PPT 캡처를 날짜별 1장 저장 → 추이 재생) ===== */
