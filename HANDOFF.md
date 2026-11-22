@@ -529,3 +529,10 @@ const APP = {
 - 작업 카드 `dCard`: 왼쪽 작업·업체·장비·일정·진도 막대, 오른쪽 `dRiskPanel` — 금일은 어제 표의 P-E&C 위험성평가(없으면 오늘 표 같은 작업의 명일 평가), 위험유형 칩(`dCats` = kwRisks+normalizeRisk), 펼치면 RISK_TYPES 조치 + `riskRefHtml`(legal.json 핵심 기준 cats 일치 + laws.json 조문 링크). TBM 작업 상세에도 '📚 관련 기준·법령' 추가.
 - TBM 자동 반영 `dAutoTbm`: 최근 이틀치 표가 새로 올라오거나 바뀌면(LS `tbm3_dauto` day→updated_at) 이 기기 TBM에 `dToTbm(it,true)` — 앱 열 때도 실행. `sdReconcile` 같은 작업 판정에 `dSim≥0.5` 추가(전날 명일 위험요인이 오늘 금일로 더 많이 이어짐).
 - 형광펜: Worker `daily_mark(day,k,c,t)` · `/kakao/daily-mark` GET ?from=&to= / POST {day,k,c,t}(관리자·부관리자, c 비우면 지움, 부관리자는 활동 기록·복원 대상). 키 `dKey(kind,x)` = 'd|업체|정규화 작업명'. 카드 🖍 노랑·초록·분홍·✕, 주간판 작업명에도 색.
+
+## 45. 일일작업 붙여넣기 — PM memo 방식 이식 · 단계별 진단 (앱 v6.24.0, 2026-11-22)
+- 사용자: 회사 PC에서 엑셀 복사 붙여넣기가 안 되고 오류(PM memo 앱 `0toher0/memo`에서는 됨). memo의 `memo_attach/_paste/index.html`과 비교 — 읽는 로직은 같고, 차이는 ① 표를 컴포넌트 iframe(격리 문서)에서 렌더해 읽음 ② 표 읽기 실패 시 try/catch로 탭 글자로 넘어감 ③ 그림만 있으면 그림으로 붙음.
+- `mStageDoc()`/`mParseHtmlTable(html)`: 숨긴 iframe(화면 밖, 1600px, body 14px)에서 렌더·`mExtractTable`, 오류면 null. `mReadCell`은 셀 문서의 getComputedStyle 사용. 순시메모 `mOnPaste`도 같은 함수 사용.
+- `dOnPaste`: getData 각각 try, 빈 클립보드 안내, 양식 인식 try, 단계(`표 읽기/양식 인식/AI 표 분석/AI 그림 분석/저장`)별 `dErrMsg`. 네트워크 실패(TypeError fetch·bad_response)는 회사 방화벽·DLP 가능성과 다른 망/IT 허용 요청 안내. 실패 시 `dDiagHtml` 진단 줄(클립보드 형식·HTML/글자 길이·그림·표 크기·인식 경로·브라우저).
+- `dZone` keydown: Shift+Insert 허용.
+- 보안 차단(DLP 등) 우회 기능은 넣지 않음 — 회사 정책 사안. 다음: 회사 PC 진단 줄 캡처를 받아 원인 확정.

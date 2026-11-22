@@ -1556,7 +1556,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.23.0',
+  version : '6.24.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3746,7 +3746,7 @@ function mBorder(cs,side){
   return Math.max(1,Math.round(w))+'px '+s+' '+col;
 }
 function mReadCell(cell){
-  const cs=getComputedStyle(cell);
+  const cs=(cell.ownerDocument.defaultView||window).getComputedStyle(cell);
   const o={v:(cell.innerText||'').replace(/ /g,' ').replace(/\s+$/g,'')};
   const fw=cs.fontWeight; if(fw==='bold'||fw==='bolder'||parseInt(fw,10)>=600) o.b=1;
   if(cs.fontStyle==='italic') o.i=1;
@@ -3787,6 +3787,24 @@ function mExtractTable(table){
   }
   grid.forEach(row=>row.forEach(x=>{ if(x) delete x._dom; }));
   return {grid,widths,rows:grid.length,cols:maxc,truncated};
+}
+/* v6.24: 붙여넣은 엑셀 HTML을 '격리된 빈 문서(iframe)'에서 렌더해 읽는다 — PM memo 앱이 컴포넌트 iframe 안에서 읽는 방식과 같음.
+   앱 화면의 CSS가 표에 섞이지 않고, 엑셀이 같이 넣는 <style>도 앱 화면을 건드리지 않는다. 읽다가 오류가 나면 null(→ 탭 글자로 대신). */
+let mFrame=null;
+function mStageDoc(){
+  if(!mFrame||!mFrame.isConnected||!mFrame.contentDocument){
+    mFrame=document.createElement('iframe'); mFrame.setAttribute('aria-hidden','true'); mFrame.tabIndex=-1;
+    mFrame.style.cssText='position:absolute;left:-100000px;top:0;width:1600px;height:900px;border:0';
+    document.body.appendChild(mFrame);
+    const d=mFrame.contentDocument; d.open(); d.write('<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;font-size:14px;font-family:"Malgun Gothic","맑은 고딕",sans-serif}table{border-collapse:collapse}</style></head><body></body></html>'); d.close();
+  }
+  return mFrame.contentDocument;
+}
+function mParseHtmlTable(html){
+  let d=null;
+  try{ d=mStageDoc(); d.body.innerHTML=html; const t=d.body.querySelector('table'); return t?mExtractTable(t):null; }
+  catch(e){ console.warn('[표 읽기]',e); return null; }
+  finally{ try{ if(d) d.body.innerHTML=''; }catch(_){} }
 }
 function mTsvToGrid(plain){
   const lines=plain.replace(/\r/g,'').split('\n'); while(lines.length&&lines[lines.length-1]==='') lines.pop();
@@ -3898,8 +3916,7 @@ async function mOnPaste(e){
     }
     // 엑셀 모드: 표를 먼저 본다 (엑셀은 셀 복사 시 그림도 같이 넣으므로)
     if(html){
-      const st=$('mStage'); st.innerHTML=html; const t=st.querySelector('table');
-      const res=t?mExtractTable(t):null; st.innerHTML='';
+      const res=mParseHtmlTable(html);
       if(res){ mStatus('저장 중…'); await mAddBlock('table',{grid:res.grid,widths:res.widths,rows:res.rows,cols:res.cols});
         mStatus(`📊 표 붙여넣기 완료 (${res.rows}행 × ${res.cols}열)${res.truncated?' — 커서 일부만 가져옴':''}`,'ok'); return; }
     }
@@ -5654,32 +5671,58 @@ async function dAnalyzeImage(dataUrl){
   if(!an.today.length&&!an.tomorrow.length) throw new Error('작업을 찾지 못했습니다 — 표가 잘 보이게 다시 캡쳐해 주세요');
   await dSave('image',{img:p.store,w:p.w,h:p.h},an,'ai');
 }
+/* v6.24: 붙여넣기 단계별 오류 안내 + 진단 줄(회사 PC에서 안 될 때 어디서 막혔는지 화면만 보고 알 수 있게) */
+let dDiag=null;
+const dIsNet=err=>err instanceof TypeError&&/fetch|network|load failed/i.test(err.message||'');
+function dErrMsg(err,step){
+  if(dIsNet(err)||err.message==='bad_response')
+    return `서버로 보내지 못했습니다(${step}) — 표는 읽었지만 인터넷으로 보내는 단계에서 막혔습니다. 회사 네트워크 보안(방화벽·DLP)이 <b>tbm-proxy.st4gi720.workers.dev</b>로 문서 내용을 보내는 걸 막는 경우가 많습니다. 휴대폰 데이터·집 와이파이에서 다시 해 보시고, 회사에서 써야 하면 IT에 이 주소 허용을 요청해 주세요.`;
+  if(err.message==='too_large') return '원본이 너무 큽니다 — 범위를 나눠 붙이거나 이미지로 올려 주세요';
+  return `${step} 중 오류 — ${esc(err.data?kErr(err):(err.message||String(err)))}`;
+}
+function dDiagHtml(){
+  const g=dDiag; if(!g) return '';
+  const ua=navigator.userAgent, br=(ua.match(/(Edg|Whale|Chrome|Firefox|Version)\/(\d+)/)||[]).slice(1).join(' ')||'?';
+  return `<div style="margin-top:4px;font-size:.7rem;color:var(--steel);font-weight:400">진단 · 클립보드 형식: ${esc(g.types||'없음')} · 서식(HTML) ${g.html.toLocaleString()}자 · 글자 ${g.plain.toLocaleString()}자${g.img?' · 그림 있음':''} · 표 ${esc(g.table||'-')} · 인식 ${esc(g.how||'-')} · 브라우저 ${esc(br)}</div>`;
+}
+function dFail(msg){ dStatus(msg+dDiagHtml(),'err'); }
 async function dOnPaste(e){
   e.preventDefault();
-  const cd=e.clipboardData; if(!cd){ dStatus('클립보드를 읽을 수 없습니다','err'); return; }
-  let file=null; for(const it of [...(cd.items||[])]) if(it.kind==='file'&&/^image\//.test(it.type)){ file=it.getAsFile(); break; }
-  const html=cd.getData('text/html')||'', plain=cd.getData('text/plain')||'';
+  const cd=e.clipboardData||window.clipboardData; if(!cd){ dDiag=null; dFail('클립보드를 읽을 수 없습니다 — 브라우저가 붙여넣기를 막았습니다. 크롬·엣지 최신 버전에서 해 주세요'); return; }
+  let file=null, html='', plain='';
+  try{ for(const it of [...(cd.items||[])]) if(it.kind==='file'&&/^image\//.test(it.type)){ file=it.getAsFile(); break; } }catch(_){}
+  try{ html=cd.getData('text/html')||''; }catch(_){}
+  try{ plain=cd.getData('text/plain')||''; }catch(_){}
+  let types=''; try{ types=[...(cd.types||[])].join(', '); }catch(_){}
+  dDiag={types,html:html.length,plain:plain.length,img:!!file};
   setTimeout(()=>{ $('dZone').innerHTML=dHint(); },0);
+  let step='표 읽기';
   try{
     if(dMode==='image'){
-      if(!file){ dStatus('클립보드에 그림이 없습니다 — 캡쳐(Win+Shift+S) 후 붙이거나, "엑셀로 붙이기"를 쓰세요','err'); return; }
-      return await dAnalyzeImage(await mFileToDataUrl(file));
+      if(!file){ dFail('클립보드에 그림이 없습니다 — 캡쳐(Win+Shift+S) 후 붙이거나, "엑셀로 붙이기"를 쓰세요'); return; }
+      step='AI 그림 분석'; return await dAnalyzeImage(await mFileToDataUrl(file));
     }
-    // 엑셀: 서식 그대로 원본 저장 + 텍스트로 분석(정해진 양식이면 바로, 아니면 AI)
-    let grid=null;
-    if(html){ const st=$('mStage'); st.innerHTML=html; const t=st.querySelector('table'); grid=t?mExtractTable(t):null; st.innerHTML=''; }
-    if(!grid&&plain.indexOf('\t')>=0) grid=mTsvToGrid(plain);
-    if(!grid){ if(file) return await dAnalyzeImage(await mFileToDataUrl(file)); dStatus('표를 찾지 못했습니다 — 엑셀에서 범위를 복사했는지 확인하세요','err'); return; }
-    // v6.23: 글자(탭) → 실패하면 서식 표에서 만든 글자로 다시 인식 · 저장 전에 미리보기
+    if(!html&&!plain&&!file){ dFail('클립보드가 비어 있습니다 — 엑셀에서 범위를 다시 복사(Ctrl+C)한 뒤 붙여 주세요. 계속 비어 있으면 회사 보안 프로그램이 문서 복사를 막고 있는 것입니다'); return; }
+    // 엑셀: 서식 표(격리 문서에서 읽기) → 안 되면 탭 글자 → 둘 다 없고 그림만 있으면 그림으로
+    let grid=html?mParseHtmlTable(html):null;
+    if(grid) dDiag.table=`${grid.rows}×${grid.cols} (서식)`;
+    if(!grid&&plain.indexOf('\t')>=0){ grid=mTsvToGrid(plain); dDiag.table=`${grid.rows}×${grid.cols} (글자)`; }
+    if(!grid){
+      if(file){ dDiag.how='그림 → AI'; step='AI 그림 분석'; dStatus('표 글자가 없고 그림만 있어 그림으로 읽습니다…'); return await dAnalyzeImage(await mFileToDataUrl(file)); }
+      dFail('표를 찾지 못했습니다 — 엑셀에서 셀 범위를 복사했는지 확인하세요'); return;
+    }
+    step='양식 인식';
     const pack=dGridPack(grid);
-    let sd=plain&&plain.indexOf('\t')>=0?parseSdDaily(plain):null;
-    if(!sd||!sd.length) sd=parseSdDaily(mTsv(grid));
-    if(sd&&sd.length) return dPreview('excel',{grid:pack},dFromSdRows(sd),'parser');
+    const tryP=t=>{ try{ const r=parseSdDaily(t); return r&&r.length?r:null; }catch(ex){ console.warn('[일일작업 양식]',ex); return null; } };
+    let sd=plain.indexOf('\t')>=0?tryP(plain):null; if(sd) dDiag.how='양식(글자)';
+    if(!sd){ sd=tryP(mTsv(grid)); if(sd) dDiag.how='양식(서식 표)'; }
+    if(sd) return dPreview('excel',{grid:pack},dFromSdRows(sd),'parser');
+    step='AI 표 분석'; dDiag.how='AI';
     dStatus('정해진 양식과 달라 AI가 표를 읽는 중… (1~2분)');
-    const text=plain&&plain.indexOf('\t')>=0?plain:mTsv(grid);
+    const text=plain.indexOf('\t')>=0?plain:mTsv(grid);
     const r=await kApi('daily-ai',{text}); if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
     dPreview('excel',{grid:pack},dFromAi(r.result),'ai');
-  }catch(err){ dStatus(err.message==='too_large'?'원본이 너무 큽니다 — 범위를 나눠 붙이거나 이미지로 올려 주세요':(err.data?kErr(err):err.message),'err'); }
+  }catch(err){ console.warn('[일일작업 붙여넣기]',step,err); dFail(dErrMsg(err,step)); }
 }
 let dDeleted=[], dEditDay=null;
 const D_REASON={replace:'다시 올리기 전',edit:'수정 전',delete:'삭제 전'};
@@ -5761,7 +5804,7 @@ function dPreview(kind,payload,an,src){
     <div class="btn-row"><button class="btn ghost" id="dpCancel">취소</button><button class="btn primary" id="dpSave">💾 이대로 저장</button></div></div>`;
   $('dpCancel').onclick=()=>{ dPending=null; $('dPrev').innerHTML=''; dStatus('취소했습니다'); };
   $('dpSave').onclick=async()=>{ const p=dPending; if(!p) return; $('dpSave').disabled=true;
-    try{ await dSave(p.kind,p.payload,p.an,p.src); dPending=null; $('dPrev').innerHTML=''; }catch(err){ $('dpSave').disabled=false; dStatus(err.message==='too_large'?'원본이 너무 큽니다 — 범위를 나눠 붙이거나 이미지로 올려 주세요':(err.data?kErr(err):err.message),'err'); } };
+    try{ await dSave(p.kind,p.payload,p.an,p.src); dPending=null; $('dPrev').innerHTML=''; }catch(err){ $('dpSave').disabled=false; console.warn('[일일작업 저장]',err); dFail(dErrMsg(err,'저장')); } };
   $('dPrev').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 // 작업 같음 판정: 같은 업체 + 작업명 낱말이 절반 이상 겹침(괄호 안 설명은 빼고)
@@ -5912,7 +5955,7 @@ $('dZone').innerHTML=dHint();
 $('dZone').addEventListener('paste',dOnPaste);
 $('dZone').addEventListener('focus',()=>$('dZone').classList.add('focus'));
 $('dZone').addEventListener('blur',()=>$('dZone').classList.remove('focus'));
-$('dZone').addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey)) e.preventDefault(); });
+$('dZone').addEventListener('keydown',e=>{ if(!(e.ctrlKey||e.metaKey||(e.shiftKey&&e.key==='Insert'))) e.preventDefault(); }); // v6.24: Shift+Insert 붙여넣기도 허용
 document.querySelectorAll('#dModes [data-dm]').forEach(b=>b.onclick=()=>{ dMode=b.dataset.dm; document.querySelectorAll('#dModes [data-dm]').forEach(x=>x.classList.toggle('on',x===b)); $('dZone').innerHTML=dHint(); $('dImgBtns').style.display=dMode==='image'?'flex':'none'; dStatus(''); });
 ['dFile','dCam'].forEach(id=>$(id).onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ await dAnalyzeImage(await mFileToDataUrl(f)); }catch(err){ dStatus(err.data?kErr(err):err.message,'err'); } });
