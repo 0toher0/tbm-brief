@@ -579,6 +579,65 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-gl.corner{z-index:5;background:#f7f8f9!important}
 .a-dts{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 @media (max-width:560px){.a-dts{grid-template-columns:1fr}}
+.bottombar .tab-btn{padding:4px 6px}
+/* 회의결과 */
+.mt-up textarea{min-height:120px;white-space:pre-wrap}
+.mt-doc{margin-top:10px;padding:0;overflow:hidden}
+.mt-head{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line);background:#f7f8f9}
+.mt-head .t{flex:1;min-width:0;font-weight:800;font-size:.9rem}
+.mt-head .t small{display:block;font-weight:600;color:var(--steel);font-size:.66rem;margin-top:1px}
+.mt-copy{flex:none;border:none;background:var(--ink);color:#fff;font-weight:800;font-size:.72rem;border-radius:8px;padding:7px 10px;cursor:pointer}
+.mt-tools{display:flex;gap:6px;justify-content:flex-end;padding:8px 12px 0}
+.mt-body{padding:12px 14px 14px;font-size:.84rem;line-height:1.62;color:var(--ink);word-break:keep-all;overflow-wrap:anywhere}
+.mt-title{font-size:1.02rem;font-weight:800;text-align:center;padding:2px 0 9px;margin-bottom:8px;border-bottom:2px solid var(--ink)}
+.mt-info{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;background:#f7f8f9;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:4px 0 10px;font-size:.78rem}
+.mt-info b{color:var(--steel);font-weight:700;white-space:nowrap}
+.mt-h{font-weight:800;font-size:.9rem;margin:14px 0 5px;padding:2px 0 2px 9px;border-left:4px solid var(--accent)}
+.mt-h:first-child{margin-top:2px}
+.mt-h2{font-weight:800;font-size:.84rem;margin:9px 0 3px;color:var(--ink2)}
+.mt-li{display:flex;gap:6px;margin:2px 0}
+.mt-li .mk{flex:none;min-width:12px;color:var(--steel);font-weight:700}
+.mt-li .mk.dot::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink2);vertical-align:middle;margin:0 3px 2px}
+.mt-li.l1 .mk.dot::before{background:none;border:1.3px solid var(--ink2);width:4px;height:4px}
+.mt-li.l2 .mk.dot::before{border-radius:0;width:5px;height:1.5px;background:var(--steel)}
+.mt-li.l1{padding-left:14px}.mt-li.l2{padding-left:28px}.mt-li.l3{padding-left:42px}
+.mt-p{margin:2px 0}
+.mt-note{margin:5px 0;padding:6px 9px;background:var(--amber-bg);border-radius:7px;font-size:.78rem;color:#7a4a00}
+.mt-gap{height:6px}
+.mt-tbl{width:100%;border-collapse:collapse;margin:6px 0;font-size:.76rem}
+.mt-tbl td{border:1px solid var(--line);padding:4px 6px;vertical-align:top}
+.mt-tbl tr:first-child td{background:#f1f3f5;font-weight:700}
+.mt-tblw{overflow-x:auto}
+.mt-hot{color:var(--red);font-weight:800}
+.mt-chip{display:inline-block;font-size:.66rem;font-weight:700;border-radius:5px;padding:0 5px;margin-left:3px;background:#e7f0fa;color:#1864ab;white-space:nowrap}
+.mt-acts{margin-top:10px}
+.mt-act{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;border-bottom:1px dashed var(--line)}
+.mt-act:last-child{border-bottom:none}
+.mt-act input[type=checkbox]{width:19px;height:19px;flex:none;margin-top:1px;accent-color:var(--green)}
+.mt-act .tx{flex:1;min-width:0;font-size:.84rem;line-height:1.45}
+.mt-act.done .tx{color:var(--steel);text-decoration:line-through}
+.mt-act .meta{display:block;margin-top:2px}
+.mt-act .x{flex:none;border:none;background:none;color:var(--steel);font-size:.8rem;cursor:pointer;padding:0 3px}
+.mt-due{display:inline-block;font-size:.64rem;font-weight:700;border-radius:5px;padding:0 5px;background:#eef0f2;color:var(--ink2);margin-right:3px}
+.mt-due.over{background:var(--red-bg);color:var(--red)}
+.mt-who{display:inline-block;font-size:.64rem;font-weight:700;border-radius:5px;padding:0 5px;background:#e7f0fa;color:#1864ab;margin-right:3px}
+.mt-add{display:grid;grid-template-columns:1fr 92px 128px auto;gap:5px;margin-top:8px}
+@media(max-width:560px){.mt-add{grid-template-columns:1fr 1fr}.mt-add .f-input:first-child{grid-column:1/-1}}
+.mt-sug{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+.mt-sug div{display:flex;gap:6px;align-items:flex-start;font-size:.78rem;padding:4px 0;color:var(--ink2)}
+.mt-sug div span{flex:1}
+.mt-badge{display:inline-block;min-width:16px;font-size:.62rem;font-weight:800;border-radius:9px;padding:0 5px;margin-left:4px;background:var(--red);color:#fff;text-align:center}
+.dchip.on .mt-badge{background:#fff;color:var(--red)}
+.mo-sum{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.mo-sec{margin-top:14px}
+.mo-sec>.sec-t{margin-bottom:6px}
+.mo-grp{margin-top:8px;padding:0}
+.mo-gh{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f7f8f9;border-bottom:1px solid var(--line);font-size:.8rem;font-weight:700}
+.mo-gh .d{font-weight:900;font-size:.82rem;border-radius:7px;padding:2px 8px;background:var(--green-bg);color:var(--green)}
+.mo-gh .d.w{background:var(--amber-bg);color:var(--amber)}
+.mo-gh .d.r{background:var(--red-bg);color:var(--red)}
+.mo-gh a{margin-left:auto;font-size:.7rem;color:var(--steel);font-weight:700;cursor:pointer;text-decoration:underline}
+.mo-grp .mt-act{padding:8px 12px}
 .a-dt{display:flex;gap:4px}
 .a-dt input[type=date]{flex:1.4;min-width:0}
 .a-dt input[type=time]{flex:1;min-width:0}
@@ -1202,6 +1261,10 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   </div>
   <div id="mStage" contenteditable="true" style="position:absolute;left:-100000px;top:0;width:1600px"></div>
 </div>
+<!-- ============ 📝 회의결과 (일일안전회의 · C.P회의 · 미결사항) ============ -->
+<div class="pg" id="pgMtgS"><div id="mtgS"></div></div>
+<div class="pg" id="pgMtgC"><div id="mtgC"></div></div>
+<div class="pg" id="pgMtgO"><div id="mtgO"></div></div>
 </main>
 
 <!-- bottom nav -->
@@ -1209,8 +1272,9 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   <button class="tab-btn nav-btn on" data-grp="sched" data-pg="pgSched"><span class="ic">📈</span>공정</button>
   <button class="tab-btn nav-btn" data-grp="gantt" data-pg="pgGantt"><span class="ic">🗓</span>공정표</button>
   <button class="tab-btn nav-btn" data-grp="daily" data-pg="pgDaily"><span class="ic">📋</span>일일작업</button>
-  <button class="tab-btn nav-btn" data-grp="site" data-pg="pgKakao"><span class="ic">💬</span>현장</button>
+  <button class="tab-btn nav-btn" data-grp="meet" data-pg="pgMtgS"><span class="ic">📝</span>회의결과</button>
   <button class="tab-btn nav-btn" data-grp="safe" data-pg="pgToday"><span class="ic">🦺</span>안전</button>
+  <button class="tab-btn nav-btn" data-grp="site" data-pg="pgKakao" id="navSite" style="display:none" title="관리자 전용"><span class="ic">💬</span>현장</button>
 </nav>
 <!-- 예전 탭 버튼(코드에서 .click()으로 쓰는 곳이 있어 숨겨 둠) -->
 <div id="legacyTabs" hidden>
@@ -1348,7 +1412,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.15.0',
+  version : '6.16.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4091,6 +4155,10 @@ function applyEditorUI(){
   if(typeof sLoaded!=='undefined'&&sLoaded){ sRenderAll(); if($('pgGantt').classList.contains('show')) sGanttView(); }
   if(typeof dSel!=='undefined'&&$('pgDaily').classList.contains('show')) dLoad();
   if(typeof mpList!=='undefined'&&$('pgMan').classList.contains('show')&&mpDay) mpRender(mpDay);
+  // v6.16: 현장 탭은 관리자만 — 로그아웃하면 숨기고 회의결과로
+  if($('navSite')) $('navSite').style.display=ed?'':'none';
+  try{ const cur=navCurPg(); if(!ed&&PG_GROUP[cur]==='site') showPage('pgMtgS');
+    else if(cur==='pgMtgS') mtgRender('safety'); else if(cur==='pgMtgC') mtgRender('cp'); else if(cur==='pgMtgO') mtgRenderOpen(); }catch(e){}
 }
 // 휴대폰·카톡 안 브라우저에서 prompt()가 막히는 경우가 있어 화면 안 입력창으로 로그인
 function openAdminLogin(){ $('admPass').value=''; $('admMsg').textContent=''; $('adminModal').classList.add('show'); setTimeout(()=>$('admPass').focus(),150); }
@@ -5504,11 +5572,206 @@ async function renderLaw(){
   if(lawView==='admin'){ const h=await adminLegalHtml(); if(lawView==='admin'&&box.querySelector('.loading')) box.querySelector('.loading').outerHTML=h; }
 }
 
+/* ================= 📝 회의결과: 일일안전회의(오전) · C.P회의(오후) · 미결사항 (v6.16.0) =================
+ * 날짜·회의당 1건. 관리자가 회의록 글을 붙여넣으면 정리된 화면으로 보여주고(원문은 '회의록 복사'로 그대로),
+ * 아래 '액션 아이템' 체크 목록(내용·담당·기한·완료)을 따로 관리. 미결사항 탭은 체크 안 된 것을 회의 후 경과일(D+n)별로. */
+const MTG={safety:{name:'일일안전회의',ic:'🦺',el:'mtgS',pg:'pgMtgS',when:'오전'},cp:{name:'C.P회의',ic:'🧭',el:'mtgC',pg:'pgMtgC',when:'오후'}};
+let mtgList=[], mtgSel={safety:'',cp:''}, mtgCache={}, mtgEdit={safety:null,cp:null}, moFilter='all';
+const mtgDL=d=>sMD(d)+'('+sWD[new Date(d+'T00:00:00Z').getUTCDay()]+')';
+const mtgAge=d=>Math.round((Date.parse(rToday()+'T00:00:00Z')-Date.parse(d+'T00:00:00Z'))/86400e3);
+const mtgId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+async function mtgLoadList(){ const r=await kApi('meeting'); mtgList=r.items||[]; return mtgList; }
+async function mtgGet(d,k){ const key=d+'|'+k; if(key in mtgCache) return mtgCache[key]; const r=await kApi('meeting?day='+encodeURIComponent(d)+'&kind='+k); mtgCache[key]=r.item; return r.item; }
+async function mtgCopyText(t){
+  try{ await navigator.clipboard.writeText(t); toast('회의록을 복사했습니다'); return; }catch(e){}
+  const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast('회의록을 복사했습니다'); }catch(e){ toast('복사 실패 — 길게 눌러 복사하세요'); } ta.remove();
+}
+// 회의록 글 → 정리된 화면 (제목 · 일시/장소/참석자 칸 · ■/1./[ ] 머리글 · ○/-/· 단계 목록 · ※ 참고 · 탭 구분 표)
+const MT_INFO=/^\s*[-·•○■□▶]?\s*(일\s*시|일\s*자|날\s*짜|시\s*간|장\s*소|참\s*석\s*자|참\s*석\s*인\s*원|참\s*석|주\s*관|주\s*재|작\s*성\s*자|작\s*성|회\s*의\s*명|사\s*회|진\s*행|회\s*의\s*일\s*시)\s*[:：]\s*(.+)$/;
+function mtgInline(s){
+  return esc(s)
+    .replace(/(긴급|필수|금지|엄수|즉시|절대|반드시|중점|특별\s*관리)/g,'<span class="mt-hot">$1</span>')
+    .replace(/[(（]\s*(담당|담당자|기한|완료|일정)\s*[:：]\s*([^)）]{1,30})[)）]/g,'<span class="mt-chip">$1 $2</span>');
+}
+function mtgFmt(raw){
+  const L=String(raw||'').replace(/\r/g,'').replace(/\u00a0/g,' ').split('\n');
+  let out='', info=[], stack=[], gap=false, first=true, i=0;
+  const flushInfo=()=>{ if(info.length){ out+='<div class="mt-info">'+info.map(([k,v])=>`<b>${esc(k.replace(/\s+/g,''))}</b><span>${mtgInline(v)}</span>`).join('')+'</div>'; info=[]; } };
+  const put=s=>{ flushInfo(); if(gap&&out){ out+='<div class="mt-gap"></div>'; } gap=false; out+=s; };
+  while(i<L.length){
+    const ln=L[i], t=ln.trim();
+    if(!t){ gap=true; stack=[]; i++; continue; }
+    // 표: 탭으로 나뉜 줄이 이어지면
+    if(ln.includes('\t')&&ln.split('\t').filter(c=>c.trim()).length>=2){
+      const rows=[]; while(i<L.length&&L[i].includes('\t')){ rows.push(L[i].split('\t')); i++; }
+      const nc=Math.max(...rows.map(r=>r.length));
+      put('<div class="mt-tblw"><table class="mt-tbl">'+rows.map(r=>'<tr>'+Array.from({length:nc},(_,j)=>`<td>${mtgInline((r[j]||'').trim())}</td>`).join('')+'</tr>').join('')+'</table></div>');
+      stack=[]; continue;
+    }
+    i++;
+    const mi=MT_INFO.exec(ln); if(mi&&out.length<1600){ info.push([mi[1],mi[2]]); first=false; continue; }
+    if(first){ first=false; if(t.length<=60&&!/[:：]/.test(t)&&/회의|회의록|결과|보고/.test(t)){ put(`<div class="mt-title">${mtgInline(t.replace(/^[#\[<【《]+|[\]>】》]+$/g,'').trim())}</div>`); continue; } }
+    let m;
+    if((m=/^#{1,3}\s*(.+)$/.exec(t))||(m=/^[\[【<《]\s*([^\]】>》]{1,40})\s*[\]】>》]$/.exec(t))||(m=/^[■◆▣◈★▶]\s*(.{1,50})$/.exec(t))){ put(`<div class="mt-h">${mtgInline(m[1])}</div>`); stack=[]; continue; }
+    if((m=/^((?:\d{1,2}|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+|[IVX]{1,4})[.)])\s*(.+)$/.exec(t))&&/^\S/.test(ln)&&m[2].length<=34&&!/다\.?$/.test(m[2])){ put(`<div class="mt-h">${mtgInline(m[1]+' '+m[2])}</div>`); stack=[]; continue; }
+    if((m=/^([가-하][.)]|[□◇])\s*(.{1,40})$/.exec(t))&&!/다\.?$/.test(m[2])){ put(`<div class="mt-h2">${mtgInline((/[□◇]/.test(m[1])?'':m[1]+' ')+m[2])}</div>`); continue; }
+    if((m=/^※\s*(.*)$/.exec(t))){ put(`<div class="mt-note">※ ${mtgInline(m[1])}</div>`); continue; }
+    if((m=/^([○◦●▪•·\-–*➤→>✔✓☞◎]|\d{1,2}\)|\(\d{1,2}\)|[①-⑳]|[가-하]\)|[a-z]\))\s*(.+)$/.exec(t))){
+      const sym=m[1], num=/\d|[①-⑳]|[가-하a-z]\)/.test(sym), key=num?(/[①-⑳]/.test(sym)?'①':/^\(/.test(sym)?'(1)':/^\d/.test(sym)?'1)':'가)'):sym;
+      const ind=(ln.match(/^[ \t]*/)[0].replace(/\t/g,'    ').length);
+      // 기호가 처음 나오면 한 단계 깊게, 이미 나온 기호면 그 단계로
+      let lv=stack.findIndex(x=>x.k===key);
+      if(lv<0){ stack=stack.filter(x=>x.i<ind||(x.i===ind&&true)); lv=stack.length; stack.push({k:key,i:ind}); } else stack=stack.slice(0,lv+1);
+      lv=Math.min(lv,3);
+      put(`<div class="mt-li l${lv}"><span class="mk${num?'':' dot'}">${num?esc(sym):''}</span><span>${mtgInline(m[2])}</span></div>`); continue;
+    }
+    const ind=Math.min(3,Math.floor(ln.match(/^[ \t]*/)[0].replace(/\t/g,'    ').length/2));
+    put(`<div class="mt-p" style="padding-left:${ind*14}px">${mtgInline(t)}</div>`);
+  }
+  flushInfo();
+  return out||'<div class="k-empty">내용이 없습니다</div>';
+}
+// 회의록에서 액션 후보(조치·요청·지시 등)
+function mtgSuggest(raw,acts){
+  const have=new Set((acts||[]).map(a=>a.t));
+  return [...new Set(String(raw||'').split(/\n/).map(s=>s.trim()).filter(s=>!/^[■◆▣◈★▶#\[【<《]/.test(s)).map(s=>s.replace(/^([○◦●▪•·\-–*➤→>✔✓☞◎■□◆◇▶★※]|\d{1,2}[.)]|\(\d{1,2}\)|[①-⑳]|[가-하][.)])\s*/,'').trim())
+    .filter(s=>s.length>=6&&s.length<=200&&/(조치|요청|필요|검토|확인\s*바람|확인\s*요망|할\s*것|까지|지시|보완|시정|개선|제출|협의|요망|바람|하기\s*바람|완료\s*예정|준비|점검)/.test(s)&&!MT_INFO.test(s)))]
+    .filter(s=>!have.has(s)).slice(0,15);
+}
+function mtgActRow(k,d,a,opt){
+  const ed=isEditor(), over=a.due&&!a.done&&a.due<rToday();
+  return `<div class="mt-act${a.done?' done':''}" data-aid="${esc(a.id)}" data-k="${k}" data-d="${d}">
+    <input type="checkbox" ${a.done?'checked':''} ${ed?'':'disabled'} title="${ed?'완료 표시':'관리자만 체크할 수 있습니다'}">
+    <div class="tx">${esc(a.t)}<span class="meta">${a.who?`<span class="mt-who">${esc(a.who)}</span>`:''}${a.due?`<span class="mt-due${over?' over':''}">기한 ${mtgDL(a.due)}${over?' 지남':''}</span>`:''}${a.done&&a.doneAt?`<span class="mt-due">완료 ${mtgDL(a.doneAt)}</span>`:''}${opt&&opt.src?opt.src:''}</span></div>
+    ${ed&&!(opt&&opt.noEdit)?'<button class="x" data-ae="1" title="수정">✎</button><button class="x" data-ax="1" title="삭제">✕</button>':''}
+  </div>`;
+}
+// 액션 목록 저장(원문은 그대로)
+async function mtgSaveActs(d,k,acts){
+  const it=mtgList.find(x=>x.day===d&&x.kind===k); const old=it?it.actions:[];
+  if(it) it.actions=acts; const c=mtgCache[d+'|'+k]; if(c) c.actions=acts;
+  try{ await kApi('meeting',{day:d,kind:k,actions:acts}); }
+  catch(e){ if(it) it.actions=old; if(c) c.actions=old; toast(kErr(e)); throw e; }
+}
+function mtgBindActs(root,after){
+  root.querySelectorAll('.mt-act').forEach(row=>{
+    const k=row.dataset.k, d=row.dataset.d, id=row.dataset.aid;
+    const acts=()=>((mtgList.find(x=>x.day===d&&x.kind===k)||{}).actions||[]).map(a=>({...a}));
+    const cb=row.querySelector('input[type=checkbox]');
+    cb.onchange=async()=>{ const A=acts(), a=A.find(x=>x.id===id); if(!a) return; a.done=cb.checked; a.doneAt=cb.checked?rToday():'';
+      try{ await mtgSaveActs(d,k,A); toast(cb.checked?'완료로 표시했습니다':'미결로 되돌렸습니다'); }catch(e){ cb.checked=!cb.checked; } after(); };
+    const x=row.querySelector('[data-ax]'); if(x) x.onclick=async()=>{ if(!confirm('이 액션 아이템을 지울까요?')) return; try{ await mtgSaveActs(d,k,acts().filter(a=>a.id!==id)); }catch(e){} after(); };
+    const e=row.querySelector('[data-ae]'); if(e) e.onclick=()=>{ const a=acts().find(x=>x.id===id); if(!a) return; mtgEdit[k]=id;
+      const f=$('mtAddT_'+k); if(!f) return; f.value=a.t; $('mtAddW_'+k).value=a.who||''; $('mtAddD_'+k).value=a.due||''; $('mtAddB_'+k).textContent='수정 저장'; f.focus(); };
+  });
+}
+async function mtgRender(k){
+  const M=MTG[k], box=$(M.el), ed=isEditor();
+  box.innerHTML='<div class="k-empty">불러오는 중…</div>';
+  try{ await mtgLoadList(); }catch(e){ box.innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
+  const items=mtgList.filter(x=>x.kind===k), days=items.map(x=>x.day).sort().reverse();
+  if(!mtgSel[k]||!days.includes(mtgSel[k])) mtgSel[k]=days[0]||'';
+  const d=mtgSel[k];
+  let html='';
+  if(ed) html+=`<div class="card mt-up" style="margin-top:4px">
+    <div class="sec-t" style="margin-bottom:6px">${M.ic} ${M.name} 회의록 붙여넣기 <small>${M.when} 회의 · 관리자</small></div>
+    <div class="btn-row" style="margin-top:0;align-items:center"><label class="f-label" style="margin:0;flex:none">회의 날짜</label><input type="date" class="f-input" id="mtDay_${k}" value="${rToday()}" style="flex:1"></div>
+    <textarea class="paste-area" id="mtRaw_${k}" placeholder="작성한 회의록 전체를 복사해 그대로 붙여넣으세요.&#10;예)&#10;${M.name} 회의록&#10;일시: 11/22(일) ${k==='cp'?'16:00':'07:30'}&#10;참석자: …&#10;■ 주요 내용&#10;○ …&#10;  - …"></textarea>
+    <div class="paste-hint" id="mtInfo_${k}" style="margin-top:6px">붙여넣으면 아래에 정리된 모양을 미리 보여줍니다. 같은 날짜에 다시 올리면 회의록만 바뀌고 액션 아이템은 그대로 남습니다.</div>
+    <div id="mtPrev_${k}"></div>
+    <div class="btn-row"><button class="btn ghost" id="mtClr_${k}">지우기</button><button class="btn done" id="mtSave_${k}" disabled>회의록 저장</button></div>
+  </div>`;
+  else html+=`<div class="card paste-hint" style="margin-top:4px">🔒 회의록 올리기·액션 체크는 관리자만 할 수 있습니다. <button class="mini-btn" onclick="openAdminLogin()">관리자 로그인</button> · 올라온 회의록은 누구나 볼 수 있습니다.</div>`;
+  html+=`<div class="date-chips" style="margin-top:12px">${days.slice(0,60).map(x=>{ const it=items.find(y=>y.day===x), n=it.actions.filter(a=>!a.done).length;
+    return `<button class="dchip ${x===d?'on':''}" data-mday="${x}">${x===rToday()?'오늘':mtgDL(x)}${n?`<span class="mt-badge" title="미결 ${n}건">${n}</span>`:''}</button>`; }).join('')}</div>`;
+  html+=d?`<div id="mtDoc_${k}"><div class="k-empty">불러오는 중…</div></div>`:`<div class="k-empty" style="margin-top:10px">아직 올린 ${M.name} 회의록이 없습니다.</div>`;
+  box.innerHTML=html;
+  box.querySelectorAll('[data-mday]').forEach(b=>b.onclick=()=>{ mtgSel[k]=b.dataset.mday; mtgEdit[k]=null; mtgRender(k); });
+  if(ed){
+    const ta=$('mtRaw_'+k), dy=$('mtDay_'+k), sv=$('mtSave_'+k);
+    const upd=()=>{ const v=ta.value.trim(); sv.disabled=!v; $('mtPrev_'+k).innerHTML=v?`<div class="card mt-doc" style="margin-top:8px"><div class="mt-head"><div class="t">미리보기</div></div><div class="mt-body">${mtgFmt(ta.value)}</div></div>`:'';
+      const ex=mtgList.some(x=>x.kind===k&&x.day===dy.value); $('mtInfo_'+k).innerHTML=v?(ex?`⚠️ ${mtgDL(dy.value)} ${M.name} 회의록이 이미 있습니다 — 저장하면 회의록을 바꿉니다(액션 아이템은 유지).`:`${mtgDL(dy.value)} ${M.name} 회의록으로 저장합니다.`):'붙여넣으면 아래에 정리된 모양을 미리 보여줍니다. 같은 날짜에 다시 올리면 회의록만 바뀌고 액션 아이템은 그대로 남습니다.'; };
+    ta.oninput=upd; dy.onchange=upd;
+    $('mtClr_'+k).onclick=()=>{ ta.value=''; upd(); };
+    sv.onclick=async()=>{ const day=dy.value, raw=ta.value; if(!/^\d{4}-\d{2}-\d{2}$/.test(day)){ toast('회의 날짜를 고르세요'); return; }
+      const ex=mtgList.find(x=>x.kind===k&&x.day===day);
+      if(ex&&!confirm(`${mtgDL(day)} ${M.name} 회의록을 새 내용으로 바꿀까요? (액션 아이템은 그대로)`)) return;
+      sv.disabled=true;
+      try{ await kApi('meeting',{day,kind:k,raw,actions:ex?ex.actions:[]}); delete mtgCache[day+'|'+k]; mtgSel[k]=day; toast('회의록을 저장했습니다'); mtgRender(k); }
+      catch(e){ sv.disabled=false; toast(kErr(e)); }
+    };
+  }
+  if(!d) return;
+  let it; try{ it=await mtgGet(d,k); }catch(e){ $('mtDoc_'+k).innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
+  if(!it){ $('mtDoc_'+k).innerHTML='<div class="k-empty">회의록을 찾을 수 없습니다</div>'; return; }
+  const li=mtgList.find(x=>x.day===d&&x.kind===k); if(li) it.actions=li.actions;
+  const acts=it.actions||[], open=acts.filter(a=>!a.done).length;
+  $('mtDoc_'+k).innerHTML=`<div class="card mt-doc">
+      <div class="mt-head"><div class="t">${M.ic} ${M.name} · ${sFmt(d,true)} <small>${dPlus(d)} · 저장 ${esc(String(it.updated_at||'').slice(5,16))}</small></div><button class="mt-copy" id="mtCopy_${k}">📋 회의록 복사</button></div>
+      ${ed?`<div class="mt-tools"><button class="mini-btn" id="mtEditRaw_${k}">회의록 고치기</button><button class="mini-btn" id="mtDel_${k}" style="color:var(--red)">삭제</button></div>`:''}
+      <div class="mt-body">${mtgFmt(it.raw)}</div>
+    </div>
+    <div class="card mt-acts">
+      <div class="sec-t">✅ 액션 아이템 <small>중요·조치 필요 · 미결 ${open} / ${acts.length}</small></div>
+      <div id="mtActs_${k}">${acts.length?acts.map(a=>mtgActRow(k,d,a)).join(''):'<div class="k-empty" style="padding:10px">아직 없습니다'+(ed?' — 아래에서 추가하세요':'')+'</div>'}</div>
+      ${ed?`<div class="mt-add"><input class="f-input" id="mtAddT_${k}" placeholder="조치할 내용"><input class="f-input" id="mtAddW_${k}" placeholder="담당"><input type="date" class="f-input" id="mtAddD_${k}" title="기한"><button class="btn primary" id="mtAddB_${k}" style="padding:8px 12px">추가</button></div>
+        <div class="mt-sug"><button class="mini-btn" id="mtSugB_${k}">🔎 회의록에서 후보 찾기</button><div id="mtSug_${k}"></div></div>`:''}
+    </div>`;
+  $('mtCopy_'+k).onclick=()=>mtgCopyText(it.raw);
+  const rer=()=>mtgRender(k);
+  mtgBindActs($('mtActs_'+k),rer);
+  if(!ed) return;
+  $('mtEditRaw_'+k).onclick=()=>{ $('mtDay_'+k).value=d; $('mtRaw_'+k).value=it.raw; $('mtRaw_'+k).dispatchEvent(new Event('input')); window.scrollTo({top:0,behavior:'smooth'}); };
+  $('mtDel_'+k).onclick=async()=>{ if(!confirm(`${mtgDL(d)} ${M.name} 회의록과 액션 아이템 ${acts.length}건을 지울까요? 되돌릴 수 없습니다.`)) return;
+    try{ await kApi('meeting-delete',{day:d,kind:k}); delete mtgCache[d+'|'+k]; mtgSel[k]=''; toast('지웠습니다'); rer(); }catch(e){ toast(kErr(e)); } };
+  const addB=$('mtAddB_'+k);
+  if(mtgEdit[k]&&acts.some(a=>a.id===mtgEdit[k])) addB.textContent='수정 저장'; else mtgEdit[k]=null;
+  const add=async(t,who,due)=>{ t=String(t||'').trim(); if(!t){ toast('조치할 내용을 넣으세요'); return; }
+    const A=acts.map(a=>({...a}));
+    if(mtgEdit[k]){ const a=A.find(x=>x.id===mtgEdit[k]); if(a){ a.t=t; a.who=who; a.due=due; } mtgEdit[k]=null; }
+    else A.push({id:mtgId(),t,who,due,done:false,doneAt:''});
+    try{ await mtgSaveActs(d,k,A); rer(); }catch(e){} };
+  addB.onclick=()=>add($('mtAddT_'+k).value,$('mtAddW_'+k).value.trim(),$('mtAddD_'+k).value);
+  $('mtAddT_'+k).onkeydown=e=>{ if(e.key==='Enter'&&!e.isComposing) addB.click(); };
+  $('mtSugB_'+k).onclick=()=>{ const s=mtgSuggest(it.raw,acts), b=$('mtSug_'+k);
+    b.innerHTML=s.length?s.map((x,i)=>`<div><span>${esc(x)}</span><button class="mini-btn" data-si="${i}">+ 추가</button></div>`).join(''):'<div><span>조치·요청·지시 같은 말이 들어간 줄을 찾지 못했습니다.</span></div>';
+    b.querySelectorAll('[data-si]').forEach(x=>x.onclick=()=>{ let t=s[+x.dataset.si], who='', due='';
+      const mw=/[(（]\s*담당자?\s*[:：]\s*([^)）]{1,30})[)）]/.exec(t); if(mw){ who=mw[1].trim(); t=t.replace(mw[0],'').trim(); }
+      const md=/(\d{1,2})\s*[\/.월]\s*(\d{1,2})\s*일?\s*까지/.exec(t); if(md){ let y=+d.slice(0,4); const mo=+md[1]; if(mo<+d.slice(5,7)-6) y++; due=y+'-'+String(mo).padStart(2,'0')+'-'+String(+md[2]).padStart(2,'0'); }
+      add(t,who,due); }); };
+}
+// ⏳ 미결사항: 두 회의의 체크 안 된 액션 — 회의 후 경과일(D+n)별
+async function mtgRenderOpen(){
+  const box=$('mtgO'); box.innerHTML='<div class="k-empty">불러오는 중…</div>';
+  try{ await mtgLoadList(); }catch(e){ box.innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
+  const all=[]; mtgList.forEach(it=>it.actions.forEach(a=>all.push({k:it.kind,d:it.day,a,n:mtgAge(it.day)})));
+  const open=all.filter(x=>!x.a.done), cnt=k=>open.filter(x=>x.k===k).length, old=open.filter(x=>x.n>=7).length;
+  const chip=(f,t)=>`<button class="dchip ${moFilter===f?'on':''}" data-mf="${f}">${t}</button>`;
+  let html=`<div class="card" style="margin-top:4px"><div class="sec-t">⏳ 미결사항 <small>회의 액션 아이템 중 체크 안 된 것 · D+n = 회의 후 지난 날수</small></div>
+    <div class="mo-sum">${chip('all',`전체 ${open.length}`)}${chip('safety',`🦺 일일안전회의 ${cnt('safety')}`)}${chip('cp',`🧭 C.P회의 ${cnt('cp')}`)}</div>
+    ${old?`<div class="paste-hint" style="margin-top:8px;color:var(--red);font-weight:700">⚠️ 회의 후 7일 넘게 미결인 것이 ${old}건 있습니다.</div>`:''}</div>`;
+  const kinds=moFilter==='all'?['safety','cp']:[moFilter];
+  kinds.forEach(k=>{ const M=MTG[k], L=open.filter(x=>x.k===k);
+    html+=`<div class="mo-sec"><div class="sec-t">${M.ic} ${M.name} <small>미결 ${L.length}건</small></div>`;
+    if(!L.length) html+='<div class="card k-empty">미결사항이 없습니다 👍</div>';
+    [...new Set(L.map(x=>x.d))].sort().forEach(d=>{ const G=L.filter(x=>x.d===d), n=G[0].n;
+      html+=`<div class="card mo-grp"><div class="mo-gh"><span class="d ${n>=7?'r':n>=3?'w':''}">D+${n}</span><span>${mtgDL(d)} 회의 · ${G.length}건</span><a data-go="${k}|${d}">회의록 보기</a></div>${G.map(x=>mtgActRow(k,d,x.a,{noEdit:true})).join('')}</div>`; });
+    html+='</div>'; });
+  const done=all.filter(x=>x.a.done&&x.a.doneAt&&mtgAge(x.a.doneAt)<=7&&kinds.includes(x.k)).sort((a,b)=>a.a.doneAt<b.a.doneAt?1:-1);
+  if(done.length) html+=`<details class="mo-sec"><summary class="sec-t" style="cursor:pointer">✔ 최근 7일 완료 <small>${done.length}건</small></summary><div class="card mo-grp" style="margin-top:6px">${done.map(x=>mtgActRow(x.k,x.d,x.a,{noEdit:true,src:`<span class="mt-due">${MTG[x.k].ic} ${mtgDL(x.d)} 회의</span>`})).join('')}</div></details>`;
+  box.innerHTML=html;
+  box.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{ moFilter=b.dataset.mf; mtgRenderOpen(); });
+  box.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{ const [k,d]=a.dataset.go.split('|'); mtgSel[k]=d; showPage(MTG[k].pg); });
+  mtgBindActs(box,()=>mtgRenderOpen());
+}
+
 /* ================= 하단 탭 5개 + 그룹 하위 탭 ================= */
-const PG_GROUP={pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
-const GROUP_SUBS={daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgMemo','✓ 순시메모']],safe:[['pgToday','☀ 오늘 TBM'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
+const PG_GROUP={pgMtgS:'meet',pgMtgC:'meet',pgMtgO:'meet',pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
+const GROUP_SUBS={meet:[['pgMtgS','🦺 일일안전회의'],['pgMtgC','🧭 C.P회의'],['pgMtgO','⏳ 미결사항']],daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgMemo','✓ 순시메모']],safe:[['pgToday','☀ 오늘 TBM'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
 const lastPg={};
 function showPage(pg){
+  if(PG_GROUP[pg]==='site'&&!isEditor()) pg='pgMtgS'; // v6.16: 현장(현장톡·순시메모)은 관리자만
   const g=PG_GROUP[pg]; lastPg[g]=pg;
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===pg));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.grp===g));
@@ -5525,13 +5788,16 @@ function showPage(pg){
   if(pg==='pgLaw') renderLaw();
   if(pg==='pgMan') mpLoad();
   if(pg==='pgKakao') renderKakao();
+  if(pg==='pgMtgS') mtgRender('safety');
+  if(pg==='pgMtgC') mtgRender('cp');
+  if(pg==='pgMtgO') mtgRenderOpen();
   if(pg==='pgMemo'){ if(pMode==='patrol') pLoad(); else renderMemo(); }
   if(pg==='pgToday'&&wx) renderToday();
   window.scrollTo(0,0);
   setHash();
 }
 /* 주소 해시로 탭 전환·북마크: #today #gantt #list #look #config #daily #manpower #kakao #memo #tbm #law … */
-const PG_HASH={pgSched:'today',pgGantt:'gantt',pgDaily:'daily',pgMan:'manpower',pgInput:'input',pgKakao:'kakao',pgMemo:'memo',pgToday:'tbm',pgRecords:'records',pgInfo:'info',pgLaw:'law'};
+const PG_HASH={pgMtgS:'safety-meeting',pgMtgC:'cp-meeting',pgMtgO:'pending',pgSched:'today',pgGantt:'gantt',pgDaily:'daily',pgMan:'manpower',pgInput:'input',pgKakao:'kakao',pgMemo:'memo',pgToday:'tbm',pgRecords:'records',pgInfo:'info',pgLaw:'law'};
 function setHash(){
   const h=navHash(navCurPg());
   if(location.hash!==h) navPush(); else navUpd();

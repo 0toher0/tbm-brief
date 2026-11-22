@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.6.0',
+        version: '3.7.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -344,6 +344,8 @@ async function kakaoSchema(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS progress_map (day TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS manpower (day TEXT NOT NULL, shift TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift))`),
     // v3.5.0: 출력인원을 메인 시공사(P-E&C·플랜텍·P-DX)별로 — 날짜·근무조·시공사당 1건
+    // v3.7.0: 회의결과 — 날짜·회의(safety=일일안전회의, cp=C.P회의)당 1건, 회의록 원문 + 액션 체크 목록(JSON)
+    db.prepare(`CREATE TABLE IF NOT EXISTS meeting (day TEXT NOT NULL, kind TEXT NOT NULL, raw TEXT, actions TEXT, updated_at TEXT, PRIMARY KEY(day, kind))`),
     db.prepare(`CREATE TABLE IF NOT EXISTS manpower_co (day TEXT NOT NULL, shift TEXT NOT NULL, co TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift, co))`),
   ]);
   // v3.5.0: 예전 manpower(시공사 구분 없음) → manpower_co 로 옮김(시공사는 내용으로 추정)
@@ -572,10 +574,10 @@ async function handleKakao(request, env, url, cors) {
     return json({ ok }, ok ? 200 : 401, cors);
   }
   // 쓰기는 관리자만 (읽기는 누구나)
-  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST', 'progress-map': 'POST', 'progress-map-delete': 'POST' };
+  const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST', 'progress-map': 'POST', 'progress-map-delete': 'POST', 'meeting': 'POST', 'meeting-delete': 'POST' };
   if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) return json({ error: 'editor_required' }, 403, cors);
   // 고치기·지우기 전용 주소는 POST만 (GET으로 우회 금지)
-  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','sched-actual-undo','daily-ai','progress-img-delete','progress-map-delete'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+  if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','sched-actual-undo','daily-ai','progress-img-delete','progress-map-delete','meeting-delete'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
 
   // ---- 공정관리: 공정표 + 실적 ----
   if (sub === 'sched') {
@@ -703,6 +705,39 @@ async function handleKakao(request, env, url, cors) {
   }
   if (sub === 'manpower-delete') {
     await db.prepare(`DELETE FROM manpower_co WHERE day=? AND shift=? AND co=?`).bind(String(body.day || ''), String(body.shift || ''), String(body.co || 'P-E&C')).run();
+    return json({ ok: true }, 200, cors);
+  }
+  // ---- 회의결과 (v3.7.0): GET 목록(원문 제외) / GET ?day=&kind= 한 건(원문 포함) / POST 저장(raw 생략 시 액션만) ----
+  if (sub === 'meeting') {
+    const MK = ['safety', 'cp'];
+    const cleanActs = a => (Array.isArray(a) ? a : []).slice(0, 200).map(x => ({
+      id: String(x.id || '').slice(0, 24), t: String(x.t || '').slice(0, 1000), who: String(x.who || '').slice(0, 60),
+      due: /^\d{4}-\d{2}-\d{2}$/.test(String(x.due || '')) ? String(x.due) : '', done: !!x.done, doneAt: String(x.doneAt || '').slice(0, 20),
+    })).filter(x => x.id && x.t);
+    if (request.method === 'POST') {
+      const day = String(body.day || ''), kind = String(body.kind || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !MK.includes(kind)) return json({ error: 'bad_payload' }, 400, cors);
+      const acts = JSON.stringify(cleanActs(body.actions));
+      const prev = await db.prepare(`SELECT raw FROM meeting WHERE day=? AND kind=?`).bind(day, kind).first();
+      if (body.raw == null) {
+        if (!prev) return json({ error: 'not_found' }, 404, cors);
+        await db.prepare(`UPDATE meeting SET actions=?, updated_at=? WHERE day=? AND kind=?`).bind(acts, now.ts, day, kind).run();
+        return json({ ok: true }, 200, cors);
+      }
+      const raw = String(body.raw); if (!raw.trim() || raw.length > 100000) return json({ error: 'bad_payload' }, 400, cors);
+      await db.prepare(`INSERT INTO meeting(day,kind,raw,actions,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(day,kind) DO UPDATE SET raw=excluded.raw, actions=excluded.actions, updated_at=excluded.updated_at`)
+        .bind(day, kind, raw, acts, now.ts).run();
+      return json({ ok: true, replaced: !!prev }, 200, cors);
+    }
+    if (body.day && body.kind) {
+      const r = await db.prepare(`SELECT day, kind, raw, actions, updated_at FROM meeting WHERE day=? AND kind=?`).bind(String(body.day), String(body.kind)).first();
+      return json({ today: now.day, item: r ? { ...r, actions: JSON.parse(r.actions || '[]') } : null }, 200, cors);
+    }
+    const r = await db.prepare(`SELECT day, kind, actions, length(raw) AS len, updated_at FROM meeting ORDER BY day DESC LIMIT 2000`).all();
+    return json({ today: now.day, items: r.results.map(x => ({ ...x, actions: JSON.parse(x.actions || '[]') })) }, 200, cors);
+  }
+  if (sub === 'meeting-delete') {
+    await db.prepare(`DELETE FROM meeting WHERE day=? AND kind=?`).bind(String(body.day || ''), String(body.kind || '')).run();
     return json({ ok: true }, 200, cors);
   }
   // ---- 고로 진행률 그림: 날짜당 1장 (GET 목록 / GET ?day= 한 장 / POST 저장) ----
