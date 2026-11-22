@@ -575,8 +575,11 @@ table.s-t tr[data-act]{cursor:pointer}
 .s-gh .gd span{position:absolute;top:2px;font-size:.56rem;color:var(--steel);text-align:center;font-family:var(--num)}
 .s-gh .gd span.h{color:#adb5bd}
 .s-gh .gd span.t{color:#fff;background:var(--red);border-radius:3px}
-.s-gl{width:150px!important;position:sticky;left:0;z-index:3;background:#fff}
+.s-gl{width:172px!important;position:sticky;left:0;z-index:3;background:#fff}
 .s-gl.corner{z-index:5;background:#f7f8f9!important}
+.s-gl .gnm{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.s-gl .gdur{flex:none;font-family:var(--num);font-size:.62rem;font-weight:700;color:var(--steel)}
+.s-gr.ph .s-gl .gdur{font-size:.66rem;color:var(--ink2)}
 .s-gr{position:relative}
 .s-gr[data-act]{cursor:pointer}
 .s-gr .s-gl small{font-weight:600;color:var(--steel)}
@@ -1334,7 +1337,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.12.0',
+  version : '6.14.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4107,7 +4110,12 @@ $('admPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doAdminLogin();
 const S_REL={FS:'끝나면 시작',SS:'같이 시작',FF:'같이 끝남'};
 const sLagTxt=l=>{ l=+l||0; return l>0?`${l}일 뒤`:l<0?`${-l}일 당겨서`:''; };
 const sRelTxt=p=>{ const l=+p.lag||0; if((p.type||'FS')==='FS'&&l===-1) return '끝나는 날 바로 시작'; return (S_REL[p.type]||S_REL.FS)+(l?` · ${sLagTxt(l)}`:''); };
-const S_PHASES=[{id:'P1',name:'해체',short:'해체'},{id:'P2',name:'본체 설치',short:'본체'},{id:'P3',name:'연와 축조',short:'연와'},{id:'P4',name:'배관·화입준비',short:'화입준비'}];
+// 중분류 7개 (사용자 결정 2026-11-22: C01~02 · C03~12 · C13~19 · C20~26 · C27~33 · C34~37 · 나머지)
+const S_PHASES=[{id:'P1',name:'출선 및 냉각',short:'출선·냉각'},{id:'P2',name:'철피 해체 & 코크스 소출',short:'철피해체'},{id:'P3',name:'잔선 및 잔여철피 철거',short:'잔선철거'},
+  {id:'P4',name:'본체 철피 & 안전데크 설치',short:'본체설치'},{id:'P5',name:'본체 내화물 축조',short:'내화물'},{id:'P6',name:'가설 해체 & 배관설치',short:'배관'},{id:'P7',name:'화입조업',short:'화입'}];
+const S_PH_OF=n=>n<=2?'P1':n<=12?'P2':n<=19?'P3':n<=26?'P4':n<=33?'P5':n<=37?'P6':'P7'; // C번호 → 중분류
+const S_FIRE='2027-03-24'; // 기준 화입일(사용자 결정 2026-11-22) = 마지막 공정(충진 및 화입준비) 끝난 다음 날 — 공정표에는 따로 넣지 않음
+const S_PH_OLD={P1:'P2',P2:'P4',P3:'P5',P4:'P6'};                                          // 예전 4단계 → 새 중분류(추가 공정용)
 const S_SEED=[ // 사용자 제공 크리티컬 패스 (휴식 '27.2.6~2.9는 휴일, Carbon 축조는 하나로)
  ['노저출선','2026-11-12','2026-11-12','P1'],['주수냉각','2026-11-13','2026-11-14','P1'],['주수냉각 배관 및 송풍지관 철거','2026-11-15','2026-11-16','P1'],
  ['풍구상~환상관 하부배관 철거','2026-11-17','2026-11-19','P1'],['환상관 상부 배관철거','2026-11-20','2026-11-23','P1'],['풍구상 180도 철거','2026-11-24','2026-11-25','P1'],
@@ -4122,7 +4130,7 @@ const S_SEED=[ // 사용자 제공 크리티컬 패스 (휴식 '27.2.6~2.9는 �
  ['풍구 Block 축조','2027-02-19','2027-02-23','P3'],['Bosh 연와 반입구 복구','2027-02-24','2027-02-26','P3'],['냉각반 및 Stave 연와 축조','2027-02-26','2027-03-05','P3'],
  ['노내 가설 해체 및 반출','2027-03-06','2027-03-07','P3'],['안전 Deck 안착 및 건조 배관 설치','2027-03-08','2027-03-11','P4'],['노체 배관 설치','2027-03-12','2027-03-14','P4'],
  ['도압관 설치','2027-03-15','2027-03-15','P4'],['Leak Test','2027-03-16','2027-03-18','P4'],['침목적','2027-03-18','2027-03-20','P4'],['충진 및 화입준비','2027-03-21','2027-03-23','P4'],
-];
+].map((c,i)=>[c[0],c[1],c[2],S_PH_OF(i+1)]);
 let sHist={}, sPlan=null, sRev=null, sAct={}, sCalc=null, sToday=null, sLoaded=false;
 const sDAY=86400e3, sT=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)), sISO=t=>new Date(t).toISOString().slice(0,10);
 const sDN=s=>Math.round(sT(s)/sDAY);           // 날짜 → 일 번호(UTC)
@@ -4163,7 +4171,11 @@ function sMigrate(plan){
   // 크리티컬 패스 40개는 사용자가 준 날짜가 '고정 기준'(사용자 결정 2026-11-21) — 저장본과 상관없이 항상 이 날짜
   plan.base=plan.base||{at:'2026-11-12',dates:{}}; plan.base.dates=plan.base.dates||{};
   S_SEED.forEach((c,i)=>{ const id='C'+String(i+1).padStart(2,'0'); if(plan.acts.some(a=>a.id===id)) plan.base.dates[id]=[c[1],c[2]]; });
-  plan.base.fire=S_SEED[S_SEED.length-1][2]; plan.base.fixed=true;
+  plan.base.fire=S_FIRE; plan.base.fixed=true;
+  // v6.14: 4단계 → 중분류 7개 (C01~C40은 번호로, 추가 공정은 예전 단계로 옮김)
+  if(plan.phv!==2){ plan.acts.forEach(a=>{ const m=/^C(\d+)$/.exec(a.id); a.phase=m&&+m[1]<=S_SEED.length?S_PH_OF(+m[1]):(S_PH_OLD[a.phase]||a.phase); }); plan.phv=2; }
+  plan.phases=S_PHASES;
+  plan.acts.forEach(a=>{ if(!S_PHASES.some(p=>p.id===a.phase)) a.phase='P7'; });
   return plan;
 }
 // 기준선: 지정 공정의 계산 날짜를 저장(새 공정은 추가하자마자 '지연'으로 뜨지 않게)
@@ -4200,7 +4212,7 @@ function sRun(plan, actual, opt={}){
   }
   const fin=order.length?Math.max(...order.map(id=>R[id].ef)):p0;
   // 후진 계산: 기준 화입일에 맞춰 여유 — 늦어지면 주공정 여유가 음수
-  const anchor=plan.base&&plan.base.fire&&!opt.noActual?wiF(plan.base.fire):fin;
+  const anchor=plan.base&&plan.base.fire&&!opt.noActual?wi(plan.base.fire)-1:fin; // 화입 전날까지 끝나야 함
   for(const id of [...order].reverse()){
     const r=R[id]; let lf=anchor;
     (succ[id]||[]).forEach(s=>{ const x=R[s.id]; if(!x) return;
@@ -4210,7 +4222,7 @@ function sRun(plan, actual, opt={}){
   const open=order.filter(id=>!/^done/.test(R[id].state));
   const minTf=open.length?Math.min(...open.map(id=>R[id].tf)):0;
   order.forEach(id=>{ const r=R[id]; r.crit=!/^done/.test(r.state)&&r.tf<=minTf; r.critPast=/^done/.test(r.state)&&by[id].cp; }); // 여유가 가장 적은 경로 = 크리티컬(앞당겨져 여유가 +여도 유지)
-  return {R,fin:cal[fin],finIdx:fin,cal,wi,wiF,hol,order,cyc,minTf};
+  return {R,fin:cal[fin+1],finIdx:fin+1,lastEnd:cal[fin],cal,wi,wiF,hol,order,cyc,minTf}; // fin = 예상 화입일(마지막 공정 다음 작업일)
 }
 const sA=id=>sPlan.acts.find(a=>a.id===id);
 const sDate=i=>sCalc.cal[i];
@@ -4608,7 +4620,7 @@ function sHome(){
   const d0=sDN(sPlan.start), d1=sDN(fire), span=d1-d0+1, P=d=>Math.max(0,Math.min(100,(d-d0)/span*100));
   const ph=sPhaseInfo();
   $('sStrip').innerHTML=ph.map(x=>{ const a=sDN(sDate(x.es)), b=sDN(sDate(x.ef))+1;
-    return `<div class="seg st-${x.st}" style="left:${P(a)}%;width:${P(b)-P(a)}%"><div class="fill" style="width:${x.pct}%"></div><span>${esc(x.p.short)}</span></div>`; }).join('')+
+    return `<div class="seg st-${x.st}" style="left:${P(a)}%;width:${P(b)-P(a)}%" title="${esc(x.p.name)} ${sMD(sDate(x.es))}~${sMD(sDate(x.ef))}"><div class="fill" style="width:${x.pct}%"></div>${P(b)-P(a)>=6?`<span>${esc(x.p.short)}</span>`:''}</div>`; }).join('')+
     `<div class="mk" style="left:${P(sDN(sd))}%"><b>${sMD(sd)}</b></div>`;
   $('sStripLab').innerHTML=`<span>착공 ${sMD(sPlan.start)}</span><span>${dPlus(sd)} · ${Math.round(P(sDN(sd)))}% 경과</span><span>화입 ${sMD(fire)}</span>`;
   $('sPhCards').innerHTML=ph.map(x=>`<div class="s-phc st-${x.st}"><div class="n">${esc(x.p.name)}</div><div class="d">${sMD(sDate(x.es))}~${sMD(sDate(x.ef))}</div>
@@ -4723,7 +4735,7 @@ function sGanttView(){
 }
 // 간트: 하루 = sZoom px, 날짜 축(휴일도 칸을 차지하고 빗금 표시). 라벨 열·머리 줄은 sticky
 function sGantt(){
-  const C=sCalc, dw=sZoom, LW=150;
+  const C=sCalc, dw=sZoom, LW=172;
   const d0=sDN(sPlan.start)-1, dEnd=Math.max(sDN(C.fin), sPlan.base&&sPlan.base.fire?sDN(sPlan.base.fire):0)+4, nd=dEnd-d0+1, W=nd*dw;
   const x=d=>(d-d0)*dw, xs=s=>x(sDN(s));
   const sdN=sDN(sSD());
@@ -4743,14 +4755,15 @@ function sGantt(){
     let as=sPlan.acts.filter(a=>a.phase===p.id&&C.R[a.id]); if(!as.length) return;
     const es=Math.min(...as.map(a=>C.R[a.id].es)), ef=Math.max(...as.map(a=>C.R[a.id].ef));
     const phx=sPhaseInfo().find(q=>q.p.id===p.id)||{};
-    rows+=`<div class="s-gr ph"><div class="s-gl" data-ph="${p.id}">${sCollapsed[p.id]?'▸':'▾'} ${p.name} ${phx.df!=null?`<span class="s-vs ${phx.df>0?'late':phx.df<0?'early':'ok'}">${sVarShort(phx.df)}</span>`:''}</div><div class="s-gt" style="width:${W}px">${phx.bs?`<div class="s-gbase ph" style="left:${xs(phx.bs)}px;width:${xs(phx.bf)-xs(phx.bs)+dw}px"></div>`:''}<div class="s-gb ph" style="left:${xs(sDate(es))}px;width:${xs(sDate(ef))-xs(sDate(es))+dw}px"></div>${phx.df?`<span class="s-vtag ${phx.df>0?'late':'early'}" style="left:${xs(sDate(ef))+dw+3}px">${phx.df>0?`▲${phx.df}일 늦음`:`▼${-phx.df}일 빠름`}</span>`:''}</div></div>`;
+    const durSum=as.reduce((s,a)=>s+(+a.dur||0),0), span=ef-es+1;
+    rows+=`<div class="s-gr ph"><div class="s-gl" data-ph="${p.id}" title="${p.name} — 공정 ${as.length}개 일수 합 ${durSum}일 (실제 기간 ${sMD(sDate(es))}~${sMD(sDate(ef))} ${span}일)">${sCollapsed[p.id]?'▸':'▾'} <span class="gnm">${p.name}</span><span class="gdur">(${durSum}일)</span> ${phx.df!=null?`<span class="s-vs ${phx.df>0?'late':phx.df<0?'early':'ok'}">${sVarShort(phx.df)}</span>`:''}</div><div class="s-gt" style="width:${W}px">${phx.bs?`<div class="s-gbase ph" style="left:${xs(phx.bs)}px;width:${xs(phx.bf)-xs(phx.bs)+dw}px"></div>`:''}<div class="s-gb ph" style="left:${xs(sDate(es))}px;width:${xs(sDate(ef))-xs(sDate(es))+dw}px"></div>${phx.df?`<span class="s-vtag ${phx.df>0?'late':'early'}" style="left:${xs(sDate(ef))+dw+3}px">${phx.df>0?`▲${phx.df}일 늦음`:`▼${-phx.df}일 빠름`}</span>`:''}</div></div>`;
     if(sCollapsed[p.id]) return;
     if(sCritOnly) as=as.filter(a=>C.R[a.id].crit||C.R[a.id].critPast);
     as.sort((a,b)=>C.R[a.id].es-C.R[b.id].es||(b.cp-a.cp)).forEach(a=>{ const r=C.R[a.id], b=sBaseOf(a.id), ac=sAct[a.id], vv=sVar(a.id);
       const isCrit=r.crit||r.critPast, done=/^done/.test(r.state);
       const L=xs(sDate(r.es)), Wd=xs(sDate(r.ef))-L+dw;
       const pct=done?100:r.state==='run'&&ac&&ac.pct!=null?ac.pct:r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0;
-      rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)}"><small class="gid">${a.id}</small>${esc(a.name)}</div><div class="s-gt" style="width:${W}px">
+      rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)} (${a.dur}일)"><small class="gid">${a.id}</small><span class="gnm">${esc(a.name)}</span><span class="gdur">(${a.dur}일)</span></div><div class="s-gt" style="width:${W}px">
         ${b?`<div class="s-gbase" style="left:${xs(sDate(b[0]))}px;width:${xs(sDate(b[1]))-xs(sDate(b[0]))+dw}px"></div>`:''}
         <div class="s-gb ${done?'done':isCrit?'crit':''}" style="left:${L}px;width:${Wd}px" title="${esc(a.name)} ${sMD(sDate(r.es))}~${sMD(sDate(r.ef))} · 여유 ${r.tf}"><i class="pf" style="width:${pct}%"></i>${Wd>=30?`<span>${a.dur}일</span>`:''}</div>
         ${vv&&vv.df?`<span class="s-vtag ${vv.df>0?'late':'early'}" style="left:${L+Wd+3}px">${sVarShort(vv.df)}</span>`:''}</div></div>`; });
@@ -4838,7 +4851,7 @@ async function sSaveConfig(){
   if(!(await sSavePlan())){ sPlan=JSON.parse(snap); return; }
   toast('설정을 저장했습니다'); sRenderAll(); sConfig();
 }
-const sPhaseFrom=v=>{ v=String(v||'').trim(); if(!v) return ''; if(/^[1-4]$/.test(v)) return 'P'+v; if(/^P[1-4]$/i.test(v)) return v.toUpperCase(); const p=S_PHASES.find(p=>p.name===v||p.short===v||v.includes(p.short)); return p?p.id:''; };
+const sPhaseFrom=v=>{ v=String(v||'').trim(); if(!v) return ''; if(/^[1-7]$/.test(v)) return 'P'+v; if(/^P[1-7]$/i.test(v)) return v.toUpperCase(); const p=S_PHASES.find(p=>p.name===v||p.short===v||v.includes(p.short)); return p?p.id:''; };
 /* 선행 한 개 읽기 — 영문(C05SS+2)·한글(C05 같이시작 2일 뒤) 모두
  *  관계: (없음)/끝나면/완료후 = 끝나면 시작 · 같이시작/동시착수 = 같이 시작 · 같이끝/동시완료 = 같이 끝남 · FS/SS/FF
  *  간격: +2 / 2일 뒤 / 2일 후 = 2일 뒤 · -1 / 1일 당겨서 / 1일 겹쳐 = 1일 당겨서 */
@@ -5019,7 +5032,7 @@ async function sDelete(){
 async function sSaveBase(){
   const extra=sPlan.acts.filter(a=>!a.cp);
   if(!extra.length){ toast('크리티컬 패스 기준은 고정입니다 — 다시 잡을 추가 공정이 없습니다'); return; }
-  if(!confirm(`추가 공정 ${extra.length}개의 기준을 지금 계산된 일정으로 다시 잡을까요?\n(크리티컬 패스 40개의 기준 날짜와 기준 화입일 '27.03.23은 고정이라 바뀌지 않습니다)`)) return;
+  if(!confirm(`추가 공정 ${extra.length}개의 기준을 지금 계산된 일정으로 다시 잡을까요?\n(크리티컬 패스 40개의 기준 날짜와 기준 화입일 '27.03.24는 고정이라 바뀌지 않습니다)`)) return;
   const C=sCalc, snap=JSON.stringify(sPlan);
   extra.forEach(a=>{ const r=C.R[a.id]; if(r) sPlan.base.dates[a.id]=[C.cal[r.es],C.cal[r.ef]]; });
   if(await sSavePlan()){ toast('새 기준선을 저장했습니다'); sRenderAll(); } else sPlan=JSON.parse(snap);
