@@ -818,6 +818,34 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 .mp-area{font-size:.74rem;font-weight:800;color:var(--steel);margin:10px 0 2px}
 .mp-tasks.open li.more{display:list-item}
 .h-admin.on{background:#2b8a3e;border-color:#2b8a3e;color:#fff}
+/* v6.22.0: 부관리자 배지 · 가운데 알람 · 부관리자 모니터링 */
+.h-admin.on.sub{background:#fab005;border-color:#fab005;color:#212529} /* 부관리자: 같은 '관리자 로그인됨' 글자, 노란색만 다름(사용자 요청 — 본인들은 구분 모름) */
+.sa-bg{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(15,18,22,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.sa-bg.show{display:flex;animation:saIn .28s ease-out}
+@keyframes saIn{from{opacity:0}to{opacity:1}}
+.sa-card{width:100%;max-width:400px;background:linear-gradient(160deg,#ffffff 0%,#f1f6ff 100%);border-radius:22px;padding:26px 22px 18px;box-shadow:0 18px 50px rgba(0,0,0,.35);text-align:center;animation:saPop .32s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes saPop{from{transform:scale(.86);opacity:.2}to{transform:scale(1);opacity:1}}
+.sa-it{padding:12px 4px}
+.sa-it+.sa-it{border-top:1px dashed #ced4da}
+.sa-ic{font-size:2rem;line-height:1}
+.sa-tm{font-family:var(--num);font-size:.72rem;font-weight:800;color:#1c7ed6;letter-spacing:.04em;margin-top:6px}
+.sa-msg{font-size:1.18rem;font-weight:800;color:var(--ink);line-height:1.5;margin-top:6px;word-break:keep-all}
+.sa-q{font-size:1.12rem;font-weight:700;color:#343a40;line-height:1.6;margin-top:8px;word-break:keep-all}
+.sa-qa{font-size:.78rem;color:var(--steel);margin-top:6px}
+.sa-hint{font-size:.68rem;color:#adb5bd;margin-top:12px}
+.sm-sec{font-weight:800;font-size:.9rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px}
+.sm-sec small{font-weight:600;color:var(--steel);font-size:.68rem}
+.sm-al{display:grid;grid-template-columns:78px 96px 1fr 30px 30px;gap:5px;align-items:center;margin-bottom:6px}
+.sm-al input,.sm-al select{font-size:.78rem;padding:7px 6px}
+.sm-al .q{font-size:.72rem;color:var(--steel);padding:0 4px}
+@media(max-width:480px){ .sm-al{grid-template-columns:76px 1fr 30px 30px} .sm-al .sm-txt{grid-column:1/-1;grid-row:2} }
+.sm-day{font-weight:800;font-size:.8rem;margin:12px 0 4px;padding:4px 8px;background:#f1f3f5;border-radius:7px;display:flex;justify-content:space-between}
+.sm-row{display:flex;gap:8px;align-items:flex-start;padding:8px 2px;border-bottom:1px solid #f1f3f5}
+.sm-row .t{font-family:var(--num);font-size:.7rem;color:var(--steel);min-width:38px;padding-top:2px}
+.sm-row .w{font-size:.66rem;font-weight:800;color:#1c7ed6;background:#e7f5ff;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.sm-row .s{flex:1;font-size:.78rem;line-height:1.45;word-break:break-all}
+.sm-row.rst .s{color:#adb5bd;text-decoration:line-through}
+.sm-row .r{font-size:.66rem;color:var(--green);font-weight:800;white-space:nowrap}
 .inst-bar{display:none;align-items:center;gap:8px;background:#fff4e6;border:1px solid #ffd8a8;border-radius:10px;padding:8px 10px;margin:8px 0 2px;font-size:.78rem;color:var(--ink)}
 .inst-bar.show{display:flex}
 .inst-bar img{width:30px;height:30px;border-radius:7px;flex:none}
@@ -1308,7 +1336,10 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <div class="pg" id="pgMtgS"><div id="mtgS"></div></div>
 <div class="pg" id="pgMtgC"><div id="mtgC"></div></div>
 <div class="pg" id="pgMtgO"><div id="mtgO"></div></div>
+<!-- v6.22.0: 부관리자 활동 모니터링 (관리자만) -->
+<div class="pg" id="pgSubMon"><div id="smBox"></div></div>
 </main>
+<div class="sa-bg" id="saBox"><div class="sa-card" id="saCard"></div></div>
 
 <!-- bottom nav -->
 <nav class="bottombar">
@@ -1344,6 +1375,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
     <h2>관리자 로그인</h2>
     <div class="desc">일일작업·출력인원 올리기와 공정 수정은 관리자만 할 수 있습니다.</div>
     <input class="f-input" id="admPass" type="password" inputmode="numeric" autocomplete="current-password" placeholder="비밀번호">
+    <input class="f-input" id="admName" maxlength="20" placeholder="이름 (처음 한 번만)" style="margin-top:8px;display:none">
     <div class="paste-hint" id="admMsg" style="color:var(--red);margin-top:6px;min-height:1em"></div>
     <div class="btn-row">
       <button class="btn ghost" onclick="closeModal('adminModal')">닫기</button>
@@ -1471,7 +1503,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.21.0',
+  version : '6.22.1',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -3017,17 +3049,17 @@ async function kApi(path, body){
   const base=APP.proxyBase.replace(/\/$/,'');
   const r=await fetch(base+'/kakao/'+path,{
     method: body ? 'POST' : 'GET',
-    headers:Object.assign({'Content-Type':'application/json','X-App-Token':APP.appToken}, editorPass?{'X-Editor-Pass':editorPass}:{}),
+    headers:Object.assign({'Content-Type':'application/json','X-App-Token':APP.appToken}, editorPass?{'X-Editor-Pass':editorPass}:{}, editorPass&&edRole==='sub'&&edName?{'X-Editor-Name':encodeURIComponent(edName)}:{}),
     body: body ? JSON.stringify(body) : undefined,
   });
   const d=await r.json().catch(()=>({error:'bad_response'}));
   if(!r.ok || d.error){ const e=new Error(d.error||('http_'+r.status)); e.data=d; e.status=r.status;
-    if(d.error==='editor_required'&&editorPass){ editorPass=''; saveJSON(LS_EDITOR,''); applyEditorUI(); } // 암호가 바뀐 경우 로그아웃
+    if(d.error==='editor_required'&&editorPass){ editorPass=''; edRole=''; saveJSON(LS_EDITOR,''); saveJSON(LS_ROLE,''); applyEditorUI(); } // 암호가 바뀐 경우 로그아웃
     throw e; }
   return d;
 }
 function kErr(e){
-  const map={editor_required:'관리자만 할 수 있습니다 — 오른쪽 위 관리자로 로그인하세요', admin_auth_failed:'관리자 암호가 맞지 않습니다', auth_failed:'서버 접속 인증 실패 — 앱을 새로고침해 주세요',kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
+  const map={editor_required:'관리자만 할 수 있습니다 — 오른쪽 위 관리자로 로그인하세요', owner_required:'이 기능은 총괄 관리자만 쓸 수 있습니다', admin_auth_failed:'관리자 암호가 맞지 않습니다', auth_failed:'서버 접속 인증 실패 — 앱을 새로고침해 주세요',kakao_db_not_bound:'서버에 KAKAO_DB(D1)가 아직 연결되지 않았습니다',
     ai_not_configured:'서버에 ANTHROPIC_API_KEY가 없습니다', no_messages:'이 날짜에 추적 중인 방의 메시지가 없습니다',
     refused:'AI가 이 내용의 분석을 거절했습니다', anthropic_error:'AI 호출 오류'};
   const d=e.data&&e.data.detail, dm=d&&(d.error&&d.error.message||d.message);
@@ -4203,40 +4235,159 @@ pRefresh().then(()=>{ if(wx) renderTaskList(); }).catch(()=>{});
 /* ================= 관리자 로그인 =================
  * 일일작업 올리기·삭제·AI 분석, 공정 추가·수정·실적·기준선은 관리자만. 암호 확인은 서버(/kakao/editor-check)가 하고,
  * 이 기기에는 로그인 상태만 저장(로그아웃하면 지움). 보기는 누구나. */
-const LS_EDITOR='tbm3_editor';
-let editorPass=loadJSON(LS_EDITOR,'');
-const isEditor=()=>!!editorPass;
+const LS_EDITOR='tbm3_editor', LS_ROLE='tbm3_role', LS_ENAME='tbm3_ename';
+let editorPass=loadJSON(LS_EDITOR,''), edRole=loadJSON(LS_ROLE,''), edName=loadJSON(LS_ENAME,'');
+const isEditor=()=>!!editorPass;                       // 쓰기 가능(관리자·부관리자) — 공정·공정표·일일작업·회의결과·안전
+const isOwner=()=>!!editorPass&&edRole!=='sub';        // 총괄 관리자 — 현장·부관리자 모니터링·알람 설정 (v6.22.0)
+const isSub=()=>!!editorPass&&edRole==='sub';
 function applyEditorUI(){
-  const ed=isEditor(), b=$('btnAdmin');
+  const ed=isEditor(), b=$('btnAdmin'), sb=isSub();
   document.body.classList.toggle('editor',ed); // 관리자 아니면 공정 줄에 손가락 커서 없음
-  b.innerHTML=ed?'✓ 관리자<br>로그인됨':'🔒 관리자'; b.classList.toggle('on',ed); b.title=ed?'누르면 로그아웃':'관리자 로그인';
+  b.innerHTML=!ed?'🔒 관리자':'✓ 관리자<br>로그인됨'; b.classList.toggle('on',ed); b.classList.toggle('sub',sb); b.title=ed?'누르면 로그아웃':'관리자 로그인';
   [['dUpCard','dLockNote'],['mpUpCard','mpLockNote']].forEach(([u,n])=>{ if($(u)){ $(u).style.display=ed?'':'none'; $(n).style.display=ed?'none':''; } });
   if(typeof sLoaded!=='undefined'&&sLoaded){ sRenderAll(); if($('pgGantt').classList.contains('show')) sGanttView(); }
   if(typeof dSel!=='undefined'&&$('pgDaily').classList.contains('show')) dLoad();
   if(typeof mpList!=='undefined'&&$('pgMan').classList.contains('show')&&mpDay) mpRender(mpDay);
   // v6.16: 현장 탭은 관리자만 — 로그아웃하면 숨기고 회의결과로
-  if($('navSite')) $('navSite').style.display=ed?'':'none';
-  try{ const cur=navCurPg(); if(!ed&&PG_GROUP[cur]==='site') showPage('pgMtgS');
+  if($('navSite')) $('navSite').style.display=isOwner()?'':'none'; // v6.22: 부관리자에게도 안 보임
+  try{ const cur=navCurPg(); if(!isOwner()&&PG_GROUP[cur]==='site') showPage('pgMtgS');
     else if(cur==='pgMtgS') mtgRender('safety'); else if(cur==='pgMtgC') mtgRender('cp'); else if(cur==='pgMtgO') mtgRenderOpen(); }catch(e){}
 }
 // 휴대폰·카톡 안 브라우저에서 prompt()가 막히는 경우가 있어 화면 안 입력창으로 로그인
-function openAdminLogin(){ $('admPass').value=''; $('admMsg').textContent=''; $('adminModal').classList.add('show'); setTimeout(()=>$('admPass').focus(),150); }
+function openAdminLogin(){ $('admPass').value=''; $('admName').value=''; $('admName').style.display='none'; $('admMsg').textContent=''; $('adminModal').classList.add('show'); setTimeout(()=>$('admPass').focus(),150); }
 async function doAdminLogin(){
   const p=$('admPass').value.trim(); if(!p){ $('admMsg').textContent='비밀번호를 넣으세요'; return; }
   const b=$('admGo'); b.disabled=true; $('admMsg').style.color='var(--steel)'; $('admMsg').textContent='확인 중…';
   try{
     const r=await fetch(APP.proxyBase.replace(/\/$/,'')+'/kakao/editor-check',{headers:{'X-App-Token':APP.appToken,'X-Editor-Pass':p}});
     if(!r.ok){ $('admMsg').style.color='var(--red)'; $('admMsg').textContent='비밀번호가 맞지 않습니다'; return; }
-    editorPass=p; saveJSON(LS_EDITOR,p); closeModal('adminModal'); applyEditorUI(); toast('✓ 관리자로 로그인되었습니다');
+    const d=await r.json().catch(()=>({})), role=d.role==='sub'?'sub':'owner';
+    // 부관리자: 이 기기에서 처음 로그인할 때만 이름(이후엔 저장된 이름으로 활동 기록)
+    const nm=($('admName').value.trim()||edName||'').slice(0,20);
+    if(role==='sub'&&!nm){ $('admName').style.display=''; $('admMsg').style.color='var(--steel)'; $('admMsg').textContent='처음 한 번만 이름을 넣고 다시 로그인을 눌러 주세요'; $('admName').focus(); return; }
+    editorPass=p; edRole=role; saveJSON(LS_EDITOR,p); saveJSON(LS_ROLE,role); if(role==='sub'){ edName=nm; saveJSON(LS_ENAME,nm); }
+    closeModal('adminModal'); applyEditorUI(); toast('✓ 관리자로 로그인되었습니다');
+    if(role==='sub') saCheck(true);
   }catch(e){ $('admMsg').style.color='var(--red)'; $('admMsg').textContent='서버에 연결하지 못했습니다 — 인터넷 연결을 확인하세요'; }
   finally{ b.disabled=false; }
 }
 $('btnAdmin').onclick=()=>{
-  if(isEditor()){ if(confirm('관리자에서 로그아웃할까요?')){ editorPass=''; saveJSON(LS_EDITOR,''); applyEditorUI(); toast('로그아웃했습니다'); } return; }
+  if(isEditor()){ if(confirm('관리자에서 로그아웃할까요?')){ editorPass=''; edRole=''; saveJSON(LS_EDITOR,''); saveJSON(LS_ROLE,''); applyEditorUI(); toast('로그아웃했습니다'); } return; }
   openAdminLogin();
 };
 $('admGo').onclick=doAdminLogin;
 $('admPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doAdminLogin(); });
+$('admName').addEventListener('keydown',e=>{ if(e.key==='Enter') doAdminLogin(); });
+
+/* ================= v6.22.0 부관리자: 가운데 알람 · 모니터링(관리자만) =================
+ * 역할: 서버 editor-check가 owner/sub를 돌려줌. 앱을 열 때 저장된 암호로 다시 확인해 역할을 맞춤(바뀌었으면 로그아웃).
+ * 알람: 관리자가 정한 시각이 지났고 오늘 아직 안 본 것만, 앱을 열거나 다시 볼 때·1분마다 확인 → 화면 가운데 카드, 한 번 누르면 닫힘. */
+const SA_QUOTES=[
+  ['천 리 길도 한 걸음부터.','속담'],['오늘 할 수 있는 일을 내일로 미루지 마라.','벤저민 프랭클린'],['시작이 반이다.','속담'],
+  ['안전은 우연이 아니라 선택이다.','현장 격언'],['작은 일을 소홀히 하는 사람은 큰일을 이룰 수 없다.','공자'],['천재는 1%의 영감과 99%의 노력으로 이루어진다.','토머스 에디슨'],
+  ['멈추지만 않는다면 얼마나 천천히 가는지는 문제가 되지 않는다.','공자'],['준비에 실패하는 것은 실패를 준비하는 것이다.','벤저민 프랭클린'],['티끌 모아 태산.','속담'],
+  ['서두르지 말고, 쉬지도 마라.','괴테'],['오늘의 점검이 내일의 사고를 막는다.','현장 격언'],['잘 시작된 일은 반쯤 끝난 것이다.','아리스토텔레스'],
+  ['우리가 반복하는 것이 곧 우리 자신이다. 탁월함은 습관이다.','아리스토텔레스'],['돌다리도 두들겨 보고 건너라.','속담'],['사람이 먼저다. 공정은 그다음이다.','현장 격언'],
+  ['어려움 속에 기회가 있다.','알베르트 아인슈타인'],['행동은 모든 성공의 기본 열쇠다.','파블로 피카소'],['세 사람이 길을 가면 그 가운데 반드시 나의 스승이 있다.','공자'],
+  ['낙숫물이 바위를 뚫는다.','속담'],['오늘 걷지 않으면 내일은 뛰어야 한다.','속담'],['확인하고, 또 확인하라. 현장에 "아마"는 없다.','현장 격언'],
+  ['위대한 일은 작은 일들이 모여 이루어진다.','빈센트 반 고흐'],['배우고 때때로 익히면 또한 기쁘지 아니한가.','공자'],['인내는 쓰고 그 열매는 달다.','장 자크 루소'],
+  ['성공은 매일 반복되는 작은 노력의 합이다.','로버트 콜리어'],['구슬이 서 말이라도 꿰어야 보배.','속담'],['계획 없는 목표는 소원에 불과하다.','앙투안 드 생텍쥐페리'],
+  ['안전모 끈 한 번, 생명줄 한 번 더.','현장 격언'],['아는 것을 안다 하고 모르는 것을 모른다 하는 것이 아는 것이다.','공자'],['빨리 가려면 혼자 가고, 멀리 가려면 함께 가라.','아프리카 속담'],
+  ['실패는 성공의 어머니다.','속담'],['할 수 있다고 믿는 사람은 결국 해낸다.','베르길리우스'],['가장 큰 영광은 넘어지지 않는 것이 아니라 넘어질 때마다 일어서는 것이다.','공자'],
+  ['아침에 하루를 계획하라. 하루가 당신을 끌고 가지 않게.','현장 격언'],['물은 한 방울씩 떨어져도 그릇을 채운다.','부처'],['기회는 준비된 자에게 온다.','루이 파스퇴르'],
+  ['오늘도 무사히 — 모두가 웃으며 퇴근하는 현장.','현장 격언'],['두려움은 행동으로 사라진다.','데일 카네기'],['꿈을 계속 간직하고 있으면 반드시 실현할 때가 온다.','괴테'],
+  ['백 번 듣는 것이 한 번 보는 것만 못하다.','한서'],['오늘 흘린 땀은 내일 흘릴 피를 막는다.','현장 격언'],['길을 아는 것과 그 길을 걷는 것은 다르다.','현장 격언'],
+  ['쉬운 길보다 옳은 길을.','현장 격언'],['큰 강물도 작은 샘에서 시작된다.','속담'],['하루하루를 마지막 날처럼 성실하게.','마르쿠스 아우렐리우스'],
+];
+const saToday=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+const saNowHM=()=>new Date(Date.now()+9*3600e3).toISOString().slice(11,16);
+function saQuote(day){ const n=Math.round(Date.parse((day||saToday())+'T00:00:00Z')/86400e3); return SA_QUOTES[((n%SA_QUOTES.length)+SA_QUOTES.length)%SA_QUOTES.length]; }
+let saList=null, saAt=0;
+const LS_SASEEN='tbm3_alert_seen';
+function saItemHtml(x){
+  if(x.kind==='quote'){ const [q,a]=saQuote(); return `<div class="sa-it"><div class="sa-ic">🌅</div><div class="sa-tm">${esc(x.time)} · 오늘의 한 줄</div><div class="sa-q">“${esc(q)}”</div><div class="sa-qa">— ${esc(a)}</div>${x.text?`<div class="sa-msg" style="font-size:.95rem">${esc(x.text)}</div>`:''}</div>`; }
+  return `<div class="sa-it"><div class="sa-ic">🔔</div><div class="sa-tm">${esc(x.time)} 알림</div><div class="sa-msg">${esc(x.text)}</div></div>`;
+}
+function saShow(items, onClose){
+  if(!items.length) return;
+  $('saCard').innerHTML=items.map(saItemHtml).join('')+'<div class="sa-hint">화면을 한 번 누르면 닫힙니다</div>';
+  const bg=$('saBox'); bg.classList.add('show');
+  bg.onclick=()=>{ bg.classList.remove('show'); if(onClose) onClose(); };
+}
+// force: 로그인 직후 등 즉시 서버에서 다시 받기
+async function saCheck(force){
+  if(!isSub()||$('saBox').classList.contains('show')) return;
+  try{ if(force||!saList||Date.now()-saAt>10*60e3){ const d=await kApi('alerts'); saList=d.list||[]; saAt=Date.now(); } }catch(e){ return; }
+  const day=saToday(), hm=saNowHM(); let seen=loadJSON(LS_SASEEN,{});
+  if(seen.day!==day) seen={day,ids:[]};
+  const due=saList.filter(x=>x.on!==false&&x.time<=hm&&!seen.ids.includes(x.id)).sort((a,b)=>a.time<b.time?-1:1);
+  if(!due.length) return;
+  saShow(due,()=>{ const s=loadJSON(LS_SASEEN,{}); const ids=s.day===day?s.ids:[]; saveJSON(LS_SASEEN,{day,ids:[...new Set([...ids,...due.map(x=>x.id)])]}); });
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') saCheck(); });
+setInterval(()=>saCheck(),60e3);
+// 앱을 열 때: 저장된 암호의 역할 다시 확인(예전 로그인은 역할이 비어 있음) → 부관리자면 알람 확인
+(async()=>{
+  if(!editorPass) return;
+  try{ const r=await fetch(APP.proxyBase.replace(/\/$/,'')+'/kakao/editor-check',{headers:{'X-App-Token':APP.appToken,'X-Editor-Pass':editorPass}});
+    if(r.status===401){ editorPass=''; edRole=''; saveJSON(LS_EDITOR,''); saveJSON(LS_ROLE,''); applyEditorUI(); toast('로그인이 풀렸습니다 — 다시 로그인해 주세요'); return; }
+    if(r.ok){ const d=await r.json(); const role=d.role==='sub'?'sub':'owner'; if(role!==edRole){ edRole=role; saveJSON(LS_ROLE,role); applyEditorUI(); } }
+  }catch(e){ /* 오프라인 — 저장된 역할 그대로 */ }
+  saCheck(true);
+})();
+
+/* ---- 부관리자 모니터링 탭 (관리자만): 알람 설정 + 일별 활동 이력·복원 ---- */
+let smAlerts=null, smLog=null, smDays=14;
+const SM_ROUTE={sched:'공정표','sched-actual':'실적','sched-actual-undo':'실적',daily:'일일작업','daily-delete':'일일작업','daily-edit':'일일작업','daily-undo':'일일작업',manpower:'출력인원','manpower-delete':'출력인원',meeting:'회의결과','meeting-delete':'회의결과','progress-img':'공정 그림','progress-img-delete':'공정 그림','progress-map':'모식도','progress-map-delete':'모식도',report:'일일 현황','report-delete':'일일 현황'};
+async function smRender(reload){
+  const box=$('smBox'); if(!isOwner()){ box.innerHTML='<div class="k-empty">총괄 관리자만 볼 수 있습니다.</div>'; return; }
+  if(reload||!smAlerts||!smLog){ box.innerHTML='<div class="k-empty">불러오는 중…</div>';
+    try{ const from=new Date(Date.now()+9*3600e3-(smDays-1)*86400e3).toISOString().slice(0,10);
+      const [a,l]=await Promise.all([kApi('alerts'),kApi('sub-log?from='+from)]); smAlerts={list:a.list||[],saved:a.saved,at:a.updated_at}; smLog=l.items||[]; }
+    catch(e){ box.innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; } }
+  const L=smAlerts.list;
+  const row=(x,i)=>`<div class="sm-al" data-i="${i}"><input type="time" class="f-input" data-f="time" value="${esc(x.time)}"><select class="f-input" data-f="kind"><option value="text" ${x.kind!=='quote'?'selected':''}>글자</option><option value="quote" ${x.kind==='quote'?'selected':''}>오늘의 명언</option></select>
+    <input class="f-input sm-txt" data-f="text" value="${esc(x.text||'')}" placeholder="${x.kind==='quote'?'(선택) 명언 아래 덧붙일 말':'부관리자에게 보일 글'}">
+    <label title="켜기/끄기" style="text-align:center"><input type="checkbox" data-f="on" ${x.on!==false?'checked':''}></label><button class="mini-btn" data-del="${i}" title="지우기">✕</button></div>`;
+  const byDay={}; smLog.forEach(x=>{ (byDay[x.day]=byDay[x.day]||[]).push(x); });
+  const days=Object.keys(byDay).sort().reverse();
+  const q=saQuote();
+  box.innerHTML=`<div class="card" style="margin-top:6px">
+      <div class="sm-sec">🔔 부관리자 알람 <small>정한 시각이 지나고 앱을 열면 화면 가운데에 뜹니다 · 한 번 누르면 닫힘 · 하루 한 번</small></div>
+      ${smAlerts.saved?'':'<div class="paste-hint" style="color:var(--amber)">아직 저장 전 — 요청하신 기본 알람 4개가 이미 적용 중입니다. 고친 뒤 저장하세요.</div>'}
+      <div id="smAl">${L.map(row).join('')}</div>
+      <div class="btn-row"><button class="btn ghost" id="smAdd">＋ 알람 추가</button><button class="btn ghost" id="smPrev">👀 미리보기</button><button class="btn primary" id="smSave">💾 알람 저장</button></div>
+      <div class="paste-hint">오늘의 명언(매일 바뀜): “${esc(q[0])}” — ${esc(q[1])}${smAlerts.at?` · 마지막 저장 ${esc(smAlerts.at)}`:''}</div>
+    </div>
+    <div class="card">
+      <div class="sm-sec">👁 부관리자 활동 이력 <small>최근 ${smDays}일 · 고친 것마다 ↩ 복원(고치기 전 상태로)</small><button class="mini-btn" id="smReload" style="margin-left:auto">↻</button></div>
+      ${days.length?days.map(d=>`<div class="sm-day"><span>${d===rToday()?'오늘':sFmt(d)} <small class="dplus">${dPlus(d)}</small></span><span>${byDay[d].length}건</span></div>`+byDay[d].map(x=>`<div class="sm-row ${x.restored_at?'rst':''}"><span class="t">${esc(String(x.at).slice(11,16))}</span><div class="s"><span class="w">${esc(x.who||'부관리자')}</span> <span class="s-pill cls">${esc(SM_ROUTE[x.route]||x.route)}</span> ${esc(x.summary||'')}</div>
+        ${x.restored_at?`<span class="r">복원됨<br>${esc(String(x.restored_at).slice(5,16))}</span>`:x.big?'<span class="r" style="color:var(--steel)" title="원본이 커서 복원 대신 일일작업 되돌리기 사용">복원 불가</span>':`<button class="mini-btn" data-rs="${x.id}">↩ 복원</button>`}</div>`).join('')).join(''):'<div class="k-empty" style="margin-top:8px">아직 부관리자 활동이 없습니다.</div>'}
+      ${days.length?`<div class="btn-row"><button class="btn ghost" id="smMore">더 이전 기록 보기 (${smDays+14}일)</button></div>`:''}
+    </div>`;
+  const read=()=>[...box.querySelectorAll('.sm-al')].map((r,i)=>({id:L[+r.dataset.i].id,time:r.querySelector('[data-f=time]').value,kind:r.querySelector('[data-f=kind]').value,text:r.querySelector('[data-f=text]').value.trim(),on:r.querySelector('[data-f=on]').checked}));
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ smAlerts.list=read().filter((_,i)=>i!==+b.dataset.del); smRender(); });
+  box.querySelectorAll('[data-f=kind]').forEach(s=>s.onchange=()=>{ smAlerts.list=read(); smRender(); });
+  $('smAdd').onclick=()=>{ smAlerts.list=[...read(),{id:'a'+Date.now().toString(36),time:'09:00',kind:'text',text:'',on:true}]; smRender(); };
+  $('smPrev').onclick=()=>{ const l=read().filter(x=>x.on&&(x.kind==='quote'||x.text)); if(!l.length){ toast('켜진 알람이 없습니다'); return; } saShow(l.sort((a,b)=>a.time<b.time?-1:1)); };
+  $('smSave').onclick=async()=>{ const l=read(); if(l.some(x=>x.kind==='text'&&!x.text)){ toast('글자 알람의 내용을 넣으세요'); return; }
+    try{ const r=await kApi('alerts',{list:l}); smAlerts={list:r.list,saved:true,at:'방금'}; toast('알람을 저장했습니다 — 부관리자 앱에 바로 적용됩니다'); smRender(); }catch(e){ toast(kErr(e)); } };
+  $('smReload').onclick=()=>smRender(true);
+  if($('smMore')) $('smMore').onclick=()=>{ smDays+=14; smRender(true); };
+  box.querySelectorAll('[data-rs]').forEach(b=>b.onclick=async()=>{ const x=smLog.find(y=>y.id===+b.dataset.rs); if(!x) return;
+    if(!confirm(`이 변경 전 상태로 되돌릴까요?\n\n${x.who} · ${x.at}\n${x.summary}`)) return;
+    const go=async force=>{ try{ await kApi('sub-restore',{id:x.id,force}); toast('복원했습니다'); smAfterRestore(x.route); smRender(true); }
+      catch(e){ if(e.message==='changed_since'){ if(confirm('이 변경 뒤에 같은 항목이 또 바뀌었습니다.\n그래도 이 변경 전 상태로 되돌릴까요? (그 뒤 변경도 함께 사라집니다)')) go(true); }
+        else toast(kErr(e)); } };
+    go(false); });
+}
+// 복원한 뒤 다른 탭 화면이 옛 내용을 들고 있지 않게
+function smAfterRestore(route){
+  if(/^sched/.test(route)&&typeof sLoad==='function'){ sLoaded=false; }
+  if(/^progress-map/.test(route)){ pmList=null; } if(/^progress-img/.test(route)){ pimgList=null; pimgCache={}; }
+  if(/^meeting/.test(route)&&typeof mtgList!=='undefined'){ mtgList=null; try{ mtgCache={}; }catch(e){} }
+  if(/^manpower/.test(route)){ mpList=[]; }
+}
 
 /* ================= v6 공정관리 =================
  * 공정 = 기간 + 선후행(FS/SS/FF, Lag). 휴일(하루·기간)을 뺀 작업일 번호로 CPM(전진·후진) 계산.
@@ -6140,11 +6291,11 @@ async function mtgRenderOpen0(quiet){
 }
 
 /* ================= 하단 탭 5개 + 그룹 하위 탭 ================= */
-const PG_GROUP={pgMtgS:'meet',pgMtgC:'meet',pgMtgO:'meet',pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
-const GROUP_SUBS={meet:[['pgMtgS','🦺 일일안전회의'],['pgMtgC','🧭 C.P회의'],['pgMtgO','⏳ 미결사항']],daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgMemo','✓ 순시메모']],safe:[['pgToday','☀ 오늘 TBM'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
+const PG_GROUP={pgMtgS:'meet',pgMtgC:'meet',pgMtgO:'meet',pgSched:'sched',pgGantt:'gantt',pgDaily:'daily',pgMan:'daily',pgLaw:'safe',pgInput:'daily',pgKakao:'site',pgMemo:'site',pgSubMon:'site',pgToday:'safe',pgRecords:'safe',pgInfo:'safe'};
+const GROUP_SUBS={meet:[['pgMtgS','🦺 일일안전회의'],['pgMtgC','🧭 C.P회의'],['pgMtgO','⏳ 미결사항']],daily:[['pgDaily','📋 일일작업'],['pgMan','👷 출력인원'],['pgInput','✎ TBM 작업입력']],site:[['pgKakao','💬 현장톡'],['pgMemo','✓ 순시메모'],['pgSubMon','👁 부관리자']],safe:[['pgToday','☀ 오늘 TBM'],['pgRecords','▤ 기록'],['pgInfo','§ 기준'],['pgLaw','⚖️ 법률']]};
 const lastPg={};
 function showPage(pg){
-  if(PG_GROUP[pg]==='site'&&!isEditor()) pg='pgMtgS'; // v6.16: 현장(현장톡·순시메모)은 관리자만
+  if(PG_GROUP[pg]==='site'&&!isOwner()) pg='pgMtgS'; // v6.16: 현장(현장톡·순시메모·부관리자 모니터링)은 총괄 관리자만(v6.22: 부관리자 제외)
   const g=PG_GROUP[pg]; lastPg[g]=pg;
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('show',p.id===pg));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.grp===g));
@@ -6164,13 +6315,14 @@ function showPage(pg){
   if(pg==='pgMtgS') mtgRender('safety');
   if(pg==='pgMtgC') mtgRender('cp');
   if(pg==='pgMtgO') mtgRenderOpen();
+  if(pg==='pgSubMon') smRender(true);
   if(pg==='pgMemo'){ if(pMode==='patrol') pLoad(); else renderMemo(); }
   if(pg==='pgToday'&&wx) renderToday();
   window.scrollTo(0,0);
   setHash();
 }
 /* 주소 해시로 탭 전환·북마크: #today #gantt #list #look #config #daily #manpower #kakao #memo #tbm #law … */
-const PG_HASH={pgMtgS:'safety-meeting',pgMtgC:'cp-meeting',pgMtgO:'pending',pgSched:'today',pgGantt:'gantt',pgDaily:'daily',pgMan:'manpower',pgInput:'input',pgKakao:'kakao',pgMemo:'memo',pgToday:'tbm',pgRecords:'records',pgInfo:'info',pgLaw:'law'};
+const PG_HASH={pgSubMon:'sub-monitor',pgMtgS:'safety-meeting',pgMtgC:'cp-meeting',pgMtgO:'pending',pgSched:'today',pgGantt:'gantt',pgDaily:'daily',pgMan:'manpower',pgInput:'input',pgKakao:'kakao',pgMemo:'memo',pgToday:'tbm',pgRecords:'records',pgInfo:'info',pgLaw:'law'};
 function setHash(){
   const h=navHash(navCurPg());
   if(location.hash!==h) navPush(); else navUpd();

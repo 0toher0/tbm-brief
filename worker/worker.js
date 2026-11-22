@@ -68,7 +68,7 @@ async function handleRequest(request, env) {
     const cors = {
       'Access-Control-Allow-Origin': okOrigin || 'null',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'X-App-Token, X-Admin-Pass, X-Editor-Pass, Content-Type', // v3.1.1: 관리자 로그인 헤더 허용(빠지면 앱 주소에서 브라우저가 요청을 막음)
+      'Access-Control-Allow-Headers': 'X-App-Token, X-Admin-Pass, X-Editor-Pass, X-Editor-Name, Content-Type', // v3.1.1: 관리자 로그인 헤더 허용(빠지면 앱 주소에서 브라우저가 요청을 막음) · v3.9.0: 부관리자 이름
       'Cache-Control': 'no-store',
     };
 
@@ -81,12 +81,14 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.8.0',
+        version: '3.9.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
           ALLOWED_ORIGINS: env.ALLOWED_ORIGINS || '(open: all origins)',
           ADMIN_PASS: env.ADMIN_PASS ? 'set' : 'MISSING',
+          EDITOR_PASS: env.EDITOR_PASS ? 'set' : 'MISSING (관리자는 ADMIN_PASS로)',
+          SUB_PASS: env.SUB_PASS ? 'set' : 'MISSING (부관리자 로그인 꺼짐)',
           TBM_KV: env.TBM_KV ? 'bound' : 'MISSING',
           ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ? 'set' : 'MISSING (optional — /parse-ai, /kakao/analyze만 영향)',
           KAKAO_DB: env.KAKAO_DB ? 'bound' : 'MISSING (optional — 현장톡 기능만 영향)',
@@ -99,6 +101,18 @@ async function handleRequest(request, env) {
     // 대신 ADMIN_PASS로 모든 경로를 보호한다(개인 대화 내용이므로 공유 토큰으로는 부족).
     if (url.pathname.replace(/^\/+/, '').split('/')[0] === 'kakao') {
       if (origin && allowed.length && !allowed.includes(origin)) return json({ error: 'origin_not_allowed' }, 403, cors);
+      // v3.9.0: 부관리자가 고친 것은 고치기 직전 상태를 남김(관리자가 모니터링 탭에서 복원)
+      const ksub = url.pathname.replace(/^\/+/, '').split('/')[1] || '';
+      if (request.method === 'POST' && SNAP_DEF[ksub] && env.KAKAO_DB) {
+        const b0 = await readKakaoBody(request.clone(), url);
+        if (!b0.__bad && editorRole(request, env, b0) === 'sub') {
+          await kakaoSchema(env.KAKAO_DB);
+          let snap = null; try { snap = await subSnapTake(env.KAKAO_DB, ksub, b0); } catch (e) { snap = null; }
+          const res = await handleKakao(request, env, url, cors);
+          if (res.status === 200 && snap) { try { await subLogWrite(env.KAKAO_DB, request, ksub, b0, snap); } catch (e) { /* 기록 실패해도 작업은 성공 */ } }
+          return res;
+        }
+      }
       return await handleKakao(request, env, url, cors);
     }
     // ===== 현장메모 (순시 메모: 엑셀 표 서식 그대로 / 이미지) — 관리자 전용, 아래 handleMemo 참고 =====
@@ -306,11 +320,105 @@ function kakaoMemoAuthOk(request, env, body) {
 
 // v3.0.0: 관리자(편집자) 확인 — 일일작업 올리기·삭제·AI 분석, 공정표·실적 수정은 관리자만.
 // 암호 값은 Worker 비밀값 EDITOR_PASS(없으면 ADMIN_PASS)에만 있다. 앱은 X-Editor-Pass 헤더로 보냄.
-function editorOk(request, env, body) {
-  const p = request.headers.get('X-Editor-Pass') || body.ep || '';
-  if (!p) return false;
-  return (!!env.EDITOR_PASS && p === env.EDITOR_PASS) || (!!env.ADMIN_PASS && p === env.ADMIN_PASS);
+// v3.9.0: 관리자(owner) = EDITOR_PASS/ADMIN_PASS — 모든 권한 · 부관리자(sub) = SUB_PASS — 공정·공정표·일일작업·회의결과·안전 쓰기만(활동 기록됨)
+function editorRole(request, env, body) {
+  const p = request.headers.get('X-Editor-Pass') || (body && body.ep) || '';
+  if (!p) return null;
+  if ((!!env.EDITOR_PASS && p === env.EDITOR_PASS) || (!!env.ADMIN_PASS && p === env.ADMIN_PASS)) return 'owner';
+  if (!!env.SUB_PASS && p === env.SUB_PASS) return 'sub';
+  return null;
 }
+function editorOk(request, env, body) { return !!editorRole(request, env, body); }
+
+/* ---- v3.9.0 부관리자 활동 기록: 고치기 직전 행을 통째로 저장 → 복원은 그 행을 되돌려 씀(없던 행이면 지움) ---- */
+const SNAP_K = { day: b => String(b.day || '') };
+const SNAP_DEF = {
+  'sched': { t: 'sched_doc', k: [['key', () => 'plan']] },
+  'sched-actual': { t: 'sched_actual', k: [['id', b => String(b.id || '')]] },
+  'sched-actual-undo': { t: 'sched_actual', k: [['id', b => String(b.id || '')]] },
+  'daily': { t: 'daily_work', k: [['day', SNAP_K.day]] },
+  'daily-delete': { t: 'daily_work', k: [['day', SNAP_K.day]] },
+  'daily-edit': { t: 'daily_work', k: [['day', SNAP_K.day]] },
+  'daily-undo': { t: 'daily_work', k: [['day', SNAP_K.day]] },
+  'manpower': { t: 'manpower_co', k: [['day', SNAP_K.day], ['shift', b => String(b.shift || '')], ['co', b => String(b.co || 'P-E&C')]] },
+  'manpower-delete': { t: 'manpower_co', k: [['day', SNAP_K.day], ['shift', b => String(b.shift || '')], ['co', b => String(b.co || 'P-E&C')]] },
+  'meeting': { t: 'meeting', k: [['day', SNAP_K.day], ['kind', b => String(b.kind || '')]] },
+  'meeting-delete': { t: 'meeting', k: [['day', SNAP_K.day], ['kind', b => String(b.kind || '')]] },
+  'progress-img': { t: 'progress_img', k: [['day', SNAP_K.day]] },
+  'progress-img-delete': { t: 'progress_img', k: [['day', SNAP_K.day]] },
+  'progress-map': { t: 'progress_map', k: [['day', SNAP_K.day]] },
+  'progress-map-delete': { t: 'progress_map', k: [['day', SNAP_K.day]] },
+  'report': { t: 'site_daily', k: [['day', SNAP_K.day]] },
+  'report-delete': { t: 'site_daily', k: [['day', SNAP_K.day]] },
+};
+const snapWhere = keys => keys.map(([c]) => c + '=?').join(' AND ');
+// 행 내용 지문(SHA-256) — 고친 뒤 상태와 지금 상태가 같은지(그 뒤 또 바뀌었는지) 비교. 시간은 분 단위라 못 씀
+async function rowSig(row) {
+  if (!row) return null;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(row)));
+  return 'h:' + [...new Uint8Array(buf)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function subSnapTake(db, route, body) {
+  const d = SNAP_DEF[route]; const keys = d.k.map(([c, f]) => [c, f(body)]);
+  const row = await db.prepare(`SELECT * FROM ${d.t} WHERE ${snapWhere(keys)}`).bind(...keys.map(x => x[1])).first();
+  return { keys, row: row || null };
+}
+async function subLogWrite(db, request, route, body, snap) {
+  const d = SNAP_DEF[route], now = kstNow();
+  const after = await db.prepare(`SELECT * FROM ${d.t} WHERE ${snapWhere(snap.keys)}`).bind(...snap.keys.map(x => x[1])).first();
+  let who = request.headers.get('X-Editor-Name') || ''; try { who = decodeURIComponent(who); } catch (e) { /* 그대로 */ }
+  who = who.replace(/[<>]/g, '').trim().slice(0, 20) || '부관리자';
+  let before = JSON.stringify(snap.row); if (before.length > 1500000) before = '__big__'; // 너무 큰 원본(이미지 등)은 복원 대신 일일작업 되돌리기 사용
+  const summary = await subSummary(db, route, body, snap.row);
+  await db.prepare(`INSERT INTO sub_log(at,day,who,route,keyj,summary,before,after_at) VALUES(?,?,?,?,?,?,?,?)`)
+    .bind(now.ts, now.day, who, route, JSON.stringify(snap.keys), summary.slice(0, 600), before, await rowSig(after)).run(); // after_at 칸 = 고친 뒤 행 지문
+  await db.prepare(`DELETE FROM sub_log WHERE id NOT IN (SELECT id FROM sub_log ORDER BY id DESC LIMIT 3000)`).run();
+}
+async function subSummary(db, route, b, prev) {
+  const K = { safety: '일일안전회의', cp: 'C.P회의' };
+  const act = async id => { try { const doc = await db.prepare(`SELECT json FROM sched_doc WHERE key='plan'`).first(); const a = doc && (JSON.parse(doc.json).acts || []).find(x => x.id === id); return a ? a.name : ''; } catch (e) { return ''; } };
+  const list = (a, n = 3) => a.slice(0, n).join(', ') + (a.length > n ? ` 외 ${a.length - n}` : '');
+  switch (route) {
+    case 'sched': {
+      const o = prev ? (JSON.parse(prev.json).acts || []) : [], nw = (b.plan && b.plan.acts) || [];
+      const om = Object.fromEntries(o.map(a => [a.id, a])), nm = Object.fromEntries(nw.map(a => [a.id, a]));
+      const sig = a => JSON.stringify([a.name, a.dur, a.phase, a.cls, a.preds || [], a.fix || null]);
+      const add = nw.filter(a => !om[a.id]).map(a => a.name), del = o.filter(a => !nm[a.id]).map(a => a.name), chg = nw.filter(a => om[a.id] && sig(om[a.id]) !== sig(a)).map(a => a.name);
+      const parts = [add.length ? `추가 ${list(add)}` : '', chg.length ? `수정 ${list(chg)}` : '', del.length ? `삭제 ${list(del)}` : ''].filter(Boolean);
+      return '공정표 — ' + (parts.join(' · ') || '설정·기타 변경');
+    }
+    case 'sched-actual': {
+      const nm = await act(b.id); const clear = !b.s && !b.f && (b.pct == null || b.pct === '') && !b.note;
+      return `실적 ${b.id} ${nm} — ` + (clear ? '실적 지움' : [b.s ? `착수 ${b.s}` : '', b.f ? `완료 ${b.f}` : '', b.pct != null && b.pct !== '' ? `진도 ${b.pct}%` : '', b.note ? `메모 ${String(b.note).slice(0, 30)}` : ''].filter(Boolean).join(' · '));
+    }
+    case 'sched-actual-undo': return `실적 되돌리기 ${b.id} ${await act(b.id)}`;
+    case 'daily': return `일일작업 ${b.day} ${prev ? '교체' : '올림'}`;
+    case 'daily-delete': return `일일작업 ${b.day} 삭제`;
+    case 'daily-edit': return `일일작업 ${b.day} 분석 내용 수정`;
+    case 'daily-undo': return `일일작업 ${b.day} 되돌리기`;
+    case 'manpower': return `출력인원 ${b.day} ${b.shift} ${b.co || 'P-E&C'} ${prev ? '교체' : '저장'}`;
+    case 'manpower-delete': return `출력인원 ${b.day} ${b.shift} ${b.co || 'P-E&C'} 삭제`;
+    case 'meeting': {
+      const p = [b.raw != null ? `회의록 ${prev && prev.raw ? '교체' : '올림'}` : '', b.actions != null ? `액션·미결 ${Array.isArray(b.actions) ? b.actions.length + '건' : ''}` : '', b.marks != null ? '형광펜' : ''].filter(Boolean);
+      return `${K[b.kind] || b.kind} ${b.day} — ${p.join(' · ')}`;
+    }
+    case 'meeting-delete': return `${K[b.kind] || b.kind} ${b.day} 삭제`;
+    case 'progress-map': return `모식도 ${b.day} ${prev ? '수정' : '저장'}${b.data && b.data.note ? ` — ${String(b.data.note).slice(0, 40)}` : ''}`;
+    case 'progress-map-delete': return `모식도 ${b.day} 삭제`;
+    case 'progress-img': return `진행률 그림 ${b.day} ${prev ? '교체' : '올림'}`;
+    case 'progress-img-delete': return `진행률 그림 ${b.day} 삭제`;
+    case 'report': return `일일 현황 ${b.day} ${prev ? '교체' : '저장'}`;
+    case 'report-delete': return `일일 현황 ${b.day} 삭제`;
+  }
+  return route;
+}
+// 부관리자 알람 기본값(관리자가 아직 저장 안 했을 때) — 사용자 요청 2026-11-22
+const SUB_ALERTS_DEFAULT = [
+  { id: 'a1', time: '06:00', kind: 'quote', text: '', on: true },
+  { id: 'a2', time: '08:00', kind: 'text', text: '출력인원 탭에 카카오톡 출력인원을 붙여 주세요.', on: true },
+  { id: 'a3', time: '14:00', kind: 'text', text: 'C.P 회의 회의록을 올려 주세요.', on: true },
+  { id: 'a4', time: '18:00', kind: 'text', text: '모식도를 업데이트 해주세요.', on: true },
+];
 
 let KAKAO_SCHEMA_READY = false;
 async function kakaoSchema(db) {
@@ -347,6 +455,10 @@ async function kakaoSchema(db) {
     // v3.7.0: 회의결과 — 날짜·회의(safety=일일안전회의, cp=C.P회의)당 1건, 회의록 원문 + 액션 체크 목록(JSON)
     db.prepare(`CREATE TABLE IF NOT EXISTS meeting (day TEXT NOT NULL, kind TEXT NOT NULL, raw TEXT, actions TEXT, updated_at TEXT, PRIMARY KEY(day, kind))`),
     db.prepare(`CREATE TABLE IF NOT EXISTS manpower_co (day TEXT NOT NULL, shift TEXT NOT NULL, co TEXT NOT NULL, data TEXT NOT NULL, raw TEXT, updated_at TEXT, PRIMARY KEY(day, shift, co))`),
+    // v3.9.0: 부관리자 활동 기록(고치기 직전 행 before, 고친 뒤 updated_at) · 앱 설정(부관리자 알람 등)
+    db.prepare(`CREATE TABLE IF NOT EXISTS sub_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, day TEXT, who TEXT, route TEXT, keyj TEXT, summary TEXT, before TEXT, after_at TEXT, restored_at TEXT)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_sub_log_day ON sub_log(day)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS app_kv (key TEXT PRIMARY KEY, json TEXT NOT NULL, updated_at TEXT)`),
   ]);
   // v3.5.0: 예전 manpower(시공사 구분 없음) → manpower_co 로 옮김(시공사는 내용으로 추정)
   try {
@@ -571,13 +683,59 @@ async function handleKakao(request, env, url, cors) {
   // ---- 순회 체크: 📌 고른 항목(작업·현장톡 작업·이벤트·직접 추가)에 상태·메모·사진 ----
   // ---- 관리자 로그인 확인 ----
   if (sub === 'editor-check') {
-    const ok = editorOk(request, env, body);
-    if (!ok) await new Promise(r => setTimeout(r, 1200)); // 무작위 대입을 느리게
-    return json({ ok }, ok ? 200 : 401, cors);
+    const role = editorRole(request, env, body);
+    if (!role) await new Promise(r => setTimeout(r, 1200)); // 무작위 대입을 느리게
+    return json({ ok: !!role, role }, role ? 200 : 401, cors);
   }
-  // 쓰기는 관리자만 (읽기는 누구나)
+  // 쓰기는 관리자·부관리자만 (읽기는 누구나)
   const EDITOR_ONLY = { 'sched': 'POST', 'sched-actual': 'POST', 'daily': 'POST', 'daily-delete': 'POST', 'daily-ai': 'POST', 'daily-edit': 'POST', 'daily-undo': 'POST', 'sched-actual-undo': 'POST', 'manpower': 'POST', 'manpower-delete': 'POST', 'progress-img': 'POST', 'progress-img-delete': 'POST', 'progress-map': 'POST', 'progress-map-delete': 'POST', 'meeting': 'POST', 'meeting-delete': 'POST' };
-  if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) return json({ error: 'editor_required' }, 403, cors);
+  if (EDITOR_ONLY[sub] && request.method === 'POST' && !editorOk(request, env, body)) {
+    if (request.headers.get('X-Editor-Pass')) await new Promise(r => setTimeout(r, 1200)); // 틀린 암호로 두드리기 느리게
+    return json({ error: 'editor_required' }, 403, cors);
+  }
+  // ---- v3.9.0: 부관리자 알람(GET 관리자·부관리자 / POST 관리자만) · 활동 기록·복원(관리자만) ----
+  if (sub === 'alerts') {
+    const role = editorRole(request, env, body);
+    if (!role) return json({ error: 'editor_required' }, 403, cors);
+    if (request.method === 'POST') {
+      if (role !== 'owner') return json({ error: 'owner_required' }, 403, cors);
+      const list = (Array.isArray(body.list) ? body.list : []).slice(0, 30).map((x, i) => ({
+        id: String(x.id || ('a' + Date.now().toString(36) + i)).slice(0, 24), time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(x.time || '')) ? String(x.time) : '08:00',
+        kind: x.kind === 'quote' ? 'quote' : 'text', text: String(x.text || '').slice(0, 300), on: x.on !== false,
+      })).filter(x => x.kind === 'quote' || x.text.trim());
+      await db.prepare(`INSERT INTO app_kv(key,json,updated_at) VALUES('sub_alerts',?,?) ON CONFLICT(key) DO UPDATE SET json=excluded.json, updated_at=excluded.updated_at`).bind(JSON.stringify(list), now.ts).run();
+      return json({ ok: true, list }, 200, cors);
+    }
+    const r = await db.prepare(`SELECT json, updated_at FROM app_kv WHERE key='sub_alerts'`).first();
+    return json({ today: now.day, now: now.ts, list: r ? JSON.parse(r.json) : SUB_ALERTS_DEFAULT, saved: !!r, updated_at: r ? r.updated_at : null, role }, 200, cors);
+  }
+  if (sub === 'sub-log' || sub === 'sub-restore') {
+    if (editorRole(request, env, body) !== 'owner') return json({ error: 'owner_required' }, 403, cors);
+    if (sub === 'sub-log') {
+      const from = String(body.from || '2000-01-01'), to = String(body.to || '2999-12-31');
+      const r = await db.prepare(`SELECT id, at, day, who, route, keyj, summary, after_at, restored_at, (before='__big__') AS big FROM sub_log WHERE day BETWEEN ? AND ? ORDER BY id DESC LIMIT 800`).bind(from, to).all();
+      return json({ today: now.day, items: r.results.map(x => ({ ...x, keys: JSON.parse(x.keyj || '[]'), big: !!x.big })) }, 200, cors);
+    }
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+    const L = await db.prepare(`SELECT * FROM sub_log WHERE id=?`).bind(parseInt(body.id, 10) || 0).first();
+    if (!L) return json({ error: 'not_found' }, 404, cors);
+    if (L.restored_at) return json({ error: 'already_restored', at: L.restored_at }, 409, cors);
+    if (L.before === '__big__') return json({ error: 'no_snapshot' }, 400, cors);
+    const d = SNAP_DEF[L.route]; if (!d) return json({ error: 'bad_route' }, 400, cors);
+    const keys = JSON.parse(L.keyj || '[]'), W = snapWhere(keys), kv = keys.map(x => x[1]);
+    const cur = await db.prepare(`SELECT * FROM ${d.t} WHERE ${W}`).bind(...kv).first();
+    const changed = (await rowSig(cur)) !== (L.after_at || null);
+    if (changed && !body.force) return json({ error: 'changed_since', cur_at: cur ? cur.updated_at : null }, 409, cors);
+    const before = JSON.parse(L.before);
+    if (!before) await db.prepare(`DELETE FROM ${d.t} WHERE ${W}`).bind(...kv).run();
+    else {
+      if (d.t === 'sched_doc') { before.rev = (cur ? cur.rev : 0) + 1; before.updated_at = now.ts; } // 공정표는 rev를 앞으로(다른 기기 충돌 검사 유지)
+      const cols = Object.keys(before);
+      await db.prepare(`INSERT OR REPLACE INTO ${d.t}(${cols.join(',')}) VALUES(${cols.map(() => '?').join(',')})`).bind(...cols.map(c => before[c])).run();
+    }
+    await db.prepare(`UPDATE sub_log SET restored_at=? WHERE id=?`).bind(now.ts, L.id).run();
+    return json({ ok: true, route: L.route, removed: !before }, 200, cors);
+  }
   // 고치기·지우기 전용 주소는 POST만 (GET으로 우회 금지)
   if (['daily-edit','daily-undo','daily-delete','manpower-delete','sched-actual','sched-actual-undo','daily-ai','progress-img-delete','progress-map-delete','meeting-delete'].includes(sub) && request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
 

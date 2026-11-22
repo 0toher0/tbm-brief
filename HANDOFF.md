@@ -504,3 +504,13 @@ const APP = {
 - 입력 방식 `#aHow`: 📅 날짜로(새 공정 기본) / ⏱ 기간·선행. 날짜 모드: `#aFs/#aFsh(pm)`·`#aFf/#aFfh(am)`, `sFixShow`가 'n.5일(휴일 빼고)' 표시·단계 자동(`sPhaseByDate`, 손대면 고정). 선행 칸 숨김(후행은 유지).
 - 저장 형식: 공정 `a.fix={s,f,sh,fh}` + `a.dur`=작업일 칸 수. `sRun`: fix가 있으면 선행 무시하고 es=wi(s), dur=wiF(f)-wi(s)+1. 반나절은 계산엔 안 들어가고 표시만 — `sHalf`/`sDays`/`sDurTxt`(간트 막대 반 칸 이동·축소, 라벨 'n.5일', 목록 '오후/오전'). 실적이 있으면 반나절 표시 안 함.
 - Class 필수(저장 막음), `CLASS_NAMES` 이름을 사용자 지정으로(1000 본체 · 2000 노정 · … · 8000 토목/건축 · 9000 Utility). Worker 변경 없음(plan JSON 그대로 저장).
+
+## 42. 부관리자 · 활동 모니터링·복원 · 가운데 알람 (앱 v6.22.1 / Worker v3.9.0, 2026-11-22)
+- 역할: Worker `editorRole` — EDITOR_PASS/ADMIN_PASS = owner(모든 권한), **SUB_PASS** = sub(공정·공정표·일일작업·회의결과·안전 쓰기). 비밀번호 값은 Worker 비밀값에만(코드·문서에 없음). `editor-check`가 `{ok, role}`. EDITOR_ONLY 경로에서 틀린 암호는 1.2초 지연.
+- 앱: `edRole`(LS `tbm3_role`)·`isOwner()`/`isSub()`. 부관리자 배지는 같은 '✓ 관리자 로그인됨' 글자에 **노란색**(`.h-admin.on.sub`) — 본인들은 부관리자인지 모름(사용자 요청). 현장 탭·모니터링은 owner만(`navSite`, `showPage` site 그룹). 앱 열 때 저장된 암호로 역할 재확인(401이면 로그아웃).
+- 이름: 부관리자는 이 기기 첫 로그인 때만 이름(`#admName`, LS `tbm3_ename`, 로그아웃해도 유지) → 요청마다 `X-Editor-Name`(encodeURIComponent, CORS 허용 목록에 추가). 로그인 유지(localStorage).
+- 활동 기록: 부관리자가 `SNAP_DEF` 경로(sched·sched-actual(-undo)·daily*·manpower*·meeting*·progress-img/map*·report*)에 POST하면 handleRequest가 고치기 직전 행을 `sub_log.before`(1.5MB 넘으면 `__big__`=복원 불가)에, 고친 뒤 행 지문(SHA-256 앞 12바이트)을 `after_at`에 저장, 요약 `subSummary`(공정표는 추가·수정·삭제 공정명). 최근 3000건 유지.
+- `sub-log`(GET, owner) · `sub-restore`(POST {id, force}, owner): before가 null이면 행 삭제, 아니면 INSERT OR REPLACE(sched_doc은 rev+1). 지금 행 지문 ≠ after_at이면 `changed_since` → 앱이 한 번 더 묻고 force.
+- 알람: `app_kv('sub_alerts')` [{id,time,kind:text|quote,text,on}], 저장 전엔 `SUB_ALERTS_DEFAULT`(06:00 명언 · 08:00 출력인원 · 14:00 C.P 회의록 · 18:00 모식도). GET은 관리자·부관리자, POST는 owner. 앱 `saCheck`: 부관리자만, 앱 열 때·다시 볼 때·1분마다, 시각 지난 것 중 오늘 안 본 것을 한 카드(`#saBox`)로, 누르면 닫고 LS `tbm3_alert_seen`. 명언 `SA_QUOTES` 45개, 날짜로 순환.
+- 모니터링 탭 `pgSubMon`(현장 그룹 '👁 부관리자', `#sub-monitor`): 알람 편집·미리보기·저장 + 최근 14일(더 보기 +14) 일별 이력·↩ 복원. 복원 뒤 `smAfterRestore`가 해당 화면 캐시를 비움.
+- 배포 후 할 일: 사용자가 `wrangler secret put SUB_PASS`로 부관리자 비밀번호 등록(2026-11-22 배포 시점엔 MISSING).
