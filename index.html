@@ -729,6 +729,11 @@ body.editor .mt-body .mt-mk{cursor:pointer}
 .pmz-bot .pm-pick{margin-top:0}
 .pmz-bot .pm-pick button{padding:7px 9px;font-size:.76rem}
 .pmz-bot .pimg-note{margin-top:4px}
+/* v6.22.2: 엄지로 누르는 큰 확대·축소 버튼(그림 오른쪽 아래 고정) */
+.pmz-mid{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+.pmz-fab{position:absolute;right:12px;bottom:14px;display:flex;flex-direction:column;gap:10px;z-index:3}
+.pmz-fab button{width:52px;height:52px;border-radius:50%;border:none;background:rgba(33,37,41,.86);color:#fff;font-size:1.6rem;font-weight:800;line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.3);touch-action:manipulation}
+.pmz-fab button:active{transform:scale(.92)}
 .pimg-h{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
 .pimg-h b{font-size:.8rem} .pimg-h small{font-family:var(--num);font-size:.68rem;color:var(--steel)}
 .pimg-view{margin-top:6px;background:#f6f7f7;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;position:relative}
@@ -1503,7 +1508,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.22.1',
+  version : '6.22.3',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4749,7 +4754,7 @@ function pmRender(box){
 
 /* ===== 모식도 편집용 전체 화면 확대: 확대한 그림의 칸을 그대로 눌러 고르고, 아래 막대에서 상태를 칠함 =====
  * 배율 pmZ(1~6): 버튼(－/＋/맞춤) · 두 손가락 벌리기/오므리기 · PC Ctrl+휠. 다시 그릴 때 스크롤 자리 유지. 뒤로가기=닫기(.modal-bg 감시자) */
-let pmZ=2.2, pmZPinch=null;
+let pmZ=3.2, pmZPinch=null, pmZTap=0; // v6.22.2: 처음 배율 2.2 → 3.2(휴대폰에서 칸이 작다는 의견)
 function pmZoomOpen(){
   const m=$('pmZoom'), first=!m.classList.contains('show');
   m.classList.add('show'); pmZoomRender();
@@ -4775,9 +4780,9 @@ function pmZoomRender(){
   const st=pmEdit.states, sel=pmSel||[], same=sel.length&&sel.every(i=>st[i]===st[sel[0]])?st[sel[0]]:null;
   m.innerHTML=`<div class="pmz"><div class="pmz-top"><b>✎ ${esc(pimgLabel(pmEdit.day))} 모식도</b>
       <button class="mini-btn" data-z="-">－</button><span class="pmz-pct">${Math.round(pmZ*100)}%</span><button class="mini-btn" data-z="+">＋</button><button class="mini-btn" data-z="fit">맞춤</button>
-      <button class="mini-btn" id="pmzDone" style="background:var(--ink);color:#fff">완료</button></div>
-    <div class="pmz-sc">${pmSvg(st,pmSel,true)}</div>
-    <div class="pmz-bot"><div class="pm-pick">${sel.length?`<b>${esc(pmSelName)}</b>${PM_ORDER.map(k=>`<button class="${same===k?'on':''}" data-pst="${k}"><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</button>`).join('')}`:'<span class="pm-hint">칸을 눌러 고르세요 · 두 손가락으로 벌리면 더 크게 · 왼쪽 Shell 이름을 누르면 그 층 좌우 칸 한꺼번에</span>'}</div>
+      <button class="mini-btn" id="pmzDone" style="background:var(--ink);color:#fff">완료</button><button class="mini-btn" id="pmzX" title="닫기" aria-label="닫기" style="font-size:1rem;padding:4px 10px">✕</button></div>
+    <div class="pmz-mid"><div class="pmz-sc">${pmSvg(st,pmSel,true)}</div><div class="pmz-fab"><button data-z="+" aria-label="확대">＋</button><button data-z="-" aria-label="축소">－</button></div></div>
+    <div class="pmz-bot"><div class="pm-pick">${sel.length?`<b>${esc(pmSelName)}</b>${PM_ORDER.map(k=>`<button class="${same===k?'on':''}" data-pst="${k}"><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</button>`).join('')}`:'<span class="pm-hint">칸을 눌러 고르세요 · 오른쪽 아래 ＋ / 빈 곳 두 번 톡 / 두 손가락으로 더 크게 · 왼쪽 Shell 이름을 누르면 그 층 좌우 칸 한꺼번에</span>'}</div>
       <div class="pimg-note">${pmCounts(st)} · 다 칠했으면 ‘완료’ 누른 뒤 아래 💾 저장</div></div></div>`;
   const sc=m.querySelector('.pmz-sc'), s=m.querySelector('.pm-svg'); s.style.width=(pmZ*100)+'%';
   if(sl!=null){ sc.scrollLeft=sl; sc.scrollTop=stp; }
@@ -4786,6 +4791,7 @@ function pmZoomRender(){
   m.querySelectorAll('[data-pst]').forEach(b=>b.onclick=()=>{ (pmSel||[]).forEach(i=>{ st[i]=b.dataset.pst; }); pimgRender(); });
   m.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{ const k=b.dataset.z; if(k==='fit') pmZoomApply(1); else pmZoomApply(pmZ*(k==='+'?1.35:1/1.35)); });
   $('pmzDone').onclick=()=>pmZoomClose();
+  $('pmzX').onclick=()=>pmZoomClose(); // v6.22.3: ✕로도 닫기(칠한 내용은 편집 화면에 남음 → 💾 저장)
   // 두 손가락 확대·축소(페이지 전체가 아니라 그림만)
   const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
   sc.addEventListener('touchstart',e=>{ if(e.touches.length===2){ pmZPinch={d:dist(e.touches),z:pmZ}; e.preventDefault(); } },{passive:false});
@@ -4793,6 +4799,14 @@ function pmZoomRender(){
     pmZoomApply(pmZPinch.z*dist(t)/pmZPinch.d,(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2); } },{passive:false});
   sc.addEventListener('touchend',e=>{ if(e.touches.length<2) pmZPinch=null; });
   sc.addEventListener('wheel',e=>{ if(!e.ctrlKey) return; e.preventDefault(); pmZoomApply(pmZ*(e.deltaY<0?1.15:1/1.15),e.clientX,e.clientY); },{passive:false});
+  // 아이폰 사파리: 두 손가락 확대를 페이지가 가져가지 않게(gesture 이벤트로 그림만 확대)
+  let gz=null;
+  sc.addEventListener('gesturestart',e=>{ e.preventDefault(); gz=pmZ; },{passive:false});
+  sc.addEventListener('gesturechange',e=>{ e.preventDefault(); if(gz!=null) pmZoomApply(gz*e.scale,e.clientX,e.clientY); },{passive:false});
+  sc.addEventListener('gestureend',e=>{ e.preventDefault(); gz=null; },{passive:false});
+  // 빈 곳 두 번 톡 = 그 자리 확대(최대면 맞춤으로)
+  sc.addEventListener('click',e=>{ if(e.target.closest('[data-pm],[data-pmg]')) return; const t=Date.now();
+    if(t-pmZTap<350){ pmZTap=0; pmZoomApply(pmZ>=5.9?1:pmZ*1.7,e.clientX,e.clientY); } else pmZTap=t; });
 }
 
 /* ===== 고로 진행률 그림 (PPT 캡처를 날짜별 1장 저장 → 추이 재생) ===== */
