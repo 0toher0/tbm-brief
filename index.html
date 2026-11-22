@@ -1425,7 +1425,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.17.0',
+  version : '6.18.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -5379,8 +5379,28 @@ function mpCoOf(s){ s=String(s||'');
   if(/P-?\s*DX|포스코\s*(DX|디엑스)|디엑스/i.test(s)) return 'P-DX';
   return ''; }
 function mpCoTag(co){ return `<span class="mp-cotag" style="background:${MP_CO_COLOR[co]||'#495057'}">${esc(co)}</span>`; }
+/* 간단 근무 보고([철야작업 보고] · □ 일시 · □ 작업내용 • … · □ 시공사: 4명/34명 · □ 감리원) — 업체 구분 없이 인원·작업만.
+   '4명/34명'은 앞=시공사 직영, 뒤=협력사(작업자)로 보고, 숫자가 하나면 협력사 인원으로 둠 */
+function mpParseShiftRep(t){
+  const k=(parseKakaoWork(t)||[])[0]; if(!k) return null;
+  const sl=(t.match(/^□\s*시공사\s*:?\s*(.*)$/m)||[])[1]||'';
+  const nums=(sl.match(/\d+(?=\s*명)/g)||[]).map(Number);
+  if(!nums.length) return null;
+  const pec=nums.length>1?nums[0]:null, pt=nums.length>1?nums.slice(1).reduce((a,b)=>a+b,0):nums[0];
+  const head=t.slice(0,160);
+  const shift=/철야/.test(head)?'철야':/연장|추가|야간/.test(head)?'연장':k.shift==='철야'?'철야':'정규';
+  const day=k.date?k.date.replace(/\./g,'-'):'';
+  const tasks=String(k.task||'').split('\n').map(s=>s.replace(/^-\s*/,'').trim()).filter(Boolean);
+  const co=mpCoOf(sl)||mpCoOf(t.slice(0,400));
+  const R={day,shift,co,title:'',pec,partner:{total:pt,mgr:0,work:0,equip:0,crew:'',vuln:null},
+    companies:[{name:'업체 미구분',area:'',people:pt,crew:k.manager||'',vuln:null,time:k.time||'',tasks,equipN:null,equip:''}],
+    notes:k.manager?[k.manager]:[], simple:true};
+  R.co=R.co||'P-E&C'; R.subSum=pt; R.total=(pec||0)+pt; R.equipSum=0;
+  return R;
+}
 function parseManpower(raw){
   const t=String(raw||'').replace(/\r\n?/g,'\n').replace(/ /g,' ');
+  if(!/■/.test(t)&&/□\s*시공사/.test(t)&&/\d+\s*명/.test(t)) return mpParseShiftRep(t);
   if(!/■/.test(t)||!/\d+\s*명/.test(t)) return null;
   const head=t.slice(0,160);
   const shift=/철야/.test(head)?'철야':/연장|추가/.test(head)?'연장':'정규';
@@ -5465,7 +5485,7 @@ function mpPrepare(){
   const txt=$('mpPaste').value; mpParsed=null; $('mpSave').disabled=true;
   if(!txt.trim()){ $('mpInfo').textContent=''; return; }
   const p=parseManpower(txt);
-  if(!p){ $('mpInfo').innerHTML='<span style="color:var(--red)">출력인원 보고 형식을 찾지 못했습니다 — ■업체: n명 줄이 있어야 합니다</span>'; return; }
+  if(!p){ $('mpInfo').innerHTML='<span style="color:var(--red)">출력인원 보고 형식을 찾지 못했습니다 — ■업체: n명 줄이나 □ 시공사: n명 줄이 있어야 합니다</span>'; return; }
   if(!p.day) p.day=rToday();
   mpParsed=p; $('mpShift').value=p.shift; $('mpCo').value=p.co;
   mpInfo();
@@ -5478,7 +5498,7 @@ function mpInfo(){
   const others=mpList.filter(x=>x.day===p.day&&x.shift===shift&&x.co!==co).map(x=>x.co);
   const pt=p.partner?p.partner.total:p.subSum;
   const warn=p.partner&&p.partner.total!==p.subSum&&p.companies.length?` <span style="color:var(--red)">⚠ 협력사 ${p.partner.total}명 ≠ 업체별 합 ${p.subSum}명</span>`:'';
-  $('mpInfo').innerHTML=`인식: <b>${sMD(p.day)} ${dPlus(p.day)}</b> · <b>${shift}</b> · ${mpCoTag(co)} 직영 ${p.pec??'—'}명 · 협력사 ${pt}명${p.partner&&p.partner.mgr?` (관${p.partner.mgr}·작${p.partner.work}·장비${p.partner.equip})`:''} · 업체 ${p.companies.length}곳 · 합계 <b>${p.total}</b>명${warn}`+
+  $('mpInfo').innerHTML=`인식: <b>${sMD(p.day)} ${dPlus(p.day)}</b> · <b>${shift}</b> · ${mpCoTag(co)} 직영 ${p.pec??'—'}명 · 협력사 ${pt}명${p.partner&&p.partner.mgr?` (관${p.partner.mgr}·작${p.partner.work}·장비${p.partner.equip})`:''} · ${p.simple?'<span style="color:var(--amber)">업체 구분 없는 간단 보고 — 인원·작업만 저장</span>':'업체 '+p.companies.length+'곳'} · 합계 <b>${p.total}</b>명${warn}${p.simple&&p.companies[0].time?' · '+esc(p.companies[0].time):''}`+
     (ex?` <span style="color:var(--amber)">· 같은 날짜·근무조의 ${esc(co)} 기록을 새 내용으로 바꿉니다</span>`:'')+
     (others.length?` <span style="color:var(--steel)">· 다른 시공사(${others.map(esc).join('·')}) 기록은 그대로 둡니다</span>`:'');
 }
