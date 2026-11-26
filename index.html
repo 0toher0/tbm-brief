@@ -581,6 +581,15 @@ table.s-t tr[data-act]{cursor:pointer}
 .dh{background:linear-gradient(135deg,#1f3a5f,#2f5d8a);color:#fff;border-radius:16px;padding:12px 14px;margin-top:10px;box-shadow:0 6px 18px rgba(31,58,95,.18)}
 .dh .d-nav .mini-btn{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)}
 .dh-date{font-size:1.15rem;font-weight:900}
+/* v6.27: 오늘 기준 — TODAY 배지 · 지난 표 · 오늘 표 없음 빨간 안내 */
+.dh-today{display:inline-block;font-size:.6rem;font-weight:900;letter-spacing:.06em;background:#40c057;color:#fff;border-radius:5px;padding:1px 6px;vertical-align:3px;margin-left:4px}
+.dh-old{display:inline-block;font-size:.6rem;font-weight:900;background:#ff6b6b;color:#fff;border-radius:5px;padding:1px 6px;vertical-align:3px;margin-left:4px}
+.d-due{margin-top:6px;border:2px solid #fa5252;background:#fff5f5;color:#c92a2a;border-radius:12px;padding:10px 12px;font-size:.8rem;font-weight:800;line-height:1.5;animation:dDueBlink 1.6s ease-in-out 3}
+.d-due small{display:block;font-weight:600;color:#e03131;font-size:.7rem}
+.d-due.ok{border-color:#8ce99a;background:#ebfbee;color:#2b8a3e;animation:none}
+@keyframes dDueBlink{50%{background:#ffe3e3}}
+.sa-card.due{background:linear-gradient(160deg,#fff 0%,#fff0f0 100%)}
+.sa-card.due .sa-msg{color:#c92a2a}
 .dh .dplus{background:rgba(255,255,255,.2);color:#fff}
 .dh-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
 @media(max-width:520px){ .dh-kpi{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -1107,6 +1116,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 
 <!-- ============ 📋 일일작업 ============ -->
 <div class="pg" id="pgDaily">
+  <div id="dDue"></div>
   <div class="card paste-hint" id="dLockNote" style="display:none;margin-top:4px">🔒 일일작업 올리기·수정·삭제는 관리자만 할 수 있습니다. <button class="mini-btn" onclick="openAdminLogin()">관리자 로그인</button> · 올라온 내용은 누구나 볼 수 있습니다.</div>
   <div class="card" id="dUpCard" style="margin-top:4px">
     <div class="sec-t" style="margin-bottom:6px">금일·명일 작업 올리기</div>
@@ -1649,7 +1659,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.26.0',
+  version : '6.27.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4552,6 +4562,9 @@ setInterval(()=>saCheck(),60e3);
 /* v6.26.0 새 기능 공지 — 앱을 열면(누구나) 이 기기에서 아직 안 본 버전의 바뀐 점을 가운데 카드로 한 번 보여 주고, 누르면 닫힘.
    새로 배포할 때 맨 위에 {v,d,items:[[아이콘,제목,설명]]}를 추가하면 됨. 처음 쓰는 기기는 최신 1건만. */
 const WHATS_NEW=[
+  {v:'6.27.0',d:'11/26',items:[
+    ['📅','오늘(TODAY) 기준 표시','일일작업의 금일·명일이 오늘 날짜 기준으로 바뀝니다 — 어제 올린 표는 금일→전일, 명일→금일'],
+    ['🚨','오늘 일일작업 알림','오늘 표가 아직 없으면 일일작업 탭에 빨간 안내, 관리자·부관리자는 앱을 열 때 하루 한 번 알림']]},
   {v:'6.26.0',d:'11/26',items:[
     ['🧨','간트 이벤트 아이콘','공정명에 [발파] [철거] [소출] [데크] 같은 명령어를 넣거나, 공정 창에서 아이콘을 고른 공정만 간트에 그림이 붙습니다'],
     ['🏭','모식도 지난 날 입력·수정','D+ 날짜를 골라 빠뜨린 날도 입력하고 고칠 수 있습니다 (관리자)'],
@@ -5958,12 +5971,42 @@ async function dLoad(){
   catch(e){ $('dBody').innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; return; }
   $('dDayChips').innerHTML=dList.slice(0,40).map(x=>`<button class="dchip ${x.day===dSel?'on':''}" data-dd="${x.day}">${x.day===rToday()?'오늘':sMD(x.day)} <small class="dplus">${dPlus(x.day)}</small><span class="dc-cnt">${(x.analysis&&x.analysis.today||[]).length}</span></button>`).join('');
   $('dDayChips').querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{ dSel=b.dataset.dd; dEditDay=null; dLoad(); });
+  dDueRender(dList[0]&&dList[0].day);
   const delHtml=isEditor()&&dDeleted.length?`<div class="card paste-hint" style="margin-top:10px">🗑 삭제한 일일작업: ${dDeleted.map(x=>`<b>${sMD(x.day)} ${dPlus(x.day)}</b> <button class="mini-btn" data-undo="${x.day}">↩ 되돌리기</button>`).join(' · ')}</div>`:'';
   const it=dList.find(x=>x.day===dSel);
   if(!it) $('dBody').innerHTML=delHtml+'<div class="k-empty" style="margin-top:10px">아직 올린 일일작업이 없습니다. 위 칸에 표를 붙여넣으세요.</div>';
   else { dRender(it); if(delHtml) $('dBody').insertAdjacentHTML('afterbegin',delHtml); }
   $('dBody').querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>dUndo(b.dataset.undo));
 }
+// v6.27: 오늘 기준 상대 표기 · 오늘 일일작업이 없으면 빨간 안내(일일작업 탭)와 앱 열 때 팝업(관리자·부관리자, 하루 한 번)
+function dRel(d){ const n=Math.round((sT(d)-sT(rToday()))/sDAY); return n===0?'금일':n===-1?'전일':n===1?'명일':sMD(d); }
+const dWd=d=>'일월화수목금토'[new Date(sT(d)).getUTCDay()];
+function dDueRender(last){
+  const t=rToday(), el=$('dDue'); if(!el) return;
+  if(last===t){ el.innerHTML=`<div class="d-due ok">✓ 오늘 ${sMD(t)}(${dWd(t)}) ${dPlus(t)} 일일작업이 올라와 있습니다</div>`; return; }
+  const ago=last?Math.round((sT(t)-sT(last))/sDAY):null;
+  el.innerHTML=`<div class="d-due">⚠ 오늘 ${sMD(t)}(${dWd(t)}) ${dPlus(t)} 일일작업이 아직 없습니다 — 금일·명일 작업을 올려 주세요
+    <small>${last?`마지막으로 올린 날: ${sMD(last)} ${dPlus(last)} (${ago===1?'어제':ago+'일 전'}) · 그 표의 금일은 '${dRel(last)}', 명일은 '${dRel(sISO(sT(last)+sDAY))}'로 표시됩니다`:'아직 올린 일일작업이 없습니다'}</small></div>`;
+}
+const LS_DNAG='tbm3_dnag';
+async function dDueCheck(tries){
+  if(!isEditor()) return;
+  const t=rToday(); if(loadJSON(LS_DNAG,'')===t) return;
+  if($('saBox').classList.contains('show')){ if((tries||0)<40) setTimeout(()=>dDueCheck((tries||0)+1),1500); return; }
+  let last=null; try{ last=(await kApi('daily-latest')).day||null; }catch(e){ return; }
+  if(last===t) return;
+  if($('saBox').classList.contains('show')){ setTimeout(()=>dDueCheck((tries||0)+1),1500); return; }
+  const ago=last?Math.round((sT(t)-sT(last))/sDAY):null;
+  $('saCard').className='sa-card due';
+  $('saCard').innerHTML=`<div class="sa-ic">📋</div><div class="sa-tm" style="color:#e03131">TODAY · ${sMD(t)}(${dWd(t)}) ${dPlus(t)}</div>
+    <div class="sa-msg">오늘 일일작업(금일·명일 작업)을 올려 주세요</div>
+    <div class="sa-qa">${last?`마지막으로 올린 날: ${sMD(last)} ${dPlus(last)} — ${ago===1?'어제':ago+'일 전'}`:'아직 올린 일일작업이 없습니다'}</div>
+    <div class="sa-hint">화면을 한 번 누르면 닫힙니다 · 일일작업 탭에서 엑셀을 붙여넣으세요</div>`;
+  const bg=$('saBox'); bg.classList.add('show');
+  bg.onclick=()=>{ bg.classList.remove('show'); $('saCard').className='sa-card'; saveJSON(LS_DNAG,t); setTimeout(()=>saCheck(),300); };
+}
+setTimeout(()=>dDueCheck(0),2600);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') setTimeout(()=>dDueCheck(0),800); });
 async function dUndo(day){
   try{ const r=await kApi('daily-undo',{day}); dSel=day; dEditDay=null; toast(`↩ 되돌렸습니다 (${D_REASON[r.restored]||'이전'} 상태)`); await dLoad(); }
   catch(e){ toast(e.message==='nothing_to_undo'?'되돌릴 이전 상태가 없습니다':kErr(e)); }
@@ -6085,12 +6128,15 @@ function dRender(it){
   const nC=rows.filter(r=>r.kind==='c').length, nT=rows.filter(r=>r.kind==='t').length, nM=rows.filter(r=>r.kind==='m').length;
   const act=parseFloat(a.overall&&a.overall.actual), pln=parseFloat(a.overall&&a.overall.plan);
   const wd=d=>'일월화수목금토'[new Date(sT(d)).getUTCDay()];
+  // v6.27: '금일·명일'은 오늘 기준으로 — 어제 올린 표면 금일→전일, 명일→금일. 더 지난 표는 날짜로
+  const L0=dRel(it.day), L1=dRel(tm), ago=Math.round((sT(rToday())-sT(it.day))/sDAY);
+  const hd=(L,d)=>`${L===sMD(d)?'':L+' '}${sMD(d)}(${wd(d)})`;
   let h=`<div class="dh">
-    <div class="d-nav"><button class="mini-btn" id="dPrevD" ${di<=0?'disabled':''}>◀</button><div style="flex:1;text-align:center"><span class="dh-date">${sFmt(it.day)}</span> <span class="dplus">${dPlus(it.day)}</span></div><button class="mini-btn" id="dNextD" ${di<0||di>=days.length-1?'disabled':''}>▶</button></div>
+    <div class="d-nav"><button class="mini-btn" id="dPrevD" ${di<=0?'disabled':''}>◀</button><div style="flex:1;text-align:center"><span class="dh-date">${sFmt(it.day)}</span> <span class="dplus">${dPlus(it.day)}</span>${ago===0?'<span class="dh-today">TODAY</span>':ago>0?`<span class="dh-old">${ago===1?'어제':ago+'일 전'} 표</span>`:''}</div><button class="mini-btn" id="dNextD" ${di<0||di>=days.length-1?'disabled':''}>▶</button></div>
     <div class="dh-kpi">
       <div><div class="l">공사진도 실적 / 계획</div><div class="v">${isNaN(act)?'-':act.toFixed(1)+'%'} <small>/ ${isNaN(pln)?'-':pln.toFixed(1)+'%'}</small></div>${!isNaN(act)?`<div class="dh-bar"><i style="width:${Math.min(100,act)}%"></i>${!isNaN(pln)?`<b style="left:${Math.min(100,pln)}%"></b>`:''}</div>`:''}</div>
-      <div><div class="l">금일 작업(실제)</div><div class="v">${T.length}<small>건 · 명일 계속 ${nC}</small></div></div>
-      <div><div class="l">명일 작업(계획)</div><div class="v">${M.length}<small>건 · 새로 ${nM}</small></div></div>
+      <div><div class="l">${L0} 작업(실제)</div><div class="v">${T.length}<small>건 · ${L1} 계속 ${nC}</small></div></div>
+      <div><div class="l">${L1} 작업(계획)</div><div class="v">${M.length}<small>건 · 새로 ${nM}</small></div></div>
       <div><div class="l">인원 주간</div><div class="v">${tot?esc(tot.day):'-'}<small>${tot?` · 야간 ${esc(tot.night)} · 철야 ${esc(tot.overnight)}`:''}</small></div></div>
     </div>
     ${plan?`<div class="dh-pv"><span>✓ 어제 계획대로 ${nPlan}</span><span>＋ 계획 외 ${nNew}</span><span>✕ 계획했으나 미실시 ${unexec.length}</span></div>`:'<div class="dh-meta">전날 표가 없어 계획 대비 비교는 생략합니다</div>'}
@@ -6110,7 +6156,7 @@ function dRender(it){
     const rowHtml=(r,i)=>{ const x=r.x, k=dKey(r.kind==='m'?'m':'t',x), mk=mkOf(r), ra=raOf(r);
       const cats=dCats({task:x.task,hazard:ra&&ra.hazard,equip:x.equip});
       const pct=parseInt(String(x.progress||'').replace(/[^\d]/g,''),10);
-      const lab=r.kind==='c'?`▶ 명일까지 계속${x.progress?' · '+esc(x.progress):''}`:r.kind==='t'?`금일${x.progress?' · '+esc(x.progress):''}`:'명일 착수';
+      const lab=r.kind==='c'?`▶ ${L1}까지 계속${x.progress?' · '+esc(x.progress):''}`:r.kind==='t'?`${L0}${x.progress?' · '+esc(x.progress):''}`:`${L1} 착수`;
       const pb=r.kind==='m'?'':r.z.p?'<span class="dg-pb ok">계획대로</span>':plan?'<span class="dg-pb nw">계획 외</span>':'';
       return `<div class="dg-row ${mk?'mk-'+mk:''}" data-gi="${i}" data-mk="${esc(k)}" data-day="${it.day}">
         <div class="dg-n"><div class="t">${x.gong?`<span class="s-pill asm">${esc(x.gong)}</span>`:''}${esc(x.task)}</div>
@@ -6118,13 +6164,13 @@ function dRender(it){
         <div class="dg-tl"><div class="dg-bar ${r.kind}">${!isNaN(pct)&&r.kind!=='m'?`<i class="pg" style="width:${Math.min(100,pct)}%"></i>`:''}<span>${lab}</span></div></div>
       </div><div class="dg-det" data-gd="${i}" hidden></div>`; };
     const g={}; shown.forEach(r=>{ const c=r.x.cls||'기타'; (g[c]=g[c]||[]).push(r); });
-    let s=`<div class="dg-flt">${[['all','전체',rows.length],['c','▶ 이어지는 작업',nC],['t','금일만',nT],['m','명일 새로',nM],['mk','🖍 주요',nMk]].map(([k,t,n])=>`<button data-df="${k}" class="${dFlt===k?'on':''}">${t} <b>${n}</b></button>`).join('')}<button id="dOpenAll">${dOpenAll?'모두 접기':'모두 펼치기'}</button></div>
+    let s=`<div class="dg-flt">${[['all','전체',rows.length],['c','▶ 이어지는 작업',nC],['t',L0+'만',nT],['m',L1+' 새로',nM],['mk','🖍 주요',nMk]].map(([k,t,n])=>`<button data-df="${k}" class="${dFlt===k?'on':''}">${t} <b>${n}</b></button>`).join('')}<button id="dOpenAll">${dOpenAll?'모두 접기':'모두 펼치기'}</button></div>
       <div class="dg">
-        <div class="dg-head"><div>작업 · 업체 <small>(누르면 위험성평가)</small></div><div class="td">금일 ${sMD(it.day)}(${wd(it.day)})</div><div class="tm">명일 ${sMD(tm)}(${wd(tm)})</div></div>`;
+        <div class="dg-head"><div>작업 · 업체 <small>(누르면 위험성평가)</small></div><div class="td">${hd(L0,it.day)}</div><div class="tm">${hd(L1,tm)}</div></div>`;
     Object.keys(g).sort().forEach(c=>{ const L=g[c].sort((p,q)=>ord[p.kind]-ord[q.kind]||String(p.x.company).localeCompare(String(q.x.company)));
       s+=`<div class="dg-cls"><span>${c==='기타'?'Class 없음':esc(clsLabel(c))}</span><span>${L.length}건</span></div>`+L.map(r=>rowHtml(r,rows.indexOf(r))).join(''); });
     if(!shown.length) s+='<div class="paste-hint" style="padding:14px">해당하는 작업이 없습니다</div>';
-    s+=`<div class="dg-lg"><span><i style="background:linear-gradient(90deg,#1c7ed6,#7048e8)"></i>명일까지 이어짐</span><span><i style="background:#4dabf7"></i>금일만</span><span><i style="background:#e5dbff;border:1px dashed #9775fa"></i>명일 새로 시작</span><span>막대 안 밝은 부분 = 진도</span></div></div>`;
+    s+=`<div class="dg-lg"><span><i style="background:linear-gradient(90deg,#1c7ed6,#7048e8)"></i>${L1}까지 이어짐</span><span><i style="background:#4dabf7"></i>${L0}만</span><span><i style="background:#e5dbff;border:1px dashed #9775fa"></i>${L1} 새로 시작</span><span>막대 안 밝은 부분 = 진도</span></div></div>`;
     if(unexec.length) s+=`<details class="k-more" style="margin-top:10px"><summary>✕ 어제 계획했으나 오늘 표에 없는 작업 ${unexec.length}건</summary>${unexec.map(p=>`<div class="d-tm"><div class="t">${p.cls?`<span class="s-pill cls">${esc(p.cls)}</span>`:''}${esc(p.task)}</div><div class="meta">${esc(p.company)}</div></div>`).join('')}</details>`;
     if(P.length) s+=`<details class="k-more" style="margin-top:10px"><summary>👷 업체별 인원${tot?` — 주간 ${esc(tot.day)} · 야간 ${esc(tot.night)} · 철야 ${esc(tot.overnight)}`:''}</summary><div class="card" style="margin-top:6px"><table class="s-t"><tr><th>업체</th><th class="s-num">주간</th><th class="s-num">야간</th><th class="s-num">철야</th></tr>
       ${P.map(x=>`<tr style="${x.company==='합계'?'font-weight:800;background:#f7f8f9':''}"><td>${esc(x.company)}</td><td class="s-num">${esc(x.day)}</td><td class="s-num">${esc(x.night)}</td><td class="s-num">${esc(x.overnight)}</td></tr>`).join('')}</table>
@@ -6135,8 +6181,8 @@ function dRender(it){
       const on=force!=null?force:det.hidden; det.hidden=!on; row.classList.toggle('open',on); if(!on||det.dataset.ok) return;
       const ra=raOf(r), kind=r.kind==='m'?'m':'t';
       const src=r.kind==='m'?'P-E&C 위험성평가':ra&&ra===r.z.p?`어제(${sMD(dPrevDay(it.day))}) 표의 위험성평가`:'오늘 표 명일 위험성평가(같은 작업)';
-      const note=r.kind==='c'&&r.m?`➡ 명일: ${esc(r.m.task)}${r.m.period?` · 📅 ${esc(r.m.period)}`:''}`:'';
-      det.innerHTML=dCard(it.day,kind,r.x,{badge:r.kind==='m'?['tm','명일 계획']:plan?(r.z.p?['plan','계획대로']:['new','계획 외']):null,ra,src,note});
+      const note=r.kind==='c'&&r.m?`➡ ${L1}: ${esc(r.m.task)}${r.m.period?` · 📅 ${esc(r.m.period)}`:''}`:'';
+      det.innerHTML=dCard(it.day,kind,r.x,{badge:r.kind==='m'?['tm',L1+' 계획']:plan?(r.z.p?['plan','계획대로']:['new','계획 외']):null,ra,src,note});
       det.dataset.ok=1;
       det.querySelectorAll('.dk-pen [data-c]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const card=b.closest('.dk'); dMarkSet(card.dataset.day,card.dataset.mk,b.dataset.c,card.dataset.t); }); };
     box.querySelectorAll('.dg-row').forEach(row=>row.onclick=()=>openRow(row));
