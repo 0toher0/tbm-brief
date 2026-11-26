@@ -856,6 +856,28 @@ body.editor .mt-body .mt-mk{cursor:pointer}
 .pimg-note{font-size:.7rem;color:var(--ink2);margin-top:5px}
 .pimg-adm{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .pimg-adm input[type=date]{font-family:var(--num);font-size:.74rem;padding:3px 5px;border:1px solid var(--line);border-radius:6px}
+/* v6.26: 모식도 D+ 날짜 골라 지난 날 입력·수정 */
+.pm-dsel{font-size:.78rem;font-weight:800;padding:5px 6px;border:2px solid var(--ink);border-radius:8px;background:#fff;max-width:100%}
+.pm-dpick{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px}
+.pm-dpick .h{font-size:.7rem;font-weight:800;color:var(--ink2);display:flex;justify-content:space-between;gap:6px}
+.pm-dpick .h .miss{color:var(--red)}
+.pm-dchips{display:flex;gap:5px;overflow-x:auto;padding:6px 0 2px;-webkit-overflow-scrolling:touch}
+.pm-dchips button{flex:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 7px;font-size:.68rem;font-weight:800;line-height:1.25;text-align:center}
+.pm-dchips button small{display:block;font-size:.56rem;font-weight:700;color:var(--steel)}
+.pm-dchips button.ok{border-color:#8ce99a;background:#ebfbee;color:#2b8a3e}
+.pm-dchips button.miss{border-color:#ffa8a8;background:#fff5f5;color:#c92a2a}
+.pm-dchips button.today{box-shadow:0 0 0 2px var(--ink) inset}
+/* v6.26: 간트 이벤트 아이콘(발파·철거·소출·Deck·천공·축조·주수·출선·설치·Leak Test·화입) */
+.s-gev{position:absolute;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none}
+.s-gev svg,.s-gic svg,.s-evlg svg{width:16px;height:16px;display:block}
+.s-gic{flex:none;display:inline-flex}
+.s-gic svg{width:14px;height:14px}
+.s-evlg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.64rem;color:var(--ink2);margin:6px 0 2px}
+.s-evlg span{display:inline-flex;align-items:center;gap:3px}
+.a-icons{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.a-icons button{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 7px;font-size:.68rem;font-weight:700;color:var(--ink2)}
+.a-icons button svg{width:16px;height:16px}
+.a-icons button.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset;background:#f1f3f5;color:var(--ink)}
 .pimg-adm input[type=text]{flex:1 1 120px;font-size:.74rem;padding:4px 6px;border:1px solid var(--line);border-radius:6px;min-width:0}
 .pimg-zone{flex:1 1 100%;border:2px dashed #ffd43b;background:#fff9db;border-radius:8px;padding:9px;font-size:.72rem;color:#7a5b00;text-align:center;outline:none;min-height:20px}
 .pimg-zone:focus{border-color:var(--posco);background:#e8f0fb;color:var(--posco)}
@@ -945,6 +967,13 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 .sa-q{font-size:1.12rem;font-weight:700;color:#343a40;line-height:1.6;margin-top:8px;word-break:keep-all}
 .sa-qa{font-size:.78rem;color:var(--steel);margin-top:6px}
 .sa-hint{font-size:.68rem;color:#adb5bd;margin-top:12px}
+/* v6.26.0 새 기능 공지 */
+.wn-v{font-family:var(--num);font-size:.68rem;font-weight:800;color:#1c7ed6;margin-top:10px;text-align:left}
+.wn-list{list-style:none;margin:6px 0 0;padding:0;text-align:left}
+.wn-list li{display:flex;gap:8px;align-items:flex-start;font-size:.86rem;line-height:1.5;padding:6px 0;border-top:1px dashed #dee2e6;word-break:keep-all;color:var(--ink)}
+.wn-list li:first-child{border-top:none}
+.wn-list li i{font-style:normal;flex:none;width:22px;text-align:center}
+.wn-list li small{display:block;font-size:.7rem;color:var(--steel)}
 .sm-sec{font-weight:800;font-size:.9rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px}
 .sm-sec small{font-weight:600;color:var(--steel);font-size:.68rem}
 .sm-al{display:grid;grid-template-columns:78px 96px 1fr 30px 30px;gap:5px;align-items:center;margin-bottom:6px}
@@ -1041,6 +1070,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
       <div class="s-gtr"><button class="mini-btn s-addbtn" id="gAddAct" style="display:none">＋ 공정 추가</button><label class="s-crittog"><input type="checkbox" id="gCritOnly"> 주공정만</label></div>
     </div>
     <div class="s-legend"><span><i style="background:var(--s-crit)"></i>크리티컬 패스</span><span><i style="background:var(--s-norm)"></i>그 외(여유 있음)</span><span><i style="background:#adb5bd"></i>완료</span><span><i style="background:#868e96;height:3px"></i>기준(고정)</span><span><b style="color:var(--s-crit)">▲n</b> 늦음 · <b style="color:var(--green)">▼n</b> 빠름</span><span><i style="background:var(--red);width:2px"></i>기준일</span><span><i style="background:repeating-linear-gradient(135deg,#ced4da 0 3px,#fff 3px 6px)"></i>휴일</span></div>
+    <div class="s-evlg" id="gEvLg"></div>
     <div class="s-gwrap" id="gWrap"><div class="s-ginner" id="gant"></div></div>
     <div class="paste-hint" style="margin-top:6px">단계 이름을 누르면 접고 펼칩니다. 공정을 누르면 기간·선후행·실적을 고칩니다.</div>
   </div>
@@ -1542,6 +1572,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
       <div><label class="f-label">단계</label><select class="f-input" id="aPhase"></select></div>
     </div>
     <label class="f-label">설비 Class <span class="a-req">*</span> <small style="font-weight:500;color:var(--steel)">1000 본체 · 2000 노정 · 3000 주상 · 4000 열풍로 · 5000 청정설비 · 6000 원료수송설비 · 7000 전기 · 8000 토목/건축 · 9000 Utility</small></label><select class="f-input" id="aCls"></select>
+    <label class="f-label">간트 아이콘 <small style="font-weight:500;color:var(--steel)">고른 공정에만 표시 · 또는 공정명에 [발파] [철거] [소출] [데크] [천공] [축조] [주수] [출선] [Leak] [화입]을 넣으면 자동</small></label><div class="a-icons" id="aIcon"></div>
     <div id="aPredBox">
     <label class="f-label">선행 공정 <small style="font-weight:500;color:var(--steel)">고른 공정과의 관계: 끝나면 시작 · 같이 시작 · 같이 끝남 / 간격(±일): 2 = 2일 뒤, -1 = 1일 당겨서</small></label>
     <div id="aPreds"></div><button class="mini-btn" id="aAddPred" style="margin-top:6px">＋ 선행 추가</button>
@@ -1618,7 +1649,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.25.3',
+  version : '6.26.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4518,6 +4549,34 @@ async function saCheck(force){
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') saCheck(); });
 setInterval(()=>saCheck(),60e3);
+/* v6.26.0 새 기능 공지 — 앱을 열면(누구나) 이 기기에서 아직 안 본 버전의 바뀐 점을 가운데 카드로 한 번 보여 주고, 누르면 닫힘.
+   새로 배포할 때 맨 위에 {v,d,items:[[아이콘,제목,설명]]}를 추가하면 됨. 처음 쓰는 기기는 최신 1건만. */
+const WHATS_NEW=[
+  {v:'6.26.0',d:'11/26',items:[
+    ['🧨','간트 이벤트 아이콘','공정명에 [발파] [철거] [소출] [데크] 같은 명령어를 넣거나, 공정 창에서 아이콘을 고른 공정만 간트에 그림이 붙습니다'],
+    ['🏭','모식도 지난 날 입력·수정','D+ 날짜를 골라 빠뜨린 날도 입력하고 고칠 수 있습니다 (관리자)'],
+    ['📢','새 기능 공지','업데이트가 있으면 앱을 열 때 이렇게 알려 드립니다']]},
+  {v:'6.25.3',d:'11/23',items:[
+    ['📱','오늘 TBM 작업 목록','휴대폰에서도 작업명이 다 보이게 — 윗줄 작업명, 아랫줄 Class·업체·공정률·위험요인'],
+    ['🌤','오늘 TBM 날씨','광양제철소 기준으로, 밤에도 정상으로 불러옵니다'],
+    ['📝','안전 > 점검메모','누구나 메모·🎙 음성 녹음을 남기고 모두가 볼 수 있습니다. ⚠ 고위험 표시한 작업을 현장에서 점검·기록'],
+    ['📋','일일작업 작업판','금일→명일로 이어지는 작업을 주간 공정처럼 한 막대로'],
+    ['🧭','회의결과','C.P회의가 맨 앞']]}
+];
+const LS_WN='tbm3_whatsnew';
+const wnCmp=(a,b)=>{ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)-(y[i]||0); } return 0; };
+function wnCheck(){
+  const seen=loadJSON(LS_WN,''), latest=WHATS_NEW[0]; if(!latest) return;
+  const list=seen?WHATS_NEW.filter(e=>wnCmp(e.v,seen)>0):[latest];
+  if(!list.length) return;
+  if($('saBox').classList.contains('show')){ setTimeout(wnCheck,1500); return; }
+  $('saCard').innerHTML=`<div class="sa-ic">✨</div><div class="sa-msg" style="margin-top:8px">새로 바뀐 기능</div>`
+    +list.slice(0,3).map(e=>`<div class="wn-v">v${esc(e.v)} · ${esc(e.d)}</div><ul class="wn-list">${e.items.map(([ic,t,s])=>`<li><i>${ic}</i><div><b>${esc(t)}</b><small>${esc(s)}</small></div></li>`).join('')}</ul>`).join('')
+    +'<div class="sa-hint">화면을 한 번 누르면 닫힙니다</div>';
+  const bg=$('saBox'); bg.classList.add('show');
+  bg.onclick=()=>{ bg.classList.remove('show'); saveJSON(LS_WN,latest.v); setTimeout(()=>saCheck(),300); };
+}
+setTimeout(wnCheck,1200);
 // 앱을 열 때: 저장된 암호의 역할 다시 확인(예전 로그인은 역할이 비어 있음) → 부관리자면 알람 확인
 (async()=>{
   if(!editorPass) return;
@@ -4879,6 +4938,19 @@ function pmStop(){ if(pmTimer){ clearInterval(pmTimer); pmTimer=null; if(pimgMod
 function pmGo(i){ if(!pmList||!pmList.length) return; pmIdx=Math.max(0,Math.min(pmList.length-1,i)); pimgRender(); }
 function pmPlay(){ if(pmTimer){ pmStop(); return; } if(pmList.length<2) return; if(pmIdx>=pmList.length-1) pmIdx=0;
   pmTimer=setInterval(()=>{ if(pmIdx>=pmList.length-1){ pmStop(); return; } pmGo(pmIdx+1); },1000); pimgRender(); }
+// v6.26: D+1(또는 첫 기록)부터 오늘까지 날짜 — 빠뜨린 날도 골라서 입력·수정
+function pmDayList(extra){
+  const t=pimgToday(), first=[SD_DAY1,...(pmList||[]).map(x=>x.day)].sort()[0], out=[];
+  for(let n=Date.parse(first+'T00:00:00Z'), e=Date.parse(t+'T00:00:00Z'); n<=e; n+=86400e3) out.push(new Date(n).toISOString().slice(0,10));
+  if(extra&&!out.includes(extra)) out.push(extra);
+  return out.sort();
+}
+function pmDayPickHtml(cur){
+  const L=pmDayList(), t=pimgToday(), saved=new Set((pmList||[]).map(x=>x.day)), f0=[...saved].sort()[0]||t, miss=L.filter(d=>!saved.has(d)&&d>f0&&d<=t); // 첫 기록 이전 날은 빠진 날로 세지 않음(회색)
+  return `<div class="pm-dpick"><div class="h"><span>📅 날짜(D+) 골라 입력·수정</span>${miss.length?`<span class="miss">미입력 ${miss.length}일</span>`:'<span style="color:#2b8a3e">빠진 날 없음</span>'}</div>
+    <div class="pm-dchips">${L.map(d=>`<button data-pmed="${d}" class="${saved.has(d)?'ok':d>f0?'miss':''} ${d===t?'today':''} ${d===cur?'cur':''}" title="${esc(pimgLabel(d))}${saved.has(d)?' — 저장됨, 눌러서 수정':' — 미입력, 눌러서 입력'}">${esc(dPlus(d))}<small>${esc(sMD(d))}${saved.has(d)?' ✓':' ·미입력'}</small></button>`).join('')}</div>
+    <div class="pm-hint">빨간 날은 아직 입력 안 한 날 — 누르면 그 전날 상태를 불러와 고칠 수 있습니다</div></div>`;
+}
 function pmBaseFor(day){ // 그 날짜 기록, 없으면 그 전 마지막 기록, 없으면 전부 유용
   const ex=pmList.find(x=>x.day===day); if(ex) return pmNorm(ex.data.states);
   const prev=pmList.filter(x=>x.day<day).pop(); return prev?pmNorm(prev.data.states):PM_DEFAULT(); }
@@ -4888,7 +4960,7 @@ function pmRender(box){
   if(pmEdit){ // ---- 관리자 편집 ----
     const st=pmEdit.states, sel=pmSel||[], same=sel.length&&sel.every(i=>st[i]===st[sel[0]])?st[sel[0]]:null;
     box.innerHTML=`<div class="pimg-h">${pimgTabs()}<small>✎ 편집 · ${esc(pimgLabel(pmEdit.day))}</small></div>
-      <div class="pimg-adm" style="border:none;margin:0;padding:4px 0 0"><input type="date" id="pmDay" value="${pmEdit.day}"><button class="mini-btn" id="pmZoomBtn" style="background:var(--ink);color:#fff">🔍 크게 보고 칠하기</button><span class="pm-hint">부위를 눌러 상태를 고르세요</span></div>
+      <div class="pimg-adm" style="border:none;margin:0;padding:4px 0 0"><select id="pmDay" class="pm-dsel">${pmDayList(pmEdit.day).reverse().map(d=>`<option value="${d}" ${d===pmEdit.day?'selected':''}>${esc(dPlus(d))} · ${esc(sMD(d))}(${'일월화수목금토'[new Date(d+'T00:00:00Z').getUTCDay()]})${pmList.some(y=>y.day===d)?' ✓ 저장됨':' — 미입력'}${d===pimgToday()?' · 오늘':''}</option>`).join('')}</select><button class="mini-btn" id="pmZoomBtn" style="background:var(--ink);color:#fff">🔍 크게 보고 칠하기</button><span class="pm-hint">부위를 눌러 상태를 고르세요</span></div>
       <div class="pm-wrap">${pmSvg(st,pmSel,true)}</div>
       <div class="pm-pick">${sel.length?`<b>${esc(pmSelName)}</b>${PM_ORDER.map(k=>`<button class="${same===k?'on':''}" data-pst="${k}"><i class="pm-sw ${k}"></i>${PM_ST[k][0]}</button>`).join('')}`:'<span class="pm-hint">↑ 실선으로 나뉜 칸(철피·Stave·내화물·Bunker 등)을 누르세요. 왼쪽 Shell 이름을 누르면 그 층 좌우 칸을 한꺼번에 고릅니다</span>'}</div>
       <div class="pimg-note">${pmCounts(st)}</div>
@@ -4901,7 +4973,7 @@ function pmRender(box){
     box.querySelectorAll('[data-pmg]').forEach(g=>g.onclick=()=>{ const G=PM_GROUPS[g.dataset.pmg]; pmSel=[...G.ids]; pmSelName=`${G.name} 전체 (${G.ids.length}칸)`; pimgRender(); });
     box.querySelectorAll('[data-pst]').forEach(b=>b.onclick=()=>{ (pmSel||[]).forEach(i=>{ st[i]=b.dataset.pst; }); pimgRender(); });
     $('pmDay').onchange=e=>{ const d=e.target.value; if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; const ex=pmList.find(x=>x.day===d);
-      pmEdit={day:d,states:pmBaseFor(d),note:ex?ex.data.note||'':''}; pimgRender(); };
+      pmEdit={day:d,states:pmBaseFor(d),note:ex?ex.data.note||'':''}; pmSel=null; pimgRender(); toast(`${dPlus(d)} ${ex?'저장된 상태를 불러왔습니다':'미입력 — 그 전날 상태에서 시작합니다'}`); };
     $('pmNote').oninput=e=>{ pmEdit.note=e.target.value; };
     $('pmCancel').onclick=()=>{ pmZoomClose(); pmEdit=null; pmSel=null; pimgRender(); };
     $('pmSave').onclick=async()=>{ try{ const r=await kApi('progress-map',{day:pmEdit.day,data:{states:pmEdit.states,note:pmEdit.note||''}});
@@ -4921,6 +4993,7 @@ function pmRender(box){
     ${n?`<div class="pimg-ctl"><button class="mini-btn" data-pm2="prev" ${pmIdx<=0?'disabled':''}>◀</button><button class="mini-btn" data-pm2="play">${pmTimer?'⏸ 멈춤':'▶ 추이 재생'}</button>
       <input type="range" min="0" max="${n-1}" value="${pmIdx}" data-pm2="range" ${n<2?'disabled':''}><button class="mini-btn" data-pm2="next" ${pmIdx>=n-1?'disabled':''}>▶</button><span class="cnt">${pmIdx+1}/${n}</span></div>`:''}
     ${n>1?`<div class="pimg-days">${pmList.map((y,i)=>`<button class="${i===pmIdx?'on':''}" data-pmd="${i}">${esc(dPlus(y.day))}</button>`).join('')}</div>`:''}
+    ${ed?pmDayPickHtml(x&&x.day):''}
     ${ed?`<div class="pimg-adm">${pmList.some(y=>y.day===pimgToday())?`<span class="pm-hint">✓ 오늘(${esc(dPlus(pimgToday()))}) 저장됨</span>`:pmList.some(y=>y.day<pimgToday())?`<button class="mini-btn" id="pmSame" style="background:#2b8a3e;color:#fff">✓ 오늘(${esc(dPlus(pimgToday()))}) 직전과 동일 확정</button>`:''}<button class="mini-btn" id="pmEditToday">✎ 오늘(${esc(dPlus(pimgToday()))}) 상태 편집</button>${x?`<button class="mini-btn" id="pmEditThis">✎ ${esc(dPlus(x.day))} 고치기</button>`:''}</div>`:''}`;
   pimgBindTabs(box);
   box.querySelectorAll('[data-pm2]').forEach(el=>{ const k=el.dataset.pm2;
@@ -4934,6 +5007,8 @@ function pmRender(box){
     if(!confirm(`${pimgLabel(d)} 모식도를 ${pimgLabel(last.day)}와 똑같이 확정할까요?`)) return;
     try{ await kApi('progress-map',{day:d,data:{states:pmNorm(last.data.states),note:`변동 없음 (${dPlus(last.day)}와 동일)`}}); toast(`${pimgLabel(d)} 확정 — ${dPlus(last.day)}와 동일`); pmStop(); await pmLoad(d); }catch(e){ toast(kErr(e)); } };
   if($('pmEditThis')) $('pmEditThis').onclick=()=>startEdit(x.day);
+  box.querySelectorAll('[data-pmed]').forEach(b=>b.onclick=()=>startEdit(b.dataset.pmed));
+  const dOn=box.querySelector('.pm-dchips .cur'); if(dOn) dOn.scrollIntoView({block:'nearest',inline:'center'});
   box.querySelector('.pm-wrap').onclick=()=>{ pmStop(); const s=box.querySelector('.pm-svg').outerHTML;
     $('pimgFI').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s); $('pimgFI').style.background='#fff';
     $('pimgFT').textContent=(x?pimgLabel(x.day)+' · ':'')+pmCounts(st); $('pimgFC').innerHTML=''; $('pimgModal').classList.add('show'); };
@@ -5282,6 +5357,35 @@ function sGanttView(){
   $('gAddAct').style.display=isEditor()?'':'none';
   if(sGv==='gantt') sGantt(); else if(sGv==='list') sList(); else if(sGv==='look') sLook(); else sConfig();
 }
+/* v6.26: 간트 이벤트 아이콘 — 공정 이름의 낱말로 종류를 정해 막대 시작점에 그림을 붙임(직접 그린 SVG). 앞 규칙이 우선 */
+const S_EV_SVG={
+  blast:'<svg viewBox="0 0 24 24"><rect x="4" y="9" width="4.2" height="12" rx="1.2" fill="#e03131"/><rect x="9.9" y="9" width="4.2" height="12" rx="1.2" fill="#c92a2a"/><rect x="15.8" y="9" width="4.2" height="12" rx="1.2" fill="#e03131"/><rect x="3.5" y="13" width="17" height="2.4" fill="#495057"/><path d="M12 9C12 6 14 5 16 4.5" stroke="#495057" stroke-width="1.3" fill="none"/><path d="M18 1l.8 2 2.1-.4-1.4 1.6 1.1 1.8-2-.7-1.2 1.7-.1-2.1-2-.7 2-.6z" fill="#fab005"/></svg>',
+  drill:'<svg viewBox="0 0 24 24"><rect x="8.5" y="1.5" width="7" height="5" rx="1" fill="#495057"/><path d="M9.5 6.5h5l-.7 4h-3.6zM10.3 10.5h3.4l-.6 4h-2.2zM10.9 14.5h2.2L12 22.5z" fill="#adb5bd" stroke="#495057" stroke-width=".7"/><path d="M9.7 9l4.6-1.8M10.4 13l3.2-1.4M11 17l2-1" stroke="#495057" stroke-width=".8"/></svg>',
+  deck:'<svg viewBox="0 0 24 24"><rect x="2" y="13" width="20" height="3.2" rx=".6" fill="#f08c00"/><path d="M4 13V5.5M12 13V5.5M20 13V5.5M4 6.5h16M4 9.8h16" stroke="#2b8a3e" stroke-width="1.7"/><path d="M5 16.2v5.3M19 16.2v5.3" stroke="#868e96" stroke-width="1.8"/></svg>',
+  muck:'<svg viewBox="0 0 24 24"><path d="M3 11h14l-2.2 10H5.2z" fill="#4c6ef5"/><circle cx="7" cy="10" r="2.1" fill="#343a40"/><circle cx="10.8" cy="9" r="2.5" fill="#495057"/><circle cx="14.4" cy="10" r="1.9" fill="#343a40"/><path d="M20 10V2.5m0 0l-2.4 2.4M20 2.5l2.4 2.4" stroke="#2b8a3e" stroke-width="1.9" fill="none" stroke-linecap="round"/></svg>',
+  demo:'<svg viewBox="0 0 24 24"><path d="M3 22V8" stroke="#495057" stroke-width="2"/><path d="M3 8.5L15 2.5" stroke="#f59f00" stroke-width="2.2"/><path d="M14.5 3v7.5" stroke="#495057" stroke-width="1.2" stroke-dasharray="1.4 .8"/><circle cx="14.5" cy="13.5" r="3.3" fill="#343a40"/><rect x="18.8" y="12" width="3.2" height="3" fill="#d9480f"/><rect x="19.4" y="16.2" width="3" height="3" fill="#e8590c" transform="rotate(12 21 17.7)"/><rect x="15.6" y="18.6" width="2.6" height="2.6" fill="#d9480f" transform="rotate(-15 17 20)"/></svg>',
+  brick:'<svg viewBox="0 0 24 24"><g fill="#d9480f" stroke="#fff" stroke-width=".9"><rect x="2" y="4.5" width="9" height="5"/><rect x="11" y="4.5" width="11" height="5"/><rect x="2" y="9.5" width="5" height="5"/><rect x="7" y="9.5" width="9" height="5"/><rect x="16" y="9.5" width="6" height="5"/><rect x="2" y="14.5" width="9" height="5"/><rect x="11" y="14.5" width="11" height="5"/></g></svg>',
+  water:'<svg viewBox="0 0 24 24"><path d="M12 2C8 8 5 11.5 5 15a7 7 0 0014 0c0-3.5-3-7-7-13z" fill="#339af0"/><path d="M8.8 15a3.2 3.2 0 003.2 3.2" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>',
+  tap:'<svg viewBox="0 0 24 24"><path d="M2.5 5h11.5l-1.6 8.5H4.2z" fill="#495057"/><path d="M4.3 7.2h9.2" stroke="#ff922b" stroke-width="2.2"/><path d="M14 7.2c3.4 0 4.6 3 4.6 6.4V22" stroke="#fd7e14" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg>',
+  crane:'<svg viewBox="0 0 24 24"><path d="M4.5 22V3h15" stroke="#f59f00" stroke-width="2.2" fill="none"/><path d="M4.5 7.5L9 3" stroke="#f59f00" stroke-width="1.6"/><path d="M16 3v6" stroke="#495057" stroke-width="1.2"/><path d="M16 9.2a1.8 1.8 0 11-1.8 1.8" stroke="#495057" stroke-width="1.5" fill="none"/><rect x="11" y="15" width="10" height="5" rx=".8" fill="#1c7ed6"/></svg>',
+  gauge:'<svg viewBox="0 0 24 24"><rect x="10.5" y="1.5" width="3" height="3" fill="#495057"/><circle cx="12" cy="13" r="8.2" fill="#fff" stroke="#495057" stroke-width="1.9"/><path d="M7 13h1.6M15.4 13H17M12 7.6v1.6" stroke="#495057" stroke-width="1.3"/><path d="M12 13l3.8-3.8" stroke="#e03131" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="13" r="1.2" fill="#495057"/></svg>',
+  fire:'<svg viewBox="0 0 24 24"><path d="M12 1.8c1 4.2 5.4 6.2 5.4 11.4a5.4 5.4 0 01-10.8 0c0-2.6 1.6-4.2 2.6-5.2.2 2.1 1.3 3.2 2.1 3.4C10.8 8.4 10.9 5 12 1.8z" fill="#f76707"/><path d="M12 13.2c.5 1.5 2.1 2 2.1 3.6a2.1 2.1 0 01-4.2 0c0-1 .7-1.8 1-2.1.3.8.8 1 1.1.9z" fill="#ffd43b"/></svg>'
+};
+// v6.26.0: 아이콘은 ① 공정 창에서 직접 고른 공정(a.icon) ② 공정명에 [발파]처럼 대괄호 명령어를 넣은 공정에만(사용자: 너무 많으면 산만)
+const S_EV_RULES=[['blast',/발파/,'발파'],['demo',/철거|해체/,'철거·해체'],['muck',/소출/,'소출'],['deck',/deck|데크/i,'Deck 설치'],['drill',/천공/,'천공'],
+  ['brick',/축조|연와/,'연와 축조'],['water',/주수|냉각/,'주수냉각'],['tap',/출선/,'출선'],['gauge',/leak|누설/i,'Leak Test'],['fire',/화입/,'화입'],['crane',/양중|설치/,'설치(양중)']];
+const S_EV_NAME=Object.fromEntries(S_EV_RULES.map(([k,,t])=>[k,t]));
+function sEvOf(a){
+  if(!a) return null;
+  if(a.icon&&S_EV_SVG[a.icon]) return {k:a.icon,t:S_EV_NAME[a.icon]};
+  const tags=[...String(a.name||'').matchAll(/\[([^\]]+)\]/g)].map(m=>m[1]).join(' '); if(!tags) return null;
+  const r=S_EV_RULES.find(([,re])=>re.test(tags)); return r?{k:r[0],t:r[2]}:null;
+}
+function sEvLegend(){ const used=new Set(sPlan.acts.map(a=>(sEvOf(a)||{}).k).filter(Boolean));
+  return S_EV_RULES.filter(([k])=>used.has(k)).map(([k,,t])=>`<span>${S_EV_SVG[k]}${t}</span>`).join(''); }
+let sIcon='';
+function sIconRender(){ $('aIcon').innerHTML=`<button data-ic="" class="${sIcon?'':'on'}">없음${/\[[^\]]+\]/.test($('aName').value)?' (이름의 [ ]로)':''}</button>`+S_EV_RULES.map(([k,,t])=>`<button data-ic="${k}" class="${sIcon===k?'on':''}">${S_EV_SVG[k]}${t}</button>`).join('');
+  $('aIcon').querySelectorAll('[data-ic]').forEach(b=>b.onclick=()=>{ sIcon=b.dataset.ic; sIconRender(); }); }
 // 간트: 하루 = sZoom px, 날짜 축(휴일도 칸을 차지하고 빗금 표시). 라벨 열·머리 줄은 sticky
 function sGantt(){
   const C=sCalc, dw=sZoom, LW=172;
@@ -5312,9 +5416,11 @@ function sGantt(){
       const isCrit=r.crit||r.critPast, done=/^done/.test(r.state);
       const hf=sHalf(a), L=xs(sDate(r.es))+hf.s*dw, Wd=xs(sDate(r.ef))-xs(sDate(r.es))+dw-(hf.s+hf.f)*dw;
       const pct=done?100:r.state==='run'&&ac&&ac.pct!=null?ac.pct:r.state==='run*'?Math.round((r.dur-r.rem)/r.dur*100):0;
-      rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)} (${sDurTxt(a)})"><small class="gid">${a.id}</small><span class="gnm">${esc(a.name)}</span><span class="gdur">(${sDurTxt(a)})</span></div><div class="s-gt" style="width:${W}px">
+      const ev=sEvOf(a);
+      rows+=`<div class="s-gr" data-act="${a.id}"><div class="s-gl" title="${esc(a.name)} (${sDurTxt(a)})${ev?' · '+ev.t:''}"><small class="gid">${a.id}</small>${ev?`<span class="s-gic">${S_EV_SVG[ev.k]}</span>`:''}<span class="gnm">${esc(a.name)}</span><span class="gdur">(${sDurTxt(a)})</span></div><div class="s-gt" style="width:${W}px">
         ${b?`<div class="s-gbase" style="left:${xs(sDate(b[0]))}px;width:${xs(sDate(b[1]))-xs(sDate(b[0]))+dw}px"></div>`:''}
         <div class="s-gb ${done?'done':isCrit?'crit':''}" style="left:${L}px;width:${Wd}px" title="${esc(a.name)} ${sMD(sDate(r.es))}${hf.s?' 오후':''}~${sMD(sDate(r.ef))}${hf.f?' 오전':''} · 여유 ${r.tf}"><i class="pf" style="width:${pct}%"></i>${Wd>=30?`<span>${sDurTxt(a)}</span>`:''}</div>
+        ${ev?`<span class="s-gev" style="left:${Math.max(0,L-11)}px" title="${esc(ev.t)}">${S_EV_SVG[ev.k]}</span>`:''}
         ${vv&&vv.df?`<span class="s-vtag ${vv.df>0?'late':'early'}" style="left:${L+Wd+3}px">${sVarShort(vv.df)}</span>`:''}</div></div>`; });
   });
   $('gant').style.width=(LW+W)+'px';
@@ -5322,6 +5428,7 @@ function sGantt(){
   $('gant').querySelectorAll('[data-ph]').forEach(e=>e.onclick=ev=>{ ev.stopPropagation(); sCollapsed[e.dataset.ph]=!sCollapsed[e.dataset.ph]; sGantt(); });
   $('gant').querySelectorAll('.s-gr[data-act]').forEach(e=>e.onclick=()=>sEdit(e.dataset.act));
   $('gWrap').scrollLeft=Math.max(0,x(sdN)-60);
+  if($('gEvLg')) $('gEvLg').innerHTML=sEvLegend();
 }
 function sList(){
   const C=sCalc;
@@ -5521,6 +5628,7 @@ function sEdit(id){
   sHowMode(a?(a.fix?'date':'dur'):'date');
   $('aPhase').innerHTML=S_PHASES.map(p=>`<option value="${p.id}" ${a&&a.phase===p.id?'selected':''}>${p.name}</option>`).join('');
   $('aCls').innerHTML='<option value="">— Class 고르기 —</option>'+Object.keys(CLASS_NAMES).map(c=>`<option value="${c}" ${a&&a.cls===c?'selected':''}>${c} ${CLASS_NAMES[c]}</option>`).join('');
+  sIcon=a&&a.icon||''; sIconRender();
   $('aPreds').innerHTML=''; $('aSuccs').innerHTML='';
   (a?a.preds||[]:[]).forEach(p=>sPredRow('aPreds',p));
   if(!a) sPredRow('aPreds',null);
@@ -5645,7 +5753,7 @@ async function sSaveEdit(){
   if(!$('aCls').value){ toast('설비 Class를 고르세요 (1000~9000)'); $('aCls').focus(); return; }
   const preds=fix?[]:sReadRows('aPreds'), succs=sReadRows('aSuccs');
   const old=sEditId?sA(sEditId):null;
-  const planChanged=!old||old.name!==name||old.dur!==dur||JSON.stringify(old.fix||null)!==JSON.stringify(fix)||old.phase!==$('aPhase').value||(old.cls||'')!==$('aCls').value||JSON.stringify(old.preds||[])!==JSON.stringify(preds)
+  const planChanged=!old||old.name!==name||old.dur!==dur||(old.icon||'')!==sIcon||JSON.stringify(old.fix||null)!==JSON.stringify(fix)||old.phase!==$('aPhase').value||(old.cls||'')!==$('aCls').value||JSON.stringify(old.preds||[])!==JSON.stringify(preds)
     ||JSON.stringify(sPlan.acts.filter(s=>(s.preds||[]).some(p=>p.id===old.id)).map(s=>s.id).sort())!==JSON.stringify(succs.map(s=>s.id).sort());
   const btn=$('aSave'); btn.disabled=true;
   try{
@@ -5653,7 +5761,7 @@ async function sSaveEdit(){
       const snapshot=JSON.stringify(sPlan);
       const id=old?old.id:'A'+(sPlan.seq||500);
       if(!old) sPlan.seq=(sPlan.seq||500)+10;
-      const a=old||{id,cp:false}; Object.assign(a,{name,dur,phase:$('aPhase').value,cls:$('aCls').value,preds}); if(fix) a.fix=fix; else delete a.fix;
+      const a=old||{id,cp:false}; Object.assign(a,{name,dur,phase:$('aPhase').value,cls:$('aCls').value,preds}); if(fix) a.fix=fix; else delete a.fix; if(sIcon) a.icon=sIcon; else delete a.icon;
       if(!old) sPlan.acts.push(a);
       sPlan.acts.forEach(s=>{ if(s.id===id) return; s.preds=(s.preds||[]).filter(p=>p.id!==id); const m=succs.find(x=>x.id===s.id); if(m) s.preds.push({id,type:m.type,lag:m.lag}); });
       const test=sRun(sPlan,sAct); if(test.cyc){ sPlan=JSON.parse(snapshot); toast('선후행이 순환합니다(서로가 서로의 선행) — 저장하지 않았습니다'); return; }
