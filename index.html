@@ -590,6 +590,13 @@ table.s-t tr[data-act]{cursor:pointer}
 @keyframes dDueBlink{50%{background:#ffe3e3}}
 .sa-card.due{background:linear-gradient(160deg,#fff 0%,#fff0f0 100%)}
 .sa-card.due .sa-msg{color:#c92a2a}
+/* v6.28: 지난 날짜 올리기 · 기간별 엑셀 출력 */
+.dp-day{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0;padding:8px 10px;border:1px dashed #74c0fc;border-radius:10px;background:#f1f8ff}
+.dp-day input{font:inherit;font-weight:800;border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:#fff}
+.dp-day .dplus{font-weight:900}
+.dx-row{display:flex;gap:8px;margin-top:8px}
+.dx-row label{flex:1;display:flex;flex-direction:column;gap:3px;font-size:.72rem;font-weight:800;color:var(--steel)}
+.dx-q{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 2px}
 .dh .dplus{background:rgba(255,255,255,.2);color:#fff}
 .dh-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
 @media(max-width:520px){ .dh-kpi{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -1120,7 +1127,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   <div class="card paste-hint" id="dLockNote" style="display:none;margin-top:4px">🔒 일일작업 올리기·수정·삭제는 관리자만 할 수 있습니다. <button class="mini-btn" onclick="openAdminLogin()">관리자 로그인</button> · 올라온 내용은 누구나 볼 수 있습니다.</div>
   <div class="card" id="dUpCard" style="margin-top:4px">
     <div class="sec-t" style="margin-bottom:6px">금일·명일 작업 올리기</div>
-    <div class="paste-hint">매일 받는 'SD 공사 일일작업' 표를 붙여넣으세요. <b>엑셀로 붙이기</b>는 엑셀에서 표 범위를 복사해 그대로, <b>이미지로 붙이기</b>는 캡쳐·사진을 붙이면 AI가 표를 읽어 금일·명일 작업을 정리합니다. 같은 날짜를 다시 올리면 새 내용으로 바뀝니다.</div>
+    <div class="paste-hint">매일 받는 'SD 공사 일일작업' 표를 붙여넣으세요. <b>엑셀로 붙이기</b>는 엑셀에서 표 범위를 복사해 그대로, <b>이미지로 붙이기</b>는 캡쳐·사진을 붙이면 AI가 표를 읽어 금일·명일 작업을 정리합니다. 같은 날짜를 다시 올리면 새 내용으로 바뀝니다. <b>지난 날짜 표</b>도 붙여넣은 뒤 저장 전에 날짜(D+)를 골라 올릴 수 있습니다.</div>
     <div class="k-seg m-mode" id="dModes"><button class="on" data-dm="excel">📊 엑셀로 붙이기</button><button data-dm="image">🖼️ 이미지로 붙이기</button></div>
     <div class="m-zone" id="dZone" contenteditable="true" spellcheck="false"></div>
     <div class="btn-row" id="dImgBtns" style="display:none;margin-top:6px">
@@ -1130,6 +1137,13 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
     <div class="paste-hint" id="dStatus" style="margin-top:8px"></div>
     <div id="dPrev"></div>
   </div>
+  <details class="card" id="dEx" style="margin-top:10px"><summary class="sec-t" style="cursor:pointer;margin:0">📤 기간별 엑셀 출력 <small style="font-weight:600;color:var(--steel);font-size:.7rem">금일(실제) 작업 기준</small></summary>
+    <div class="paste-hint" style="margin-top:6px">D+ 범위를 고르면 그 기간에 올린 일일작업의 <b>금일 작업</b>을 엑셀 파일로 받습니다. <b>간트형</b>은 같은 작업을 날짜끼리 이어 Actual 공정표처럼 막대로, <b>목록형</b>은 날짜마다 그날 작업을 세로로 나열합니다.</div>
+    <div class="dx-row"><label>시작<select id="dxFrom" class="f-input"></select></label><label>끝<select id="dxTo" class="f-input"></select></label></div>
+    <div class="dx-q"><button class="mini-btn" data-dxq="7">최근 7일</button><button class="mini-btn" data-dxq="14">최근 14일</button><button class="mini-btn" data-dxq="30">최근 30일</button><button class="mini-btn" data-dxq="all">처음부터</button></div>
+    <div class="btn-row"><button class="btn primary" id="dxG">📊 간트형 받기</button><button class="btn ghost" id="dxL">📋 목록형 받기</button></div>
+    <div class="paste-hint" id="dxMsg" style="margin-top:6px"></div>
+  </details>
   <div id="dDayChips" class="date-chips" style="margin-top:12px"></div>
   <div id="dBody"></div>
 </div>
@@ -1659,7 +1673,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.27.0',
+  version : '6.28.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4562,6 +4576,9 @@ setInterval(()=>saCheck(),60e3);
 /* v6.26.0 새 기능 공지 — 앱을 열면(누구나) 이 기기에서 아직 안 본 버전의 바뀐 점을 가운데 카드로 한 번 보여 주고, 누르면 닫힘.
    새로 배포할 때 맨 위에 {v,d,items:[[아이콘,제목,설명]]}를 추가하면 됨. 처음 쓰는 기기는 최신 1건만. */
 const WHATS_NEW=[
+  {v:'6.28.0',d:'11/26',items:[
+    ['📅','지난 날짜 일일작업 올리기','표를 붙여넣은 뒤 저장 전에 날짜(D+)를 골라 빠뜨린 날도 올릴 수 있습니다'],
+    ['📤','기간별 엑셀 출력','일일작업 탭 아래 — D+ 범위를 골라 금일 작업을 간트형(Actual 공정표) 또는 날짜별 목록형 엑셀로 받습니다']]},
   {v:'6.27.0',d:'11/26',items:[
     ['📅','오늘(TODAY) 기준 표시','일일작업의 금일·명일이 오늘 날짜 기준으로 바뀝니다 — 어제 올린 표는 금일→전일, 명일→금일'],
     ['🚨','오늘 일일작업 알림','오늘 표가 아직 없으면 일일작업 탭에 빨간 안내, 관리자·부관리자는 앱을 열 때 하루 한 번 알림']]},
@@ -5906,7 +5923,7 @@ async function dAnalyzeImage(dataUrl){
   if(!r.ok) throw Object.assign(new Error(r.error),{data:r});
   const an=dFromAi(r.result);
   if(!an.today.length&&!an.tomorrow.length) throw new Error('작업을 찾지 못했습니다 — 표가 잘 보이게 다시 캡쳐해 주세요');
-  await dSave('image',{img:p.store,w:p.w,h:p.h},an,'ai');
+  dPreview('image',{img:p.store,w:p.w,h:p.h},an,'ai'); // v6.28: 이미지도 저장 전에 날짜 확인·선택
 }
 /* v6.24: 붙여넣기 단계별 오류 안내 + 진단 줄(회사 PC에서 안 될 때 어디서 막혔는지 화면만 보고 알 수 있게) */
 let dDiag=null;
@@ -5972,6 +5989,7 @@ async function dLoad(){
   $('dDayChips').innerHTML=dList.slice(0,40).map(x=>`<button class="dchip ${x.day===dSel?'on':''}" data-dd="${x.day}">${x.day===rToday()?'오늘':sMD(x.day)} <small class="dplus">${dPlus(x.day)}</small><span class="dc-cnt">${(x.analysis&&x.analysis.today||[]).length}</span></button>`).join('');
   $('dDayChips').querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{ dSel=b.dataset.dd; dEditDay=null; dLoad(); });
   dDueRender(dList[0]&&dList[0].day);
+  dxInit();
   const delHtml=isEditor()&&dDeleted.length?`<div class="card paste-hint" style="margin-top:10px">🗑 삭제한 일일작업: ${dDeleted.map(x=>`<b>${sMD(x.day)} ${dPlus(x.day)}</b> <button class="mini-btn" data-undo="${x.day}">↩ 되돌리기</button>`).join(' · ')}</div>`:'';
   const it=dList.find(x=>x.day===dSel);
   if(!it) $('dBody').innerHTML=delHtml+'<div class="k-empty" style="margin-top:10px">아직 올린 일일작업이 없습니다. 위 칸에 표를 붙여넣으세요.</div>';
@@ -6007,6 +6025,135 @@ async function dDueCheck(tries){
 }
 setTimeout(()=>dDueCheck(0),2600);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') setTimeout(()=>dDueCheck(0),800); });
+/* v6.28: 기간별 일일작업 엑셀 출력 — 금일(실제) 작업 기준
+   ① 간트형: 날짜순으로 작업을 채우고, 같은 작업(같은 업체 + 작업명 절반 이상 같음)은 다음 날과 이어 Actual 공정표처럼 막대로
+   ② 목록형: 날짜마다 그날 작업을 세로로 나열
+   xlsx는 외부 라이브러리 없이 직접 만든다(회사망에서 CDN이 막혀도 되게) — 압축 없는 zip */
+const xZip=(()=>{ const T=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; T[n]=c>>>0; }
+  const crc=b=>{ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=T[(c^b[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+  return files=>{ const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+    files.forEach(([name,str])=>{ const nm=enc.encode(name), data=enc.encode(str), c=crc(data);
+      const h=new DataView(new ArrayBuffer(30)); h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(12,0x21,true);
+      h.setUint32(14,c,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,nm.length,true);
+      const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(14,0x21,true);
+      ch.setUint32(16,c,true); ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true); ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
+      parts.push(h.buffer,nm,data); cen.push(ch.buffer,nm); off+=30+nm.length+data.length; });
+    const cl=cen.reduce((s,x)=>s+x.byteLength,0), e=new DataView(new ArrayBuffer(22));
+    e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cl,true); e.setUint32(16,off,true);
+    return new Blob([...parts,...cen,e.buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); };
+})();
+function xBook(){
+  const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+  const col=n=>{ let s=''; n++; while(n){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
+  const xf=[], xk={}, fonts=['<font><sz val="10"/><name val="맑은 고딕"/></font>'], fk={'0|10|':0},
+    fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'], flk={}, sheets=[];
+  // 스타일 {b:굵게, sz:크기, c:글자색, f:칸색, bd:테두리, h:가로정렬, v:세로정렬, w:줄바꿈}
+  const S=o=>{ o=o||{}; const k=JSON.stringify(o); if(k in xk) return xk[k];
+    const fkey=[o.b?1:0,o.sz||10,o.c||''].join('|'); let fi=fk[fkey];
+    if(fi==null){ fi=fk[fkey]=fonts.length; fonts.push(`<font>${o.b?'<b/>':''}<sz val="${o.sz||10}"/>${o.c?`<color rgb="FF${o.c}"/>`:''}<name val="맑은 고딕"/></font>`); }
+    let fl=0; if(o.f){ fl=flk[o.f]; if(fl==null){ fl=flk[o.f]=fills.length; fills.push(`<fill><patternFill patternType="solid"><fgColor rgb="FF${o.f}"/><bgColor indexed="64"/></patternFill></fill>`); } }
+    const al=`<alignment${o.h?` horizontal="${o.h}"`:''} vertical="${o.v||'center'}"${o.w?' wrapText="1"':''}/>`;
+    xf.push(`<xf numFmtId="0" fontId="${fi}" fillId="${fl}" borderId="${o.bd?1:0}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">${al}</xf>`);
+    return xk[k]=xf.length; };
+  // rows: [[{v,s}|문자|숫자|null…]…] · o: {cols:[너비…], fx,fy(틀 고정), ht:{행번호(0부터):높이}, merge:['A1:H1']}
+  const add=(name,rows,o)=>{ o=o||{};
+    const sd=rows.map((r,i)=>{ const cs=(r||[]).map((c,j)=>{ if(c==null) return ''; if(typeof c!=='object') c={v:c};
+        const ref=col(j)+(i+1), s=c.s?` s="${c.s}"`:'';
+        if(typeof c.v==='number') return `<c r="${ref}"${s}><v>${c.v}</v></c>`;
+        if(c.v==null||c.v==='') return s?`<c r="${ref}"${s}/>`:'';
+        return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${xe(c.v)}</t></is></c>`; }).join('');
+      const ht=o.ht&&o.ht[i]; return `<row r="${i+1}"${ht?` ht="${ht}" customHeight="1"`:''}>${cs}</row>`; }).join('');
+    const fx=o.fx||0, fy=o.fy||0;
+    const pane=fx||fy?`<pane${fx?` xSplit="${fx}"`:''}${fy?` ySplit="${fy}"`:''} topLeftCell="${col(fx)}${fy+1}" activePane="${fx&&fy?'bottomRight':fx?'topRight':'bottomLeft'}" state="frozen"/>`:'';
+    sheets.push({name:String(name).replace(/[\[\]:*?\/\\]/g,' ').slice(0,31),xml:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="16.5"/>${o.cols?`<cols>${o.cols.map((w,j)=>`<col min="${j+1}" max="${j+1}" width="${w}" customWidth="1"/>`).join('')}</cols>`:''}<sheetData>${sd}</sheetData>${o.merge&&o.merge.length?`<mergeCells count="${o.merge.length}">${o.merge.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>`:''}</worksheet>`}); };
+  const blob=()=>{ const M='http://schemas.openxmlformats.org', bd=`<left style="thin"><color rgb="FFCED4DA"/></left><right style="thin"><color rgb="FFCED4DA"/></right><top style="thin"><color rgb="FFCED4DA"/></top><bottom style="thin"><color rgb="FFCED4DA"/></bottom><diagonal/>`;
+    return xZip([
+      ['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="${M}/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+      ['_rels/.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${M}/package/2006/relationships"><Relationship Id="rId1" Type="${M}/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+      ['xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="${M}/spreadsheetml/2006/main" xmlns:r="${M}/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${xe(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`],
+      ['xl/_rels/workbook.xml.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${M}/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="${M}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="${M}/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+      ['xl/styles.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="${M}/spreadsheetml/2006/main"><fonts count="${fonts.length}">${fonts.join('')}</fonts><fills count="${fills.length}">${fills.join('')}</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border>${bd}</border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xf.length+1}"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>${xf.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+      ...sheets.map((s,i)=>[`xl/worksheets/sheet${i+1}.xml`,s.xml])]); };
+  const save=fname=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob()); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },3000); };
+  return {S,add,blob,save,col};
+}
+const DX_CLS={1:'FFD8A8',2:'FFEC99',3:'B2F2BB',4:'A5D8FF',5:'D0BFFF',6:'FCC2D7',7:'99E9F2',8:'D8F5A2',9:'DEE2E6'}; // Class 앞자리(1000 본체 … 9000 Utility)별 막대 색
+const dxColor=c=>DX_CLS[String(c||'').trim()[0]]||'BAC8FF';
+const dxDays=(a,b)=>{ const o=[]; for(let t=sT(a);t<=sT(b);t+=sDAY) o.push(sISO(t)); return o; };
+const dxHd=d=>`${sMD(d)}(${dWd(d)})`;
+// 같은 작업 잇기: 앞 날짜에서 이어 온 작업(4일 안에 마지막으로 보인 것) 중 같은 업체 + 작업명 비슷한 것에 붙임. 없으면 새 줄
+function dxChains(days,recs){
+  const ch=[];
+  days.forEach(d=>{ const an=recs[d]; if(!an) return;
+    const live=ch.filter(c=>(sT(d)-sT(c.last))/sDAY<=4);
+    (an.today||[]).forEach(x=>{ if(!x||!x.task) return;
+      let best=null, bs=0; live.forEach(c=>{ if(c.last===d||dCo(c.company)!==dCo(x.company)) return; const s=dSim(x.task,c.task); if(s>bs){ bs=s; best=c; } });
+      if(best&&bs>=0.5){ best.cells[d]=x; best.last=d; best.task=x.task; best.n++; if(!best.cls&&x.cls) best.cls=x.cls; }
+      else ch.push({first:d,last:d,company:x.company||'',cls:x.cls||'',name:x.task,task:x.task,n:1,cells:{[d]:x}}); }); });
+  return ch;
+}
+function dxBuild(mode,from,to,recs){
+  const days=dxDays(from,to), B=xBook(), S=B.S, has=d=>!!recs[d], W=d=>new Date(sT(d)).getUTCDay();
+  const nDays=days.filter(has).length, tN=d=>((recs[d]&&recs[d].today)||[]).filter(x=>x&&x.task).length;
+  const title=`G2R2 일일작업 — ${mode==='g'?'Actual 공정표 (간트형)':'날짜별 작업 목록'} · ${dPlus(from)} ~ ${dPlus(to)} (${sMD(from)} ~ ${sMD(to)})`;
+  const sT1=S({b:1,sz:14}), sNote=S({sz:9,c:'868E96'}), sH=S({b:1,f:'343A40',c:'FFFFFF',h:'center',bd:1}), sHl=S({b:1,f:'343A40',c:'FFFFFF',bd:1});
+  const sHd=d=>S({b:1,sz:9,f:has(d)?(d===rToday()?'FFE3E3':'F1F3F5'):'DEE2E6',c:W(d)===0?'E03131':W(d)===6?'1C7ED6':'495057',h:'center',bd:1});
+  const made=`출력 ${rToday()} · 올린 날 ${nDays}일 / 기간 ${days.length}일 · 금일(실제) 작업 기준`;
+  if(mode==='g'){
+    const ch=dxChains(days,recs).sort((a,b)=>a.first<b.first?-1:a.first>b.first?1:String(a.cls).localeCompare(String(b.cls))||dCo(a.company).localeCompare(dCo(b.company)));
+    const L=7, rows=[[{v:title,s:sT1}],[{v:`${made} · 칸 색 = Class · 칸 안 = 그날 공정률 · 회색 · = 일일작업을 안 올린 날(앞뒤를 이어 표시) · 같은 업체 + 작업명이 비슷하면 같은 작업으로 이음`,s:sNote}]];
+    rows.push(['No','Class','업체','작업명','착수','최종','일수'].map(v=>({v,s:sH})).concat(days.map(d=>({v:dPlus(d),s:sHd(d)}))));
+    rows.push(Array(L).fill(0).map((_,j)=>({v:j===3?'(날짜 →)':'',s:sHl})).concat(days.map(d=>({v:dxHd(d),s:sHd(d)}))));
+    rows.push(Array(L).fill(0).map((_,j)=>({v:j===3?'(그날 작업 수 →)':'',s:sHl})).concat(days.map(d=>({v:has(d)?tN(d)+'건':'미등록',s:sHd(d)}))));
+    const sTx=S({bd:1}), sC=S({bd:1,h:'center'}), sEmpty=S({bd:1}), sGap=S({bd:1,f:'E9ECEF',h:'center',c:'ADB5BD'});
+    ch.forEach((c,i)=>{ const f=dxColor(c.cls), sBar=S({bd:1,f,h:'center',sz:9,b:1});
+      rows.push([{v:i+1,s:sC},{v:clsLabel(c.cls),s:sTx},{v:c.company,s:sTx},{v:c.name,s:sTx},{v:sMD(c.first),s:sC},{v:sMD(c.last),s:sC},{v:c.n,s:sC}]
+        .concat(days.map(d=>{ const x=c.cells[d]; if(x) return {v:String(x.progress||'').trim(),s:sBar};
+          if(d>c.first&&d<c.last&&!has(d)) return {v:'·',s:sGap}; return {v:'',s:sEmpty}; }))); });
+    if(!ch.length) rows.push([{v:'이 기간에 금일 작업이 없습니다',s:sNote}]);
+    B.add('Actual 공정표',rows,{cols:[5,15,14,46,7,7,5].concat(days.map(()=>8)),fx:L,fy:5,ht:{0:24}});
+  } else {
+    const lists=days.map(d=>((recs[d]&&recs[d].today)||[]).filter(x=>x&&x.task));
+    const max=Math.max(0,...lists.map(l=>l.length)), CW=40, CPL=19; // 열 너비 40 ≈ 한글 19자/줄
+    const rows=[[{v:title,s:sT1}],[{v:`${made} · 날짜마다 그날 금일 작업을 위에서부터 나열 · [업체] 작업명 · 공정률 · 칸 색 = Class`,s:sNote}]];
+    rows.push([{v:'No',s:sH}].concat(days.map(d=>({v:`${dPlus(d)}  ${dxHd(d)}`,s:sHd(d)}))));
+    rows.push([{v:'',s:sHl}].concat(days.map((d,j)=>({v:has(d)?`${lists[j].length}건`:'미등록',s:sHd(d)}))));
+    const ht={0:24}, sC=S({bd:1,h:'center',v:'top'}), sE=S({bd:1});
+    for(let i=0;i<max;i++){ let lines=1;
+      rows.push([{v:i+1,s:sC}].concat(lists.map(l=>{ const x=l[i]; if(!x) return {v:'',s:sE};
+        const t=`${x.company?'['+x.company+'] ':''}${x.task}${x.progress?' · '+x.progress:''}`; lines=Math.max(lines,Math.ceil(t.length/CPL));
+        return {v:t,s:S({bd:1,w:1,v:'top',f:x.cls?dxColor(x.cls):''})}; })));
+      ht[rows.length-1]=Math.max(16.5,lines*14+4); }
+    if(!max) rows.push([{v:'이 기간에 금일 작업이 없습니다',s:sNote}]);
+    B.add('날짜별 작업',rows,{cols:[5].concat(days.map(()=>CW)),fx:1,fy:4,ht});
+  }
+  return {B,fname:`G2R2_일일작업_${mode==='g'?'간트':'목록'}_${dPlus(from)}~${dPlus(to)}.xlsx`};
+}
+async function dxExport(mode){
+  const from=$('dxFrom').value, to=$('dxTo').value, msg=$('dxMsg');
+  if(!from||!to||from>to){ msg.textContent='시작이 끝보다 늦습니다 — 기간을 다시 골라 주세요'; return; }
+  if(dxDays(from,to).length>200){ msg.textContent='한 번에 200일까지 출력할 수 있습니다'; return; }
+  msg.textContent='불러오는 중…';
+  let items; try{ items=(await kApi(`daily-range?from=${from}&to=${to}`)).items||[]; }catch(e){ msg.textContent=kErr(e); return; }
+  const recs={}; items.forEach(x=>{ if(x&&x.analysis) recs[x.day]=x.analysis; });
+  if(!Object.keys(recs).length){ msg.textContent='이 기간에 올린 일일작업이 없습니다'; return; }
+  try{ const {B,fname}=dxBuild(mode,from,to,recs); B.save(fname); msg.innerHTML=`✓ <b>${esc(fname)}</b> 받기 — 올린 날 ${Object.keys(recs).length}일`; }
+  catch(e){ console.warn('[엑셀 출력]',e); msg.textContent='엑셀을 만들지 못했습니다 — '+(e.message||e); }
+}
+function dxInit(){
+  const t=rToday(), ds=dList.map(x=>x.day).sort(), a=[SD_DAY1,ds[0]||t].sort()[0], b=[t,ds[ds.length-1]||t].sort()[1];
+  const opts=dxDays(a,b).reverse(), set=new Set(ds);
+  const html=opts.map(d=>`<option value="${d}">${dPlus(d)} · ${dxHd(d)}${set.has(d)?' ✓':''}</option>`).join('');
+  const f=$('dxFrom'), e=$('dxTo'), fv=f.value, ev=e.value;
+  f.innerHTML=html; e.innerHTML=html;
+  f.value=fv||ds[0]||t; e.value=ev||ds[ds.length-1]||t;
+}
+$('dxG').onclick=()=>dxExport('g');
+$('dxL').onclick=()=>dxExport('l');
+document.querySelectorAll('[data-dxq]').forEach(b=>b.onclick=()=>{ const t=rToday(), q=b.dataset.dxq, ds=dList.map(x=>x.day).sort();
+  $('dxTo').value=t; $('dxFrom').value=q==='all'?[SD_DAY1,ds[0]||t].sort()[0]:sISO(sT(t)-(+q-1)*sDAY);
+  if(!$('dxFrom').value) $('dxFrom').selectedIndex=$('dxFrom').options.length-1; });
 async function dUndo(day){
   try{ const r=await kApi('daily-undo',{day}); dSel=day; dEditDay=null; toast(`↩ 되돌렸습니다 (${D_REASON[r.restored]||'이전'} 상태)`); await dLoad(); }
   catch(e){ toast(e.message==='nothing_to_undo'?'되돌릴 이전 상태가 없습니다':kErr(e)); }
@@ -6059,6 +6206,7 @@ function dGridPack(g){
 }
 function dPreview(kind,payload,an,src){
   dPending={kind,payload,an,src}; dStatus('');
+  if(an._src===undefined) an._src=an.date||''; // 표에서 읽은 날짜(처음 한 번)
   const day=an.date||rToday(), ex=dList.some(x=>x.day===day), T=an.today||[], M=an.tomorrow||[];
   const tot=(an.people||[]).find(x=>x.company==='합계');
   const cls={}; T.forEach(x=>{ cls[x.cls||'-']=(cls[x.cls||'-']||0)+1; });
@@ -6066,12 +6214,15 @@ function dPreview(kind,payload,an,src){
   $('dPrev').innerHTML=`<div class="dp-card"><div class="h">📋 인식 결과 — ${sFmt(day)} ${dPlus(day)}${src==='ai'?' <span style="color:var(--amber)">(AI 분석)</span>':''}</div>
     <div class="s">금일(실제) <b>${T.length}</b>건 · 명일(계획) <b>${M.length}</b>건${an.overall&&an.overall.actual?` · 공사진도 ${esc(an.overall.actual)}% / ${esc(an.overall.plan)}%`:''}${tot?` · 인원 주간 ${esc(tot.day)}·야간 ${esc(tot.night)}·철야 ${esc(tot.overnight)}`:''}</div>
     <div class="s">Class별 ${Object.keys(cls).sort().map(c=>`${c==='-'?'없음':esc(clsLabel(c))} ${cls[c]}`).join(' · ')}${noHz?` · <span style="color:var(--red)">명일 위험요인 빈 칸 ${noHz}건</span>`:''}</div>
+    <div class="s dp-day">📅 저장할 날짜 <input type="date" id="dpDay" value="${day}"> <span class="dplus">${dPlus(day)}</span>
+      <span style="font-size:.72rem;color:var(--steel)">${!an._src?'<b style="color:var(--red)">표에서 날짜를 못 찾아 오늘로 넣었습니다 — 맞는 날짜를 고르세요</b>':an._src!==day?`<b style="color:var(--amber)">표에 적힌 날짜는 ${sMD(an._src)} ${dPlus(an._src)}</b>`:'표에 적힌 날짜 · 지난 날이면 바꿔서 올릴 수 있습니다'}</span></div>
     ${ex?`<div class="s" style="color:var(--amber);font-weight:800">⚠ ${sMD(day)} 기존 일일작업을 새 내용으로 바꿉니다 (↩ 되돌리기 가능)</div>`:''}
     <div style="overflow-x:auto"><table class="s-t"><tr><th>금일 작업(앞 5건)</th><th>업체</th><th>진도</th></tr>${T.slice(0,5).map(x=>`<tr><td>${esc(x.task)}</td><td>${esc(x.company)}</td><td>${esc(x.progress)}</td></tr>`).join('')}</table></div>
     <div class="btn-row"><button class="btn ghost" id="dpCancel">취소</button><button class="btn primary" id="dpSave">💾 이대로 저장</button></div></div>`;
+  $('dpDay').onchange=()=>{ const v=$('dpDay').value; if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; an.date=v; dPreview(kind,payload,an,src); };
   $('dpCancel').onclick=()=>{ dPending=null; $('dPrev').innerHTML=''; dStatus('취소했습니다'); };
   $('dpSave').onclick=async()=>{ const p=dPending; if(!p) return; $('dpSave').disabled=true;
-    try{ await dSave(p.kind,p.payload,p.an,p.src); dPending=null; $('dPrev').innerHTML=''; }catch(err){ $('dpSave').disabled=false; console.warn('[일일작업 저장]',err); dFail(dErrMsg(err,'저장')); } };
+    try{ p.an.date=$('dpDay').value||p.an.date; delete p.an._src; await dSave(p.kind,p.payload,p.an,p.src); dPending=null; $('dPrev').innerHTML=''; }catch(err){ $('dpSave').disabled=false; console.warn('[일일작업 저장]',err); dFail(dErrMsg(err,'저장')); } };
   $('dPrev').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 // 작업 같음 판정: 같은 업체 + 작업명 낱말이 절반 이상 겹침(괄호 안 설명은 빼고)

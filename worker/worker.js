@@ -81,7 +81,7 @@ async function handleRequest(request, env) {
       return json({
         ok: true,
         worker: 'tbm-proxy',
-        version: '3.12.0',
+        version: '3.13.0',
         env: {
           DATA_GO_KR_KEY: env.DATA_GO_KR_KEY ? 'set' : 'MISSING',
           SHARED_TOKEN: env.SHARED_TOKEN ? 'set' : 'MISSING',
@@ -802,6 +802,13 @@ async function handleKakao(request, env, url, cors) {
 
   // ---- 일일작업: 엑셀 표/이미지 원본 + 분석 결과 (날짜당 1건, 다시 올리면 교체) ----
   // v3.12.0: 마지막으로 올린 일일작업 날짜만(앱 열 때 '오늘 표 없음' 알림용 — 목록 전체를 받지 않게)
+  // v3.13.0: 기간별 일일작업(엑셀 출력용) — 날짜·분석 내용만, 최대 200일
+  if (sub === 'daily-range') {
+    const from = String(body.from || ''), to = String(body.to || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return json({ error: 'bad_payload' }, 400, cors);
+    const r = await db.prepare(`SELECT day, analysis FROM daily_work WHERE day BETWEEN ? AND ? ORDER BY day LIMIT 200`).bind(from, to).all();
+    return json({ items: r.results.map(x => ({ day: x.day, analysis: JSON.parse(x.analysis) })) }, 200, cors);
+  }
   if (sub === 'daily-latest') {
     const r = await db.prepare(`SELECT MAX(day) AS day FROM daily_work`).first();
     return json({ day: (r && r.day) || null, today: now.day }, 200, cors);
