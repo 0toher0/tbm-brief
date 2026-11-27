@@ -39,6 +39,14 @@ button{cursor:pointer}
 /* 날짜 선택 칩 */
 .date-chips{display:flex;gap:6px;overflow-x:auto;padding:0 2px 12px;scrollbar-width:none}
 .date-chips::-webkit-scrollbar{display:none}
+/* v6.28.1: PC(마우스)에서는 칩 줄에 얇은 가로 스크롤바 + 휠·끌기로 좌우 이동 */
+@media (hover:hover) and (pointer:fine){
+  .date-chips{scrollbar-width:thin;scrollbar-color:#ced4da transparent;padding-bottom:8px;margin-bottom:4px}
+  .date-chips::-webkit-scrollbar{display:block;height:6px}
+  .date-chips::-webkit-scrollbar-thumb{background:#ced4da;border-radius:6px}
+  .date-chips::-webkit-scrollbar-thumb:hover{background:#adb5bd}
+  .date-chips.chip-drag{cursor:grabbing;user-select:none}
+}
 /* 공용/개인 작업 구분 */
 .src-badge{font-size:.58rem;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:5px;vertical-align:middle}
 .src-badge.my{background:#e7f0ff;color:#1864ab}
@@ -597,6 +605,59 @@ table.s-t tr[data-act]{cursor:pointer}
 .dx-row{display:flex;gap:8px;margin-top:8px}
 .dx-row label{flex:1;display:flex;flex-direction:column;gap:3px;font-size:.72rem;font-weight:800;color:var(--steel)}
 .dx-q{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 2px}
+/* v6.29: 📈 실적 비교 — 일일작업(실적) vs 고정 기준 크리티컬 패스 */
+.vs-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+@media (max-width:720px){.vs-kpi{grid-template-columns:repeat(2,1fr)}}
+.vs-k{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 11px;min-width:0}
+.vs-k .l{font-size:.66rem;font-weight:800;color:var(--steel)}
+.vs-k .v{font-family:var(--num);font-size:1.25rem;font-weight:900;margin-top:2px;line-height:1.15}
+.vs-k .v small{font-size:.68rem;font-weight:700;color:var(--steel)}
+.vs-k .s{font-size:.66rem;color:var(--steel);margin-top:3px;line-height:1.4}
+.vs-k.good .v{color:#2b8a3e} .vs-k.bad .v{color:var(--s-crit)}
+.vs-chart{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px 4px;margin-top:10px}
+.vs-chart svg{width:100%;height:auto;display:block}
+.vs-h{font-weight:900;font-size:.92rem;margin:16px 2px 6px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.vs-h small{font-weight:600;color:var(--steel);font-size:.7rem}
+.vs-pull{border:1px solid #b2f2bb;background:#f4fdf5;border-radius:12px;padding:10px 12px;margin-top:6px}
+.vs-pull .t{font-weight:800;font-size:.84rem}
+.vs-pull .r{font-size:.74rem;color:var(--ink2);margin-top:4px;line-height:1.5}
+.vs-pull .r li{margin-left:14px}
+.vs-sim{border:2px solid #40c057;background:#ebfbee;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:.82rem;font-weight:800;color:#2b8a3e;line-height:1.5}
+.vs-sim small{display:block;font-weight:600;color:var(--steel);font-size:.7rem}
+.vs-warn{border:1px solid #ffc9c9;background:#fff5f5;border-radius:12px;padding:9px 12px;margin-top:6px;font-size:.76rem;color:#c92a2a;line-height:1.5}
+.vs-flt{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}
+.vs-tl{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.vs-row{display:grid;grid-template-columns:minmax(150px,1.2fr) 2fr;gap:8px;align-items:center;padding:7px 10px;border-top:1px solid #f1f3f5;cursor:pointer}
+.vs-row:first-child{border-top:none}
+.vs-row:hover{background:#f8f9fa}
+.vs-row.open{background:#f1f8ff}
+.vs-nm{font-size:.76rem;font-weight:800;line-height:1.35;min-width:0}
+.vs-nm small{display:block;font-weight:600;color:var(--steel);font-size:.64rem}
+.vs-st{position:relative;height:26px}
+.vs-st .bl{position:absolute;top:3px;height:9px;border:1.5px solid #868e96;background:#f1f3f5;border-radius:3px}
+.vs-st .bl.cp{border-color:var(--s-crit);background:#fff0f0}
+.vs-st .ev{position:absolute;top:15px;height:8px;border-radius:2px;background:#2f9e44}
+.vs-st .ev.pre{background:#1c7ed6}
+.vs-st .td{position:absolute;top:0;bottom:0;width:2px;background:var(--red);opacity:.6}
+.vs-st .out{position:absolute;top:5px;font-size:.62rem;color:var(--steel);white-space:nowrap}
+.vs-scale{display:grid;grid-template-columns:minmax(150px,1.2fr) 2fr;gap:8px;padding:6px 10px;background:#f8f9fa;font-size:.62rem;font-weight:800;color:var(--steel)}
+.vs-scale .sc{position:relative;height:14px}
+.vs-scale .sc span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.vs-chip{display:inline-block;font-size:.6rem;font-weight:900;border-radius:5px;padding:1px 5px;margin-right:3px;vertical-align:1px}
+.vs-chip.pull{background:#d0ebff;color:#1864ab} .vs-chip.early{background:#d3f9d8;color:#2b8a3e} .vs-chip.ok{background:#f1f3f5;color:#495057}
+.vs-chip.late,.vs-chip.nostart{background:#ffe3e3;color:#c92a2a} .vs-chip.future{background:#fff;color:#adb5bd;border:1px solid #dee2e6} .vs-chip.done{background:#e9ecef;color:#495057} .vs-chip.before{background:#f8f9fa;color:#adb5bd}
+.vs-det{grid-column:1/-1;background:#fff;border:1px solid #d0ebff;border-radius:10px;padding:9px 11px;margin-top:4px;font-size:.74rem;line-height:1.5;cursor:default}
+.vs-det h5{margin:8px 0 3px;font-size:.72rem;color:var(--steel)}
+.vs-det h5:first-child{margin-top:0}
+.vs-li{display:flex;gap:6px;align-items:flex-start;padding:4px 0;border-top:1px dashed #e9ecef}
+.vs-li:first-of-type{border-top:none}
+.vs-li .x{flex:1;min-width:0;word-break:keep-all}
+.vs-li .x small{color:var(--steel)}
+.vs-li button{flex:none}
+.vs-det input{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:4px}
+.vs-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.64rem;color:var(--steel);margin:6px 2px}
+@media (max-width:720px){.vs-row,.vs-scale{grid-template-columns:1fr;gap:3px}.vs-scale>div:first-child{display:none}.vs-st{height:24px}}
+.vs-legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:3px;vertical-align:0}
 .dh .dplus{background:rgba(255,255,255,.2);color:#fff}
 .dh-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
 @media(max-width:520px){ .dh-kpi{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -1079,7 +1140,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 
 <!-- ============ 🗓️ 공정표 ============ -->
 <div class="pg" id="pgGantt">
-  <div class="k-seg" id="gSeg"><button class="on" data-gv="gantt">간트</button><button data-gv="list">단계별 목록</button><button data-gv="look">주간 공정</button><button data-gv="config">⚙ 설정</button></div>
+  <div class="k-seg" id="gSeg"><button class="on" data-gv="gantt">간트</button><button data-gv="list">단계별 목록</button><button data-gv="look">주간 공정</button><button data-gv="vs">📈 실적비교</button><button data-gv="config">⚙ 설정</button></div>
   <div id="gvGantt">
     <div class="s-gtools">
       <div class="s-zoom" id="gZoom"><button data-z="8">좁게</button><button data-z="14" class="on">보통</button><button data-z="24">넓게</button></div>
@@ -1092,6 +1153,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
   </div>
   <div id="gvList" style="display:none"></div>
   <div id="gvLook" style="display:none"></div>
+  <div id="gvVs" style="display:none"></div>
   <div id="gvConf" style="display:none">
     <div class="card">
       <div class="sec-t" style="margin-bottom:4px">기본 설정</div>
@@ -1673,7 +1735,7 @@ body:not(.editor) #pgSched [data-act],body:not(.editor) #pgGantt [data-act],body
 <script>
 /* ================= 앱 구성 ================= */
 const APP = {
-  version : '6.28.0',
+  version : '6.29.0',
   channel : 'LTE',
   dataSource : 'proxy',
   proxyBase : 'https://tbm-proxy.st4gi720.workers.dev',
@@ -4576,6 +4638,10 @@ setInterval(()=>saCheck(),60e3);
 /* v6.26.0 새 기능 공지 — 앱을 열면(누구나) 이 기기에서 아직 안 본 버전의 바뀐 점을 가운데 카드로 한 번 보여 주고, 누르면 닫힘.
    새로 배포할 때 맨 위에 {v,d,items:[[아이콘,제목,설명]]}를 추가하면 됨. 처음 쓰는 기기는 최신 1건만. */
 const WHATS_NEW=[
+  {v:'6.29.0',d:'11/27',items:[
+    ['📈','공정표 > 실적 비교','일일작업(실적)과 고정 기준 크리티컬 패스를 비교 — 공사진도 곡선·SPI·며칠 앞섬/늦음, 공정별 기준 vs 실제 착수'],
+    ['⏩','크리티컬 패스 단축 가능성','기준보다 먼저 당겨서 한 공정을 찾아, 그 작업량을 반영하면 화입이 며칠 당겨질 수 있는지 계산'],
+    ['🖱','PC에서 날짜 넘기기','날짜 칩 줄에 가로 스크롤바 · 마우스 휠·끌기로 좌우 이동']]},
   {v:'6.28.0',d:'11/26',items:[
     ['📅','지난 날짜 일일작업 올리기','표를 붙여넣은 뒤 저장 전에 날짜(D+)를 골라 빠뜨린 날도 올릴 수 있습니다'],
     ['📤','기간별 엑셀 출력','일일작업 탭 아래 — D+ 범위를 골라 금일 작업을 간트형(Actual 공정표) 또는 날짜별 목록형 엑셀로 받습니다']]},
@@ -4607,6 +4673,23 @@ function wnCheck(){
   bg.onclick=()=>{ bg.classList.remove('show'); saveJSON(LS_WN,latest.v); setTimeout(()=>saCheck(),300); };
 }
 setTimeout(wnCheck,1200);
+/* v6.28.1: 가로 칩 줄(.date-chips) — PC에서 마우스 휠(세로)로 좌우 이동, 마우스로 끌어서 이동(끌었을 땐 클릭 안 됨) */
+document.addEventListener('wheel',e=>{
+  const el=e.target.closest&&e.target.closest('.date-chips'); if(!el||e.ctrlKey) return;
+  if(el.scrollWidth<=el.clientWidth+1||Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;
+  const max=el.scrollWidth-el.clientWidth, d=e.deltaY*(e.deltaMode===1?32:1);
+  if((d<0&&el.scrollLeft<=0)||(d>0&&el.scrollLeft>=max-1)) return; // 끝에 닿으면 페이지 스크롤로
+  e.preventDefault(); el.scrollLeft+=d;
+},{passive:false});
+(()=>{ let el=null, x0=0, s0=0, moved=false;
+  document.addEventListener('mousedown',e=>{ if(e.button!==0) return; const c=e.target.closest&&e.target.closest('.date-chips');
+    if(!c||c.scrollWidth<=c.clientWidth+1) return; el=c; x0=e.clientX; s0=c.scrollLeft; moved=false; });
+  document.addEventListener('mousemove',e=>{ if(!el) return; const dx=e.clientX-x0;
+    if(!moved&&Math.abs(dx)>5){ moved=true; el.classList.add('chip-drag'); }
+    if(moved){ el.scrollLeft=s0-dx; e.preventDefault(); } });
+  document.addEventListener('mouseup',()=>{ if(!el) return; const c=el; el=null; c.classList.remove('chip-drag');
+    if(moved){ const h=ev=>{ ev.stopPropagation(); ev.preventDefault(); }; c.addEventListener('click',h,true); setTimeout(()=>c.removeEventListener('click',h,true),0); } });
+})();
 // 앱을 열 때: 저장된 암호의 역할 다시 확인(예전 로그인은 역할이 비어 있음) → 부관리자면 알람 확인
 (async()=>{
   if(!editorPass) return;
@@ -5381,11 +5464,168 @@ function sSim(){
 let sGv='gantt', sZoom=14, sCritOnly=false; const sCollapsed={};
 function sGanttView(){
   if(!sCalc) return;
-  ['gantt','list','look','config'].forEach(v=>{ const el=$({gantt:'gvGantt',list:'gvList',look:'gvLook',config:'gvConf'}[v]); el.style.display=sGv===v?'':'none'; });
+  ['gantt','list','look','vs','config'].forEach(v=>{ const el=$({gantt:'gvGantt',list:'gvList',look:'gvLook',vs:'gvVs',config:'gvConf'}[v]); el.style.display=sGv===v?'':'none'; });
   document.querySelectorAll('#gSeg [data-gv]').forEach(x=>x.classList.toggle('on',x.dataset.gv===sGv));
   $('sAddRow').style.display=sGv==='config'?'none':(isEditor()?'':'none');
   $('gAddAct').style.display=isEditor()?'':'none';
-  if(sGv==='gantt') sGantt(); else if(sGv==='list') sList(); else if(sGv==='look') sLook(); else sConfig();
+  if(sGv==='gantt') sGantt(); else if(sGv==='list') sList(); else if(sGv==='look') sLook(); else if(sGv==='vs') vsView(); else sConfig();
+}
+/* ================= v6.29 📈 실적 비교 =================
+ * 일일작업의 '금일' 작업 = 실적. 크리티컬 패스는 처음 정한 기준선(Baseline, 고정)을 바꾸지 않고 실적만 쌓아 비교한다(PMP 기준선 관리).
+ * ① 공사진도 실적·계획(일일작업 표 머리) → SV(%p)·SPI, Earned Schedule(진도%를 '며칠 앞/뒤'로 환산)
+ * ② 기준 공정마다 일일작업 근거를 연결(관리자) → 실제 착수일·근거 일수·공정률로 기준 대비 판정
+ * ③ 기준 착수일보다 먼저 일일작업에 보인 공정 = 당겨서 한 작업 → 그 작업량만큼 기간을 줄여 CPM 다시 계산 = 화입 단축 가능성
+ * 연결은 공정표 저장본(plan.dlink = {공정ID:[{co,task}]})에 둠. 자동 매칭은 '후보'로만 보여 주고(같은 단어가 많아 틀리기 쉬움), 관리자가 눌러 확정 */
+let vsRecs=null, vsDays=[], vsFlt='now', vsOpen=null, vsQ='', vsCand=[], vsLoading=false;
+const vsNz=s=>String(s||'').toLowerCase().replace(/\[[^\]]*\]/g,'').replace(/\(.*?\)/g,' ').replace(/및|등|작업/g,'').replace(/[^0-9a-z가-힣]+/g,'');
+const vsBg=s=>{ const o=new Set(); for(let i=0;i<s.length-1;i++) o.add(s.slice(i,i+2)); return o; };
+function vsScore(act,task){ const A=vsBg(vsNz(act)), T=vsBg(vsNz(task)); if(!A.size) return 0; let h=0; A.forEach(b=>{ if(T.has(b)) h++; }); return h/A.size; } // 공정명 글자쌍이 작업명에 얼마나 들어 있나
+const vsPct=s=>{ s=String(s||''); if(/완료/.test(s)) return 100; const m=s.match(/(\d+(?:\.\d+)?)/); if(!m) return null; const v=+m[1]; return v>=0&&v<=100?v:null; };
+async function vsLoad(force){
+  if(vsRecs&&!force) return;
+  const t=rToday(), from=[sISO(sT(t)-199*sDAY),[SD_DAY1,sPlan.start||SD_DAY1].sort()[0]].sort()[1];
+  const r=await kApi(`daily-range?from=${from}&to=${t}`);
+  vsRecs={}; (r.items||[]).forEach(x=>{ if(x&&x.analysis) vsRecs[x.day]=x.analysis; }); vsDays=Object.keys(vsRecs).sort();
+}
+function vsTasks(){ const m=new Map();
+  vsDays.forEach(d=>(vsRecs[d].today||[]).forEach(x=>{ if(!x||!x.task) return; const k=dCo(x.company)+'|'+x.task; let v=m.get(k);
+    if(!v){ v={co:x.company||'',task:x.task,days:[]}; m.set(k,v); } v.days.push(d); v.last=x; }));
+  return [...m.values()]; }
+const vsLinks=id=>((sPlan.dlink||{})[id])||[];
+const vsHit=(x,L)=>dCo(x.company)===dCo(L.co)&&(x.task===L.task||dSim(x.task,L.task)>=0.6); // 날마다 작업명이 조금 바뀌어도 같은 작업으로
+function vsEvid(id){ const Ls=vsLinks(id); if(!Ls.length) return null; const ev=[];
+  vsDays.forEach(d=>(vsRecs[d].today||[]).forEach(x=>{ if(x&&x.task&&Ls.some(L=>vsHit(x,L))) ev.push({d,x}); }));
+  const days=[...new Set(ev.map(e=>e.d))].sort(); let p=null; for(let i=ev.length-1;i>=0;i--){ const v=vsPct(ev[i].x.progress); if(v!=null){ p=v; break; } }
+  return {n:days.length,days,first:days[0]||null,last:days[days.length-1]||null,p,ev}; }
+// 판정: pull 기준 착수 전인데 이미 진행(당겨짐) · early 일찍 착수 · ok 기준대로 · late 늦게 착수 · nostart 기준상 착수했어야 하나 근거 없음 · future 예정 · done 완료(실적)
+const VS_K={before:'기록 이전',pull:'⏩ 당겨서 진행',early:'▼ 일찍 착수',ok:'기준대로',late:'▲ 늦게 착수',nostart:'⚠ 근거 없음',future:'예정',done:'완료'};
+function vsJudge(a){
+  const b=sPlan.base&&sPlan.base.dates&&sPlan.base.dates[a.id]; if(!b) return null;
+  const t=rToday(), E=vsEvid(a.id), ac=sAct[a.id], dur=+a.dur||1, o={a,b,E,ac,dur,cp:!!a.cp};
+  const s0=(ac&&ac.s&&String(ac.s).slice(0,10))||(E&&E.first)||null; o.s0=s0; o.src=ac&&ac.s?'공정표 실적':E&&E.first?'일일작업':'';
+  if(ac&&ac.f){ o.k='done'; o.df=sDiff(b[1],String(ac.f).slice(0,10)); }
+  else if(s0){ o.ds=sDiff(b[0],s0); o.k=o.ds<0?(b[0]>t?'pull':'early'):o.ds>1?'late':'ok'; }
+  else o.k=vsDays.length&&b[1]<vsDays[0]?'before':b[0]<=t?'nostart':'future'; // 일일작업을 올리기 전에 끝난 기준 공정은 비교할 근거 자체가 없음
+  if(E&&E.n&&E.first<b[0]&&o.k!=='done'){ // 기준 착수 전에 해 둔 작업량(일) — 공정률이 있으면 기간×공정률, 없으면 근거 일수의 절반으로 추정
+    o.pre=E.days.filter(d=>d<b[0]).length;
+    // 보수적으로: 근거 일수×0.5와 (공정률이 있으면) 기간×공정률 중 작은 값 — 일일작업 공정률은 그 작업 항목의 공정률이지 기준 공정 전체가 아니라서
+    const byDays=o.pre*0.5, byPct=E.p!=null?dur*E.p/100:Infinity; o.ahead=Math.min(byDays,byPct); o.aheadBy=byPct<byDays?'pct':'days';
+    o.ahead=Math.min(Math.round(o.ahead*2)/2,dur);
+    const man=sPlan.dahead&&sPlan.dahead[a.id]; if(man!=null&&man!==''){ o.ahead=Math.min(+man,dur); o.aheadBy='man'; } // 관리자가 인정한 작업량
+    o.aheadSim=Math.max(0,Math.min(Math.floor(o.ahead),dur-1)); }
+  if(E&&E.n&&o.k!=='done'&&b[1]<t&&sDiff(E.last,t)>3) o.endGuess=E.last; // 일일작업에서 사라짐 → 끝난 것으로 보임
+  return o; }
+function vsSim(J){ const delay={}; J.forEach(o=>{ if(o.aheadSim>0) delay[o.a.id]=-o.aheadSim; }); if(!Object.keys(delay).length) return null;
+  const r=sRun(sPlan,sAct,{delay}); return {fin:r.fin,now:sCalc.fin,gain:sDiff(r.fin,sCalc.fin),n:Object.keys(delay).length}; }
+function vsCurve(){ return vsDays.map(d=>{ const o=vsRecs[d].overall||{}, a=parseFloat(o.actual), p=parseFloat(o.plan); return isFinite(a)&&isFinite(p)?{d,a,p}:null; }).filter(Boolean); }
+// Earned Schedule: 지금 실적 진도가 계획 곡선에서 며칠째 값인지 → 그 날과 오늘의 차이 = 일정 앞섬(+)/늦음(-)
+function vsES(S){ if(!S.length) return null; const L=S[S.length-1], at=sDiff(SD_DAY1,L.d)+1; let es=null;
+  for(let i=0;i<S.length-1;i++){ const x=S[i], y=S[i+1]; if(x.p<=L.a&&y.p>=L.a&&y.p>x.p){ es=sDN(x.d)+(L.a-x.p)/(y.p-x.p)*sDiff(x.d,y.d); break; } }
+  if(es==null){ const k=S[Math.max(0,S.length-8)], sl=(L.p-k.p)/Math.max(1,sDiff(k.d,L.d)); if(sl>0) es=sDN(L.d)+(L.a-L.p)/sl; }
+  if(es==null) return null; const off=Math.round((es-sDN(L.d))*10)/10; return {off,spi:(at+off)/at,L,at,est:es>sDN(L.d)}; }
+function vsChart(S){
+  if(S.length<2) return S.length?`<div class="paste-hint">공사진도 기록이 하루뿐이라 곡선은 이틀째부터 그립니다</div>`:'';
+  const W=640,H=170,l=34,r=86,tp=12,bt=22, x0=sDN(S[0].d), x1=sDN(S[S.length-1].d), vs=S.flatMap(s=>[s.a,s.p]);
+  let y0=Math.floor(Math.min(...vs)-0.3), y1=Math.ceil(Math.max(...vs)+0.3); if(y1-y0<2) y1=y0+2;
+  const X=d=>l+(sDN(d)-x0)/Math.max(1,x1-x0)*(W-l-r), Y=v=>tp+(y1-v)/(y1-y0)*(H-tp-bt), pl=k=>S.map(s=>`${X(s.d).toFixed(1)},${Y(s[k]).toFixed(1)}`).join(' ');
+  const L=S[S.length-1], st=Math.max(1,Math.ceil(S.length/7));
+  const yt=[]; for(let v=y0;v<=y1;v+=Math.max(1,Math.round((y1-y0)/4))) yt.push(v);
+  return `<div class="vs-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="공사진도 실적·계획 곡선">
+    ${yt.map(v=>`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#f1f3f5"/><text x="${l-4}" y="${Y(v)+3}" font-size="10" text-anchor="end" fill="#868e96">${v}%</text>`).join('')}
+    ${S.filter((s,i)=>i%st===0||i===S.length-1).map(s=>`<text x="${X(s.d)}" y="${H-6}" font-size="10" text-anchor="middle" fill="#868e96">${dPlus(s.d)}</text>`).join('')}
+    <polyline points="${pl('p')}" fill="none" stroke="#868e96" stroke-width="2" stroke-dasharray="5 4"/>
+    <polyline points="${pl('a')}" fill="none" stroke="#1c7ed6" stroke-width="2.5"/>
+    ${S.map(s=>`<circle cx="${X(s.d)}" cy="${Y(s.a)}" r="2.6" fill="#1c7ed6"/>`).join('')}
+    <text x="${X(L.d)+6}" y="${Y(L.a)+(L.a>=L.p?-2:10)}" font-size="11" font-weight="800" fill="#1c7ed6">실적 ${L.a}%</text>
+    <text x="${X(L.d)+6}" y="${Y(L.p)+(L.a>=L.p?10:-2)}" font-size="11" font-weight="700" fill="#868e96">계획 ${L.p}%</text>
+  </svg><div class="vs-legend"><span><i style="background:#1c7ed6"></i>실적 공사진도</span><span><i style="background:repeating-linear-gradient(90deg,#868e96 0 5px,transparent 5px 9px)"></i>계획 공사진도</span><span>일일작업 표 머리의 공사진도(실적/계획)</span></div></div>`;
+}
+async function vsView(){
+  const box=$('gvVs');
+  if(!vsRecs){ if(vsLoading) return; vsLoading=true; box.innerHTML='<div class="k-empty">일일작업 실적을 불러오는 중…</div>';
+    try{ await vsLoad(); }catch(e){ box.innerHTML=`<div class="k-empty">${esc(kErr(e))}</div>`; vsLoading=false; return; } vsLoading=false; }
+  vsRender();
+}
+function vsRender(){
+  const box=$('gvVs'), t=rToday(), C=sCalc, ed=isEditor();
+  const J=sPlan.acts.map(vsJudge).filter(Boolean).sort((x,y)=>x.b[0]<y.b[0]?-1:x.b[0]>y.b[0]?1:0);
+  const S=vsCurve(), L=S[S.length-1], E=vsES(S), sim=vsSim(J), fireD=sDiff(sPlan.base.fire||S_FIRE,C.fin);
+  const nLink=J.filter(o=>vsLinks(o.a.id).length).length, pulls=J.filter(o=>o.pre>0), need=J.filter(o=>o.k==='nostart'||o.k==='late');
+  const kpi=(cls,l,v,s)=>`<div class="vs-k ${cls}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const sv=L?Math.round((L.a-L.p)*100)/100:null;
+  let h=`<div class="paste-hint" style="margin-top:8px">크리티컬 패스는 처음 정한 <b>기준선(고정)</b> 그대로 두고, 일일작업에 올라온 <b>금일 작업 = 실적</b>을 쌓아 비교합니다. 일정이 앞서는지·늦는지, 그리고 뒤 공정을 미리 당겨서 한 작업 때문에 <b>화입을 앞당길 여지</b>가 있는지 봅니다. ${vsDays.length?`일일작업 ${vsDays.length}일치 (${sMD(vsDays[0])}~${sMD(vsDays[vsDays.length-1])})`:'아직 올린 일일작업이 없습니다'}</div>`;
+  h+=`<div class="vs-kpi">`
+    +(L?kpi(sv>=0?'good':'bad','공사진도 실적 / 계획',`${L.a}<small>% / ${L.p}%</small>`,`SV ${sv>=0?'+':''}${sv}%p · SPI ${(L.a/L.p).toFixed(3)} · ${sMD(L.d)} ${dPlus(L.d)}`):kpi('','공사진도','—','일일작업 표에 공사진도가 없습니다'))
+    +(E?kpi(E.off>=0?'good':'bad','일정 성과 (Earned Schedule)',`${E.off>=0?'약 '+E.off+'일':'약 '+(-E.off)+'일'}<small> ${E.off>=0?'앞섬':'늦음'}</small>`,`지금 진도 ${E.L.a}%는 계획상 ${E.off>=0?E.off+'일 뒤':(-E.off)+'일 전'}에 도달할 값 ${E.est?' · 계획 곡선을 최근 추세로 늘려 추정':''}`):kpi('','일정 성과','—','공사진도 기록이 더 필요합니다'))
+    +kpi(fireD>0?'bad':'good','화입 (기준 → 예상)',`${sMD(sPlan.base.fire||S_FIRE)}<small> → ${sMD(C.fin)}</small>`,fireD>0?`${fireD}일 늦어짐 — 공정표 실적 기준`:fireD<0?`${-fireD}일 빨라짐 — 공정표 실적 기준`:'기준대로 — 공정표 실적 기준')
+    +kpi(pulls.length?'good':'','기준 공정 근거',`${nLink}<small> / ${J.length} 연결</small>`,`⏩ 당겨짐 ${pulls.length} · ⚠ 확인 필요 ${need.length}${sim&&sim.gain>0?` · 단축 여지 ${sim.gain}일`:''}`)
+    +`</div>`;
+  h+=vsChart(S);
+  // ⏩ 단축 가능성
+  h+=`<div class="vs-h">⏩ 크리티컬 패스 단축 가능성 <small>기준 착수일보다 먼저 일일작업에 나온 공정 = 뒤 공정을 당겨서 한 작업</small></div>`;
+  if(!pulls.length) h+=`<div class="paste-hint">아직 확인된 당겨진 공정이 없습니다. 아래 표에서 공정을 눌러 관련 일일작업을 <b>연결</b>하면 계산됩니다${nLink?'':' (현재 연결 0개)'}.</div>`;
+  else {
+    h+=pulls.map(o=>{ const pre=o.E.ev.filter(e=>e.d<o.b[0]), cos=[...new Set(pre.map(e=>e.x.company).filter(Boolean))];
+      return `<div class="vs-pull"><div class="t">${o.cp?'<span class="s-pill crit">CP</span>':''}${esc(o.a.name)} <span class="vs-chip pull">${o.b[0]>t?`기준 착수 ${sDiff(t,o.b[0])}일 전`:`${-o.ds}일 일찍 착수`}</span></div>
+        <div class="r">기준 ${sMD(o.b[0])}~${sMD(o.b[1])} (${o.dur}일) · 일일작업에 ${sMD(o.E.first)}부터 ${o.pre}일 보임${cos.length?` (${esc(cos.join(', '))})`:''}${o.E.p!=null?` · 최근 공정률 ${o.E.p}%`:''}
+        <br>→ 미리 해 둔 작업량 <b>약 ${o.ahead}일분</b> <small style="color:var(--steel)">(${o.aheadBy==='man'?'관리자 인정값':o.aheadBy==='pct'?`보수 추정: 기간 ${o.dur}일 × 공정률 ${o.E.p}%`:`보수 추정: 기준 착수 전 ${o.pre}일 × 0.5`})</small>
+        ${isEditor()?`<span style="white-space:nowrap">· 인정 <input type="number" min="0" max="${o.dur}" step="0.5" data-vsa="${o.a.id}" value="${o.aheadBy==='man'?o.ahead:''}" placeholder="${o.ahead}" style="width:56px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:1px 4px">일</span>`:''}
+        <ul>${[...new Map(pre.map(e=>[e.x.task,e])).values()].slice(0,3).map(e=>`<li>${esc(e.x.task)} <small style="color:var(--steel)">${esc(e.x.company||'')} · ${sMD(e.d)}${e.x.progress?' · '+esc(e.x.progress):''}</small></li>`).join('')}</ul>
+        ${o.endGuess?`<div style="color:var(--steel)">※ ${sMD(o.endGuess)} 이후 일일작업에 안 보임 — 끝났다면 공정표에 실적(완료)을 넣어 주세요</div>`:''}</div></div>`; }).join('');
+    if(sim) h+=`<div class="vs-sim">${sim.gain>0?`당겨 둔 작업량이 그대로 인정되면 예상 화입 ${sMD(sim.now)} → <span style="font-size:1rem">${sMD(sim.fin)}</span> · <b>${sim.gain}일 단축 가능</b>`:`당겨 둔 작업량을 반영해도 예상 화입은 ${sMD(sim.now)} 그대로입니다`}
+      <small>${sim.n}개 공정의 기간을 미리 한 작업량(정수 일)만큼 줄여 크리티컬 패스를 다시 계산한 값입니다. 앞 공정이 기준대로 끝나고, 당겨서 한 작업이 품질·순서상 그대로 인정될 때의 '여지'이며 확정 일정이 아닙니다(공정표 기준선은 바꾸지 않음).</small></div>`;
+  }
+  if(need.length) h+=`<div class="vs-warn">⚠ <b>확인 필요 ${need.length}건</b> — ${need.slice(0,6).map(o=>`${esc(o.a.name)}(${o.k==='late'?`${o.ds}일 늦게 착수`:`기준 착수 ${sMD(o.b[0])}, 근거 없음`})`).join(' · ')}${need.length>6?' …':''}<br><small>근거 없음은 실제로 늦은 것일 수도, 아직 일일작업을 연결하지 않은 것일 수도 있습니다 — 공정을 눌러 연결하거나 공정표에 실적을 넣어 주세요.</small></div>`;
+  // 공정별 기준 vs 실적
+  const W0=sDN(t)-21, W1=sDN(t)+42, span=W1-W0+1, P=d=>((sDN(d)-W0)/span*100);
+  const inWin=o=>sDN(o.b[1])>=W0&&sDN(o.b[0])<=W1||(o.E&&o.E.n);
+  const F={now:['지금 구간',J.filter(inWin)],pull:['⏩ 당겨짐',pulls],need:['⚠ 확인 필요',need],nolink:['🔗 미연결',J.filter(o=>!vsLinks(o.a.id).length&&inWin(o))],all:['전체',J]};
+  if(!F[vsFlt]) vsFlt='now';
+  h+=`<div class="vs-h">공정별 기준 vs 실적 <small>회색 막대 = 기준(고정) · 초록 = 일일작업에 나온 날 · 파랑 = 기준 착수 전에 한 날 · 공정을 누르면 근거${ed?'를 연결·해제':''}</small></div>
+    <div class="vs-flt">${Object.entries(F).map(([k,[n,l]])=>`<button class="dchip ${vsFlt===k?'on':''}" data-vsf="${k}">${n} <span class="dc-cnt">${l.length}</span></button>`).join('')}</div>`;
+  const rows=F[vsFlt][1], ticks=[0,7,14,21,28,35,42,49,56,63].map(i=>sISO((W0+i)*sDAY));
+  h+=`<div class="vs-tl"><div class="vs-scale"><div>공정 (기준 순서)</div><div class="sc">${ticks.map(d=>`<span style="left:${P(d)}%;${d===t?'color:var(--red)':''}">${d===t?'오늘':sMD(d)}</span>`).join('')}</div></div>`;
+  h+=rows.length?rows.map(o=>{ const bs=Math.max(sDN(o.b[0]),W0), bf=Math.min(sDN(o.b[1]),W1), vis=bf>=bs;
+    const bar=vis?`<div class="bl ${o.cp?'cp':''}" style="left:${(bs-W0)/span*100}%;width:${Math.max(.8,(bf-bs+1)/span*100)}%"></div>`:`<div class="out" style="${sDN(o.b[0])>W1?'right:0':'left:0'}">기준 ${sMD(o.b[0])}~${sMD(o.b[1])} ${sDN(o.b[0])>W1?'▶':'◀'}</div>`;
+    const ev=o.E?o.E.days.filter(d=>sDN(d)>=W0&&sDN(d)<=W1).map(d=>`<div class="ev ${d<o.b[0]?'pre':''}" style="left:${P(d)}%;width:${100/span}%" title="${sMD(d)}"></div>`).join(''):'';
+    const chip=`<span class="vs-chip ${o.k}">${VS_K[o.k]}${o.k==='late'?' '+o.ds+'일':o.k==='early'||o.k==='pull'?' '+(-o.ds)+'일':''}</span>`;
+    const nl=vsLinks(o.a.id).length;
+    return `<div class="vs-row ${vsOpen===o.a.id?'open':''}" data-vso="${o.a.id}"><div class="vs-nm">${chip}${esc(o.a.name)}<small>${o.a.id} · 기준 ${sMD(o.b[0])}~${sMD(o.b[1])}${o.s0?` · 실제 착수 ${sMD(o.s0)}(${o.src})`:''}${o.E&&o.E.n?` · 근거 ${o.E.n}일${o.E.p!=null?' · '+o.E.p+'%':''}`:''} · 🔗${nl}</small></div>
+      <div class="vs-st">${bar}${ev}<div class="td" style="left:${P(t)}%"></div></div>${vsOpen===o.a.id?vsDet(o):''}</div>`; }).join('')
+    :'<div class="k-empty" style="margin:10px">해당하는 공정이 없습니다</div>';
+  h+=`</div><div class="paste-hint" style="margin-top:8px">📘 지표: <b>SV·SPI</b>는 획득가치관리(EVM)의 일정 지표(실적÷계획, 1보다 크면 앞섬), <b>Earned Schedule</b>은 진도%를 '며칠 앞섬/늦음'으로 바꾼 값입니다. 기준선은 바꾸지 않고(Baseline 고정) 실적과의 차이·추세로 관리합니다. 크리티컬 패스 공정과 일일작업은 이름이 달라 <b>관리자가 연결</b>해야 정확합니다 — 자동 매칭은 후보로만 보여 줍니다.</div>`;
+  box.innerHTML=h;
+  box.querySelectorAll('[data-vsf]').forEach(b=>b.onclick=()=>{ vsFlt=b.dataset.vsf; vsRender(); });
+  box.querySelectorAll('[data-vsa]').forEach(inp=>inp.onchange=async()=>{ if(!isEditor()) return; const id=inp.dataset.vsa, v=inp.value.trim();
+    sPlan.dahead=sPlan.dahead||{}; if(v==='') delete sPlan.dahead[id]; else sPlan.dahead[id]=Math.max(0,+v||0);
+    if(await sSavePlan()) toast(v===''?'자동 추정으로 되돌렸습니다':`인정 작업량 ${v}일로 저장했습니다`); vsRender(); });
+  box.querySelectorAll('[data-vso]').forEach(b=>b.onclick=e=>{ if(e.target.closest('.vs-det')) return; vsOpen=vsOpen===b.dataset.vso?null:b.dataset.vso; vsQ=''; vsRender(); });
+  box.querySelectorAll('[data-vsl]').forEach(b=>b.onclick=()=>{ const c=vsCand[+b.dataset.vsl]; if(c) vsLink(vsOpen,c.co,c.task,b.dataset.on==='1'); });
+  const q=$('vsQ'); if(q){ const go=()=>{ vsQ=q.value; const p=q.selectionStart; vsRender(); const n=$('vsQ'); if(n){ n.focus(); n.setSelectionRange(p,p); } };
+    q.oninput=e=>{ if(e.isComposing) return; go(); }; q.addEventListener('compositionend',go); } // 한글 입력 중(조합 중)에는 다시 그리지 않음
+}
+function vsDet(o){
+  const ed=isEditor(), Ls=vsLinks(o.a.id), all=vsTasks(); vsCand=[];
+  const add=(c,on)=>{ vsCand.push(c); return ed?`<button class="mini-btn" data-vsl="${vsCand.length-1}" data-on="${on?1:0}">${on?'＋ 연결':'✕ 해제'}</button>`:''; };
+  const rng=v=>`${sMD(v.days[0])}${v.days.length>1?'~'+sMD(v.days[v.days.length-1]):''} · ${v.days.length}일`;
+  let h=`<div class="vs-det"><h5>판정</h5><div>${{pull:`기준 착수일(${sMD(o.b[0])})이 아직 안 왔는데 ${sMD(o.s0)}부터 진행 중 — 뒤 공정을 당겨서 하고 있습니다`,early:`기준(${sMD(o.b[0])})보다 ${-o.ds}일 일찍 착수했습니다`,ok:'기준 착수일에 맞춰 착수했습니다',late:`기준(${sMD(o.b[0])})보다 ${o.ds}일 늦게 착수했습니다`,nostart:`기준상 ${sMD(o.b[0])}에 착수했어야 하는데 연결된 일일작업·공정표 실적이 없습니다`,future:`기준 착수 ${sMD(o.b[0])} — 아직 예정입니다`,before:`일일작업을 올리기 시작한 ${sMD(vsDays[0])} 이전에 끝난 기준 공정이라 일일작업으로는 비교할 수 없습니다 — 필요하면 공정표에 실적을 넣어 주세요`,done:`완료 (기준 완료 ${sMD(o.b[1])} 대비 ${o.df>0?o.df+'일 늦음':o.df<0?(-o.df)+'일 빠름':'기준대로'})`}[o.k]}${o.ac&&(o.ac.s||o.ac.f)?` · 공정표 실적: ${o.ac.s?'착수 '+sMD(String(o.ac.s).slice(0,10)):''}${o.ac.f?' 완료 '+sMD(String(o.ac.f).slice(0,10)):''}${o.ac.pct!=null?' '+o.ac.pct+'%':''}`:''}</div>`;
+  h+=`<h5>🔗 연결된 일일작업 (${Ls.length})</h5>`+(Ls.length?Ls.map(L=>{ const v=all.filter(x=>vsHit({company:x.co,task:x.task},L)), dd=[...new Set(v.flatMap(x=>x.days))].sort();
+      return `<div class="vs-li"><div class="x">${esc(L.task)} <small>${esc(L.co)}${dd.length?` · ${sMD(dd[0])}~${sMD(dd[dd.length-1])} · ${dd.length}일`:' · 기간 안에 없음'}</small></div>${add(L,false)}</div>`; }).join(''):'<div style="color:var(--steel)">아직 없음</div>');
+  const linked=x=>Ls.some(L=>vsHit({company:x.co,task:x.task},L));
+  const cand=all.filter(x=>!linked(x)).map(x=>({...x,sc:vsScore(o.a.name,x.task)})).filter(x=>x.sc>=0.45).sort((x,y)=>y.sc-x.sc||(x.days[0]<y.days[0]?-1:1)).slice(0,8);
+  h+=`<h5>🤖 자동 후보 <small style="font-weight:600">(공정명과 글자가 겹치는 작업 — 맞는 것만 ${ed?'연결하세요':'관리자가 연결'})</small></h5>`+(cand.length?cand.map(x=>`<div class="vs-li"><div class="x">${esc(x.task)} <small>${esc(x.co)} · ${rng(x)} · 일치 ${Math.round(x.sc*100)}%</small></div>${add(x,true)}</div>`).join(''):'<div style="color:var(--steel)">후보 없음</div>');
+  if(ed){ const qn=vsNz(vsQ), hit=qn.length>=2?all.filter(x=>!linked(x)&&(vsNz(x.task).includes(qn)||vsNz(x.co).includes(qn))).slice(0,12):[];
+    h+=`<h5>🔎 직접 찾아 연결</h5><input id="vsQ" placeholder="작업명·업체 일부 (예: 180도, 소출, 삼진)" value="${esc(vsQ)}">`
+      +(qn.length>=2?(hit.length?hit.map(x=>`<div class="vs-li"><div class="x">${esc(x.task)} <small>${esc(x.co)} · ${rng(x)}</small></div>${add(x,true)}</div>`).join(''):'<div style="color:var(--steel);margin-top:4px">찾은 작업 없음</div>'):''); }
+  return h+'</div>';
+}
+async function vsLink(id,co,task,on){
+  if(!isEditor()){ toast('연결은 관리자·부관리자만 할 수 있습니다'); return; }
+  sPlan.dlink=sPlan.dlink||{};
+  const L=(sPlan.dlink[id]||[]).filter(x=>!(dCo(x.co)===dCo(co)&&x.task===task)); if(on) L.push({co,task});
+  if(L.length) sPlan.dlink[id]=L; else delete sPlan.dlink[id];
+  if(await sSavePlan()) toast(on?'🔗 연결했습니다':'연결을 풀었습니다');
+  vsRender();
 }
 /* v6.26: 간트 이벤트 아이콘 — 공정 이름의 낱말로 종류를 정해 막대 시작점에 그림을 붙임(직접 그린 SVG). 앞 규칙이 우선 */
 const S_EV_SVG={
@@ -7051,7 +7291,7 @@ window.addEventListener('popstate',e=>{
   navIdx=st.idx||0; navSilent=true;
   try{
     const hh=decodeURIComponent(location.hash.slice(1));
-    if(['gantt','list','look','config'].includes(hh)){ if(navCurPg()!=='pgGantt'||sGv!==hh){ sGv=hh; showPage('pgGantt'); } }
+    if(['gantt','list','look','vs','config'].includes(hh)){ if(navCurPg()!=='pgGantt'||sGv!==hh){ sGv=hh; showPage('pgGantt'); } }
     else { const pg=Object.keys(PG_HASH).find(k=>PG_HASH[k]===hh)||'pgSched'; if(navCurPg()!==pg) showPage(pg); }
     // 점검메모 읽기·수정 화면 → 한 단계 앞으로
     if(navCurPg()==='pgMemo'&&typeof mView!=='undefined'&&mView!=='list'&&st.mv!==mView){
@@ -7068,7 +7308,7 @@ document.querySelectorAll('.modal-bg').forEach(m=>navModalObs.observe(m,{attribu
 $('btnBack').onclick=navBack;
 function fromHash(){
   const hh=decodeURIComponent(location.hash.slice(1));
-  if(['gantt','list','look','config'].includes(hh)){ sGv=hh; showPage('pgGantt'); return true; }
+  if(['gantt','list','look','vs','config'].includes(hh)){ sGv=hh; showPage('pgGantt'); return true; }
   const pg=Object.keys(PG_HASH).find(k=>PG_HASH[k]===hh); if(pg){ showPage(pg); return true; }
   return false;
 }
